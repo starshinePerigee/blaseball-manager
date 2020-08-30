@@ -1,0 +1,82 @@
+Core gameplay:
+	Inner loop:
+		live blaseball game sim
+		    player substitutions
+		    player abilities - once per game things?
+		        player on-entry effects? (instead of abilities? the only way to call pitches / hits)
+        before game strategy
+            lineup
+            planned strategy
+        events
+            incineration / peanuts / etc.
+        win/lose
+    Mid loop:
+        player management
+            condition
+            injuries
+            lovers / besties / parentship / rivals / enemies / interventions
+            events
+        team development
+            player gatchapon
+        team approval (based on team government)
+    Outer loop:
+        blaseball politics
+
+
+windows / scenes:
+
+main menu
+    load
+    new
+        pick team
+        build your own
+    import
+        players
+        teams
+
+management view
+    news
+    manager
+        team politics
+    players
+        relations
+        training
+    team
+        practice
+        lineup
+        strategy
+        coaches
+    intel
+    politics
+    next game
+        game history
+
+game view
+    scoreboard
+    bases
+    hit order
+    pitcher status
+
+
+
+teams
+    Chicago EMT
+    Dallas Meat
+    San Fransisco Pals
+    Kansas City Toothpaste
+    Los Angeles Burritos
+    Hades Lions
+    Philly Cakes
+    Baltimore Crabs
+    Mexico City Chicken Strips
+    Moab Sunrise
+    New York Gen X
+    Charleston Cobbler Elves
+    Yellowstone Magicians
+    Boston Blooms
+    Hawaii Weekends
+    Breckenridge Thumbs Up
+    Canada Toothbrushes
+    Seattle Smash Mouth
+    Miami Do It
+    Houston Infiltration
