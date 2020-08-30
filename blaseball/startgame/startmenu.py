@@ -19,6 +19,7 @@ class StartMenu(EasyDialog):
         self.add_button("Load Saved Game", self.load_other_game)
         self.add_button("Start New Game", self.start_new_game)
         self.add_button("Import...", self.start_import)
+        self.add_button("Options", self.start_options)
 
         self.layout.setSpacing(20)
 
@@ -37,3 +38,6 @@ class StartMenu(EasyDialog):
 
     def start_import(self):
         print("Starting import menu.")
+
+    def start_options(self):
+        print("Starting options menu.")
