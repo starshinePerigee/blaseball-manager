@@ -1,20 +1,50 @@
 import sys
 import os
 from time import sleep
+from functools import partial
 
 from PySide2.QtCore import Qt, Signal, Slot, QRect, QPropertyAnimation
 from PySide2.QtWidgets import (QApplication, QMainWindow, QDialog, QVBoxLayout,
     QPushButton, QLabel)
 import qdarkstyle
 
+
+TEAMS_99 = [
+    "Chicago EMT",
+    "Dallas Meat",
+    "San Fransisco Pals",
+    "Kansas City Toothpaste",
+    "Los Angeles Burritos",
+    "Hades Lions",
+    "Philly Cakes",
+    "Baltimore Crabs",
+    "Mexico City Chicken Strips",
+    "Moab Sunrise",
+    "New York Gen X",
+    "Charleston Cobbler Elves",
+    "Yellowstone Magicians",
+    "Boston Blooms",
+    "Hawaii Weekends",
+    "Breckenridge Thumbs Up",
+    "Canada Toothbrushes",
+    "Seattle Smash Mouth",
+    "Miami Do It",
+    "Houston Infiltration",
+]
+
+
 class EasyDialog(QDialog):
     """QDialog extended with some extra utility functions"""
-    def __init__(self):
+    def __init__(self, buttons=None):
         super().__init__()
 
         self.buttons = []
         self.layout = QVBoxLayout()
         self.layout.setAlignment(Qt.AlignCenter)
+
+        if buttons is not None:
+            for button in buttons:
+                self.add_button(button[0], button[1])
 
     def add_button(self, text, function):
         new_button = QPushButton(text)
@@ -25,6 +55,7 @@ class EasyDialog(QDialog):
     def finish(self):
         self.setLayout(self.layout)
         self.show()
+
 
 class StartMenu(EasyDialog):
     """The first dialog that greets users when the application is opened."""
@@ -53,7 +84,7 @@ class StartMenu(EasyDialog):
             "Charleston Cobbler Elves, Day 14")
 
     def start_new_game(self):
-        print("Starting new game.")
+        self.main_window.start_new_game.emit()
 
     def start_import(self):
         print("Starting import menu.")
@@ -64,6 +95,7 @@ class MainWindow(QMainWindow):
     instantiates UI elements on itself directly - use modal windows
     to draw new views if necessary."""
     load_game_and_ui = Signal(str)  # should pass a savegame; maybe a path??
+    start_new_game = Signal()
 
     def __init__(self):
         super().__init__()
@@ -74,6 +106,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(StartMenu(self))
 
         self.load_game_and_ui.connect(self.start_game)
+        self.start_new_game.connect(self.new_game)
 
         self.show()
 
@@ -84,6 +117,16 @@ class MainWindow(QMainWindow):
         self.centralWidget().hide()
         self.setCentralWidget(self.main_ui)
         self.main_ui.finish()
+
+    def new_game(self):
+        menu_items = []
+        for team in TEAMS_99:
+            team_fn = partial(self.load_game_and_ui.emit,
+                              team + ": Day 1")
+            menu_items.append((team, team_fn))
+        new_game_menu = EasyDialog(menu_items)
+        self.setCentralWidget(new_game_menu)
+        new_game_menu.finish()
 
     def nah(self):
         pass
