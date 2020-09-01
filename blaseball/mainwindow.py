@@ -1,11 +1,21 @@
-from functools import partial
+"""
+Contains the UI logic for the main application window, as well as moving between
+primary game states.
+
+mainwindow is a QMainWindow, with a QStackedWidget main widget. Menus and such
+should implement widgets, that go into the stack.
+
+manager (and other windows that require toolbar / dock / layout functionality)
+should impliment as a amainwindow or gridlayout with mdiarea
+
+"""
 
 from PySide2.QtCore import Signal, Slot, QCoreApplication
-from PySide2.QtWidgets import QMainWindow
+from PySide2.QtWidgets import QMainWindow, QStackedWidget
 
-from blaseball.startgame import startmenu
+from blaseball.settings import Settings
+from blaseball.startgame import startmenu, newgame
 from blaseball.util.qthelper import EasyDialog
-from data import teams
 
 
 class MainWindow(QMainWindow):
@@ -18,13 +28,20 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("EXTREEM BLASEBALL MANAGER '99")
-        self.resize(800, 600)
+        self.setFixedSize(Settings.resolution[0], Settings.resolution[1])
+        self.setWindowFlags(self.windowFlags())
 
-        self.main_ui = None
-        self.setCentralWidget(startmenu.StartMenu(self))
+        self.main_stack = QStackedWidget()
+        self.setCentralWidget(self.main_stack)
 
         self.load_game_and_ui.connect(self.start_game)
         self.start_new_game.connect(self.new_game)
+
+        self.start_game_menu = startmenu.StartMenu(self)
+        self.main_stack.addWidget(self.start_game_menu)
+        self.new_game_menu = newgame.NewGame(self)
+        self.main_stack.addWidget(self.new_game_menu)
+        self.main_stack.setCurrentIndex(0)
 
         self.show()
 
@@ -37,14 +54,7 @@ class MainWindow(QMainWindow):
         self.main_ui.finish()
 
     def new_game(self):
-        menu_items = []
-        for team in teams.TEAMS_99:
-            team_fn = partial(self.load_game_and_ui.emit,
-                              team + ": Day 1")
-            menu_items.append((team, team_fn))
-        new_game_menu = EasyDialog(menu_items)
-        self.setCentralWidget(new_game_menu)
-        new_game_menu.finish()
+
 
     def exit_application(self):
         QCoreApplication.instance().quit()
