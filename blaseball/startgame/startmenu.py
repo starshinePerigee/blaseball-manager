@@ -34,10 +34,10 @@ class StartMenu(EasyDialog):
             "Charleston Cobbler Elves, Day 14")
 
     def start_new_game(self):
-        self.main_window.start_new_game.emit()
+        self.main_window.foreground_window.emit('new game')
 
     def start_import(self):
         print("Starting import menu.")
 
     def start_options(self):
-        print("Starting options menu.")
+        self.main_window.foreground_window.emit('settings')

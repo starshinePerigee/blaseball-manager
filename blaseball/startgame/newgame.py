@@ -16,11 +16,9 @@ class NewGame(EasyDialog):
 
         self.main_window = main_window
 
-        menu_items = []
         for team in teams.TEAMS_99:
-            team_fn = partial(self.load_game_and_ui.emit,
+            team_fn = partial(self.main_window.load_game_and_ui.emit,
                               team + ": Day 1")
-            menu_items.append((team, team_fn))
-        new_game_menu = EasyDialog(menu_items)
-        self.setCentralWidget(new_game_menu)
-        new_game_menu.finish()
+            self.add_button(team, team_fn)
+
+        self.finish()

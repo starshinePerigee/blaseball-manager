@@ -8,7 +8,7 @@ TEAMS_99 = [
     "Dallas Meat",
     "San Fransisco Pals",
     "Kansas City Toothpaste",
-    "Los Angeles Burritos",
+    "Los Angeles Tostatas",
     "Hades Lions",
     "Philly Cakes",
     "Baltimore Crabs",

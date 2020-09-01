@@ -1,16 +1,19 @@
-import sys
-import os
-from time import sleep
-from functools import partial
+"""
+A prototype for the main management window, which uses MDI to handle
+nice looking transitions, tooltips, reference windows, etc.
 
-from PySide2.QtCore import Qt, Signal, Slot, QPropertyAnimation
-from PySide2.QtWidgets import (QApplication, QMainWindow, QDialog, QVBoxLayout,
+Needs the following features:
+tab control with window changes
+hover-tooltips
+
+"""
+
+import sys
+
+from PySide2.QtCore import Qt, Signal, Slot
+from PySide2.QtWidgets import (QApplication, QMainWindow,
     QPushButton, QLabel, QMdiArea, QMdiSubWindow)
 import qdarkstyle
-
-
-from blaseball.startgame import startmenu
-
 
 class SubWindow(QMdiSubWindow):
     """A single pane on the mainwindow"""
@@ -29,6 +32,12 @@ class SubWindow(QMdiSubWindow):
         self.move(-MainWindow.resolution[0], 0)
 
 
+class MdiArea(QMdiArea):
+    """The manager for all of the primary windows"""
+    def __init__(self):
+        super().__init__()
+
+
 class MainWindow(QMainWindow):
     """The main application window. Once a game is loaded, this
     instantiates UI elements on itself directly - use modal windows
@@ -40,23 +49,13 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("EXTREEM BLASEBALL MANAGER '99")
+        self.setWindowTitle("MDI window test window")
         self.setFixedSize(MainWindow.resolution[0], MainWindow.resolution[1])
         self.setWindowFlags(self.windowFlags())
 
-        self.main_ui = QMdiArea()
-        self.setCentralWidget(self.main_ui)
-
-        # self.main_ui.addSubWindow(startmenu.StartMenu(self))
-        self.subwindow1 = SubWindow(self.main_ui)
-        self.subwindow2 = SubWindow(self.main_ui)
-        self.subwindow3 = SubWindow(self.main_ui)
+        self.setCentralWidget(MdiArea())
 
         self.show()
-
-        self.subwindow1.move(0, 0)
-        self.subwindow2.move(0, 0)
-        self.subwindow3.move(0, 0)
 
 
 if __name__ == "__main__":
