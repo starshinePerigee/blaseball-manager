@@ -19,7 +19,10 @@ class StartMenu(EasyDialog):
         self.add_button("Load Saved Game", self.load_other_game)
         self.add_button("Start New Game", self.start_new_game)
         self.add_button("Import...", self.start_import)
+<<<<<<< HEAD
         self.add_button("Options", self.start_options)
+=======
+>>>>>>> da3d81f47aa8175d1fed7048a3015567999fabf4
 
         self.layout.setSpacing(20)
 
@@ -34,6 +37,7 @@ class StartMenu(EasyDialog):
             "Charleston Cobbler Elves, Day 14")
 
     def start_new_game(self):
+<<<<<<< HEAD
         self.main_window.foreground_window.emit('new game')
 
     def start_import(self):
@@ -41,3 +45,9 @@ class StartMenu(EasyDialog):
 
     def start_options(self):
         self.main_window.foreground_window.emit('settings')
+=======
+        self.main_window.start_new_game.emit()
+
+    def start_import(self):
+        print("Starting import menu.")
+>>>>>>> da3d81f47aa8175d1fed7048a3015567999fabf4

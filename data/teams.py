@@ -8,7 +8,11 @@ TEAMS_99 = [
     "Dallas Meat",
     "San Fransisco Pals",
     "Kansas City Toothpaste",
+<<<<<<< HEAD
     "Los Angeles Tostatas",
+=======
+    "Los Angeles Burritos",
+>>>>>>> da3d81f47aa8175d1fed7048a3015567999fabf4
     "Hades Lions",
     "Philly Cakes",
     "Baltimore Crabs",

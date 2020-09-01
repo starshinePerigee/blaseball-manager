@@ -3,7 +3,11 @@ This contains some classes to wrap QT objects to make my life a little easier.
 """
 
 from PySide2.QtCore import Qt
+<<<<<<< HEAD
 from PySide2.QtWidgets import (QDialog, QPushButton, QVBoxLayout, QLabel)
+=======
+from PySide2.QtWidgets import (QDialog, QPushButton, QVBoxLayout)
+>>>>>>> da3d81f47aa8175d1fed7048a3015567999fabf4
 
 
 class EasyDialog(QDialog):
@@ -27,8 +31,12 @@ class EasyDialog(QDialog):
 
     def finish(self):
         self.setLayout(self.layout)
+<<<<<<< HEAD
         self.show()
 
     def keyPressEvent(self, event):
         if not event.key() == Qt.Key_Escape:
             super().keyPressEvent(event)
+=======
+        self.show()
+>>>>>>> da3d81f47aa8175d1fed7048a3015567999fabf4

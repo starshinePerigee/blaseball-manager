@@ -57,3 +57,29 @@ game view
     hit order
     pitcher status
 
+<<<<<<< HEAD
+=======
+
+
+teams
+    Chicago EMT
+    Dallas Meat
+    San Fransisco Pals
+    Kansas City Toothpaste
+    Los Angeles Burritos
+    Hades Lions
+    Philly Cakes
+    Baltimore Crabs
+    Mexico City Chicken Strips
+    Moab Sunrise
+    New York Gen X
+    Charleston Cobbler Elves
+    Yellowstone Magicians
+    Boston Blooms
+    Hawaii Weekends
+    Breckenridge Thumbs Up
+    Canada Toothbrushes
+    Seattle Smash Mouth
+    Miami Do It
+    Houston Infiltration
+>>>>>>> da3d81f47aa8175d1fed7048a3015567999fabf4
