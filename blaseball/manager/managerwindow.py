@@ -19,7 +19,7 @@ from blaseball.settings import Settings
 
 class SubWindow(QMdiSubWindow):
     """This is a single subwindow displayed in the manager area"""
-    def __init__(self, widget, manager, geometry, pos_x, pos_y, pos_z=0):
+    def __init__(self, widget, manager, geometry, pos_x, pos_y):
         """
         Create a new subwindow as position x, y z:
         X: position in the horizontal window stack
@@ -32,8 +32,7 @@ class SubWindow(QMdiSubWindow):
         self.setFixedSize(geometry)
 
         self.location = {"x":pos_x,
-                         "y":pos_y,
-                         "z":pos_z
+                         "y":pos_y
                          }
 
         self.manager = manager
@@ -44,6 +43,7 @@ class SubWindow(QMdiSubWindow):
 
 class ManagerWindow(QWidget):
     TASKBAR_BUTTONS = 10
+    WINDOW_TRANS_SPEED = 100
 
     """This is the central widget for the standard management window."""
     def __init__(self, main_window, game=None):
@@ -58,7 +58,7 @@ class ManagerWindow(QWidget):
         self._init_layout()
 
         self.windows = []
-        self.animations = [None, None]
+        self.animations = []
         self.geometry = QPoint(0, 0)
         QTimer.singleShot(0, self._init_windows)
         self.bar.currentChanged.connect(self.view_pos)
@@ -96,91 +96,72 @@ class ManagerWindow(QWidget):
         self.geometry = self.mda.size()
         for i in range(0, ManagerWindow.TASKBAR_BUTTONS):
             new_window = SubWindow(TestWindow(), self.mda, self.geometry,
-                                   i, 0, 0)
+                                   i, 0)
             # new_window.move(self.geometry.width(), 0)
-            new_window.move(i*100, 0)
+            new_window.move(self.geometry.width(), 0)
             self.windows.append(new_window)
             self.bar.addTab(str(i))
-        # self.windows[0].move(0, 0)
+        self.windows[0].move(0, 0)
 
-    def view_pos(self, pos):
-        move_left = pos < self.current_coords['x']
-        current_window = None
-        current_z = -1000
-        new_window = None
+    def view_pos(self, new_pos):
+        old_pos = self.current_coords['x']
+        self.current_coords['x'] = new_pos
         for window in self.windows:
-            if window.location['x'] == self.current_coords['x']:
-                if window.location['z'] > current_z:
-                    if current_window is not None:
-                        if move_left:
-                            current_window.move(self.geometry.width(),
-                                                current_window.pos().y)
-                        else:
-                            current_window.move(-self.geometry.width(),
-                                                current_window.pos().y)
-                    current_window = window
-                    current_z = window.location["z"]
-                    print(f"old window pos {current_window.location['x']}")
-                    continue
-            if window.location['x'] < pos:
-                window.move(-self.geometry.width(), window.pos().y())
-            elif window.location['x'] > pos:
-                window.move(self.geometry.width(), window.pos().y())
-            else:
-                new_window = window
-                #TODO: handle new window z order??
-        self._animate_center(new_window, current_window, move_left)
-        self.current_coords['x'] = pos
+            if window.location['x'] == new_pos:
+                # we want to show this window
+                self._move_center(window, old_pos)
+            elif window.location['x'] == old_pos:
+                # this window needs to leave
+                self._store_window(window, new_pos, True)
 
     def _get_animation_slot(self, window, animation_property):
-        index = -1
-        for i in range(0, len(self.animations)):
-            if self.animations[i] is None:
-                index = i
-                break
-            elif self.animations[i].state() == QAbstractAnimation.Stopped:
-                index = i
-                break
-        if index == -1:
-            # TODO: actually close these animations out
-            print("Animation stack overflow, halting old animations")
-            for animation in self.animations:
+        # clear expired slots
+        self.animations[:] = [x for x in self.animations if x is not None]
+        if len(self.animations) > 100:
+            raise MemoryError("Animation stack overflow?")
+        # finish any move animations that affect the current window:
+        for animation in self.animations:
+            if animation.targetObject() == window:
+                endpoint = animation.endValue()
                 animation.stop()
-            self.animations = [None, None]
-            index = 0
-        self.animations[index] = QPropertyAnimation(window, animation_property)
-        print(f"returning ani slot {index}")
-        return self.animations[index]
+                window.move(endpoint)
+        self.animations.append(QPropertyAnimation(window, animation_property))
+        return self.animations[len(self.animations)-1]
 
-    def _animate_window_slide(self, window, endpoint, speed):
+    def _animate_window_slide(self, window, startpoint, endpoint,
+                              speed=WINDOW_TRANS_SPEED):
         animation = self._get_animation_slot(window, b'pos')
         animation.setDuration(speed)
-        animation.setStartValue(window.pos())
+        animation.setStartValue(startpoint)
         animation.setEndValue(endpoint)
         animation.DeleteWhenStopped = True
         animation.start()
 
-    def _animate_center(self, window, old_window, move_left):
-        # TODO: you have a bug when switching not back and forth :c
-        if Settings.animate_window_transition:
-            if old_window is not None:
-                if move_left:
-                    old_window_point = QPoint(-self.geometry.width(),
-                                              old_window.pos().y())
-                else:
-                    old_window_point = QPoint(self.geometry.width(),
-                                              old_window.pos().y())
-                self._animate_window_slide(old_window,
-                                           old_window_point,
-                                           10000)
-            self._animate_window_slide(window, QPoint(0, 0), 10000)
+    def _store_window(self, window, new_pos, animate=False):
+        if window is None:
+            return
+        # if desired loc (win.loc) is less than new pos, we want the window
+        # to move left; ie: negative
+        move_polarity = -1 if window.location["x"] < new_pos else 1
+        store_point = QPoint(move_polarity*self.geometry.width(),
+                             window.pos().y())
+        if animate and Settings.animate_window_transition:
+            self._animate_window_slide(window, window.pos(), store_point)
         else:
-            #TODO: also move old window here
+            window.move(store_point)
+
+    def _move_center(self, window, old_pos):
+        if Settings.animate_window_transition:
+            # if old location is less than new location (win.loc),
+            # we're moving the viewport right, so this window needs to start
+            # to the right of frame (positive) and slide in leftways
+            move_polarity = 1 if old_pos < window.location['x'] else -1
+            startpoint = QPoint(self.geometry.width() * move_polarity,
+                                window.pos().y())
+            self._animate_window_slide(window, startpoint, QPoint(0, 0))
+        else:
             window.move(0, window.pos().y())
 
-    #TODO: refactor all the "move_left" and redundant store inactive window
-    #code so it's in one nice function (maybe make dest a function so you
-    #just like call .move(storepos(window, pos))
 
 if __name__ == "__main__":
     import sys
