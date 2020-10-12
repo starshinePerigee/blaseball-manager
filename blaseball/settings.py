@@ -9,7 +9,7 @@ from blaseball.util.qthelper import EasyDialog
 
 class Settings():
     resolution = (1024, 768)
-
+    animate_window_transition = True
 
 class SettingsWindow(EasyDialog):
     """the main settings window"""
@@ -19,6 +19,16 @@ class SettingsWindow(EasyDialog):
 
         self.main_window = main_window
 
+        self.add_button("Disable window transition effects",
+                        self.toggle_animate_window)
         self.add_button("Back", main_window.go_back_window.emit)
 
         self.finish()
+
+    def toggle_animate_window(self):
+        if Settings.animate_window_transition:
+            Settings.animate_window_transition = False
+            self.buttons[0].setText("Enable window transition effects")
+        else:
+            Settings.animate_window_transition = True
+            self.buttons[0].setText("Disable window transition effects")

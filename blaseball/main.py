@@ -2,6 +2,7 @@ import sys
 
 from PySide2.QtWidgets import QApplication
 import qdarkstyle
+# https://github.com/ColinDuquesnoy/QDarkStyleSheet/tree/master/qdarkstyle
 
 from blaseball import mainwindow
 

@@ -15,6 +15,7 @@ from PySide2.QtWidgets import (QApplication, QMainWindow,
     QPushButton, QLabel, QMdiArea, QMdiSubWindow)
 import qdarkstyle
 
+
 class SubWindow(QMdiSubWindow):
     """A single pane on the mainwindow"""
     counter = 0

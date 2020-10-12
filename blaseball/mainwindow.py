@@ -11,14 +11,14 @@ should impliment as a amainwindow or gridlayout with mdiarea
 """
 
 from PySide2.QtCore import Signal, Slot, QCoreApplication
-from PySide2.QtWidgets import QMainWindow, QStackedWidget
+from PySide2.QtWidgets import QMainWindow, QStackedWidget, QFrame
 
 from blaseball.settings import Settings, SettingsWindow
 from blaseball.startgame import startmenu, newgame
 from blaseball.manager import managerwindow
 
 
-class MainWindow(QMainWindow):
+class MainWindow(QStackedWidget):
     """The main application window. Once a game is loaded, this
     instantiates UI elements on itself directly - use modal windows
     to draw new views if necessary."""
@@ -32,10 +32,11 @@ class MainWindow(QMainWindow):
         self.setFixedSize(Settings.resolution[0], Settings.resolution[1])
         self.setWindowFlags(self.windowFlags())
 
+        self.setStyleSheet("QStackedWidget {border: None; padding: 0px;}")
+
         self.stack_dir = []
         self.stack_history = []
-        self.main_stack = QStackedWidget()
-        self.setCentralWidget(self.main_stack)
+        self.setFrameStyle(QFrame.NoFrame)
 
         self.load_game_and_ui.connect(self.start_game)
         self.foreground_window.connect(self.switch_window)
@@ -50,18 +51,18 @@ class MainWindow(QMainWindow):
 
     def add_window(self, name, widget):
         self.stack_dir.append(name)
-        self.main_stack.addWidget(widget)
+        self.addWidget(widget)
 
     def drop_window(self, name):
         window_index = self.stack_dir.index(name)
-        dropped_widget = self.main_stack.widget(window_index)
-        self.main_stack.removeWidget(dropped_widget)
+        dropped_widget = self.widget(window_index)
+        self.removeWidget(dropped_widget)
         dropped_widget.destroy()
         self.stack_dir.remove(name)
 
     def switch_window(self, name):
         window_index = self.stack_dir.index(name)
-        self.main_stack.setCurrentIndex(window_index)
+        self.setCurrentIndex(window_index)
         self.stack_history.insert(0, name)
 
     def window_back(self):
@@ -79,3 +80,4 @@ class MainWindow(QMainWindow):
 
     def exit_application(self):
         QCoreApplication.instance().quit()
+

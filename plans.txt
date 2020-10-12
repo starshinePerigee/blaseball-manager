@@ -57,3 +57,103 @@ game view
     hit order
     pitcher status
 
+floating utils:
+    notepad
+    calc
+    calendar
+    playerdb
+
+
+what does the standard management window look like?
+0. a set of "main windows", which are handled by mainwindow and which pop
+    over the main game. these include options, save/load, meta-game stuff.
+1. a set of "base windows", which can be switched between via toolbar
+    (ref motorsports manager)
+    each base screen represents a general aspect of the game:
+        your performance, your players, team strat, politics, next game, etc.
+    each base screen shows a basic summary, with clickable buttons
+        buttons bring up windows to access and do things
+        some buttons do things direct, but this is rare
+    these clickable buttons do one of three things:
+        - a direct action
+        - open another base screen (typically from the bottom, to indicate a
+            sub-menu)
+        - open a function window, which lets you do things
+        - lastly, certain areas / text pop up tooltip windows
+2. function window
+    a pop-up window designed to do an action. ranges from a simple
+    confirmation to a larger context action
+        modal: locks out other function windows, only one is active at any time
+            closing it is the same as a cancel action, which is the same as
+            right-clicking
+        can be downsized?
+            (splorts window is a function window?)
+            if downsized and cancellable, opening another function window cancels
+                the current one
+3. tooltip window
+    information only
+    can be pinned
+    typically closed
+
+x. navigation
+    short hover: pop tooltips
+    left click: do things, open windows, etc
+        left click on a tooltop popup context pins the tooltip.
+        left click in a tooltip window area pins the tooltip
+        left click in a tooltip popup context pins the child and the parent
+    right click: back, always
+        if current context is a base window, it moves up one level
+            from sub-base, to toolbar base, to news window
+        if current context is a function or a tooltip, it unpins and closes them
+    middle click: pin/unpin, always
+        if middle click a base window, it unpins everything
+
+
+7. calendar
+8. notepad
+9. calculator
+
+management view is a qmdi area, to handle multiple windows, cool switch effects,
+tooltips, etc. etc.
+
+you defs need CK3-style expando-tooltips
+
+
+
+
+some calculations:
+PLAYER COUNT:
+    baseball is 25 players, deploy 12ish
+    fire emblem sacred stones is deploy 12 from 33
+    genology lets you deploy 24
+    three houses is deploy 12 from 9 + eehhhh
+    with good indications (ck3 style, with identifiers, stars and expandotips)
+    you could possibly run 20 / 25 players on a team total, deploy 10 per game
+
+    this is pushing it. All named characters would have to be on this roster:
+        coaches, scouts, managers, merch, etc. etc. all need to be players.
+        which is great actually
+
+    the user would really only know a few players from other teams, so we'd
+        need to make those hooks strong, distinctive, and well-signposted.
+        (fit in with relationship system)
+
+
+GAME TIME:
+    a season is 99 games.
+    at 10 seconds per game (no user input, fast sim, 1 sec/inning):
+        16 minutes of game per season.
+        with management focus, that's about an hour per season.
+            if you want inter-season politics to be a main focus of the game,
+            you need games to fit in the 10-20 second time
+        this means a season is about a game session, with
+    at 30 seconds per game:
+        50 minutes of game per season.
+        with management focus, that's about 2 hours per season. that means
+        a season is a long session, or several smaller sessions.
+
+    you can bring time down with the following features:
+        "automation": planned substitutions, manager rules, etc.
+            can even tie into games: manager positions with specific calls you
+            can assign them
+            
