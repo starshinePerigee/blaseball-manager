@@ -1,5 +1,5 @@
 """
-This file contains data constants that are small enough to be loaded
+This file contains team info as constants small enough to be loaded
 as python directly, and not as JSON monsters
 """
 
