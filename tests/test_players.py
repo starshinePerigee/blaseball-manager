@@ -74,7 +74,7 @@ class TestPlayerBase:
         assert isinstance(new_players, list)
         assert isinstance(new_players[0], Player)
         for player in new_players:
-            assert player == pb[player.id()]
+            assert player == pb[player.df_index()]
 
     def test_verify_assign(self, playerbase_10):
         playerbase_10[0] = playerbase_10[1]
@@ -113,19 +113,19 @@ class TestPlayerBase:
         assert isinstance(subset, list)
         assert isinstance(subset[0], Player)
         for i, j in zip(subset, indexer):
-            assert i.id() == j
+            assert i.df_index() == j
 
     def test_index_slice(self, playerbase_10):
         subset = playerbase_10[:]
         assert isinstance(subset, list)
         assert isinstance(subset[0], Player)
         for i, j in zip(subset, range(0, 10)):
-            assert i.id() == j
+            assert i.df_index() == j
         subset = playerbase_10[1:7:2]
         assert isinstance(subset, list)
         assert isinstance(subset[0], Player)
         for i, j in zip(subset, [1, 3, 5, 7]):
-            assert i.id() == j
+            assert i.df_index() == j
 
     def test_index_set(self, playerbase_10, player_1):
         assert playerbase_10[0] != playerbase_10[1]

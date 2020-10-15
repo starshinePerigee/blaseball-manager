@@ -10,6 +10,15 @@ from data import playerdata
 
 
 class Player:
+    """
+    A representation of a single player.
+
+    This includes a link to a line in a PlayerBase, which uses a pandas
+    dataframe to store the bulk of numeric statistics. However, player is
+    implemented as a separate class to support advanced functionality best not
+    stored in a dataframe (like play logs, special ability functions, etc.)
+    """
+
     # default values
     CORE_STATS = {
         "name": "UNDEFINED PLAYER",
@@ -55,6 +64,8 @@ class Player:
 
     @staticmethod
     def generate_name():
+        """Creates a random name from the playerdata lists.
+        Guaranteed to be great."""
         first_name = random.choice(playerdata.PLAYER_FIRST_NAMES)
         last_name = random.choice(playerdata.PLAYER_LAST_NAMES)
         return f"{first_name} {last_name}".title()
@@ -70,12 +81,17 @@ class Player:
         self.initialize()
 
     def initialize(self):
+        """Create / reset all stats to default values.
+        Counts as a new player"""
         for statset in Player.COMBINED_STATS:
             for stat in list(statset.keys()):
                 self.stat_row[stat] = statset[stat]
         self.cid = Player.new_cid()
 
     def randomize(self):
+        """Generate random values for applicable stats.
+        Call initialize() first.
+        Counts as a new player."""
         self.stat_row["name"] = Player.generate_name()
         for stat in Player.BASE_STATS:
             self.stat_row[stat] = random.random()
@@ -83,7 +99,8 @@ class Player:
         self.stat_row["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
         self.cid = Player.new_cid()
 
-    def id(self):
+    def df_index(self):
+        """get the dataframe index of this player."""
         return self.stat_row.name
 
     def __getitem__(self, item):
@@ -94,7 +111,7 @@ class Player:
 
     def __eq__(self, other):
         if isinstance(other, Player):
-            return self.id() == other.id() and self.cid == other.cid
+            return self.df_index() == other.df_index() and self.cid == other.cid
         elif isinstance(other, pd.Series):
             for key in other.keys():
                 if self[key] != other[key]:
@@ -135,21 +152,33 @@ class PlayerBase:
             self.new_players(num_players)
 
     def new_players(self, num_players):
-        """batch create new players"""
+        """batch create new players. Returns the new players as a list
+        of Player"""
+
         # add new players as empty rows:
         old_len = len(self)
         self.df = self.df.reindex(self.df.index.tolist()
                                   + list(range(old_len, old_len+num_players)))
         new_players = self.df.iloc[old_len:old_len + num_players]
+
+        # breathe life into them:
         finished_players = []
         for new_player in new_players.iterrows():
             player = Player(new_player[1])
             player.randomize()
-            self.players[player.id()] = player
+            self.players[player.df_index()] = player
             finished_players.append(player)
         return finished_players
 
     def verify_players(self):
+        """Becasue we have a dataframe with player stats, and a separate
+        list of player objects that are linked, it's important to make sure
+        these two data sources don't get out of sync with each other.
+
+        This function performs a validation to make sure that each Player
+        links to a valid dataframe row and each dataframe row has a valid
+        Player.
+        """
         for key in self.players.keys():
             if self[key] != self.players[key]:
                 raise RuntimeError(f"Player verification failure! "
@@ -187,15 +216,15 @@ class PlayerBase:
             return self.df.iloc[item]
 
     def __setitem__(self, item, value):
-        item_id = self[item].id()
+        item_index = self[item].df_index()
         if isinstance(value, Player):
-            self.players[item_id] = value
-            self.df.loc[item_id] = value.stat_row.copy()
-            self.players[item_id].stat_row = self.df.loc[item_id]
-            self.players[item_id].cid = value.cid
+            self.players[item_index] = value
+            self.df.loc[item_index] = value.stat_row.copy()
+            self.players[item_index].stat_row = self.df.loc[item_index]
+            self.players[item_index].cid = value.cid
         elif isinstance(value, pd.Series):
-            self.df.loc[item_id] = value
-            self.players[item_id] = Player(self.df.loc[item_id])
+            self.df.loc[item_index] = value
+            self.players[item_index] = Player(self.df.loc[item_index])
         self.verify_players()
 
     def __str__(self):

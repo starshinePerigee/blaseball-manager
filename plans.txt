@@ -158,6 +158,7 @@ WHAT IS THE BARE MINIMUM PRE-ALPHA GAME NEED?
         lineup changes and selection
         weather and weather effects (sunny, eclipse)
         votes into blessings (blessings are +stat, swap only)
+    saving and loading
 
 what is barebones player stats:
     name
