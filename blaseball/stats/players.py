@@ -8,17 +8,18 @@ import pandas as pd
 
 from data import playerdata
 
+
 class Player:
-    #default values
+    # default values
     CORE_STATS = {
         "name": "UNDEFINED PLAYER",
         "team": "N/A TEAM",
     }
     BASE_STATS = {
-        "hitting": 0, # base hitting ability
-        "running": 0, # base baserunning ability
-        "catching": 0, # base defense ability
-        "pitching": 0, # base pitching ability
+        "hitting": 0,  # base hitting ability
+        "fielding": 0,  # base defense ability
+        "pitching": 0,  # base pitching ability
+        "charisma": 0, # base off-field ability
         "power": 0,
         # for pitchers: pitch speed/power,
         # for hitters: clean hit power
@@ -36,17 +37,21 @@ class Player:
         # for runners: base speed,
         # for pitchers: stealing defense
         # for defenders: ground out chances
-        "durability": 0, # stat loss per game
+        "durability": 0,  # stat loss per game
     }
     BONUS_STATS = {
         "fingers": 9,
         "element": "Basic",
+        "sleepy": 0,
         "vibes": 0,
         "dread": 0,
     }
-    ALL_STATS_KEYS = list(CORE_STATS.keys()) + list(BASE_STATS.keys())\
+    ALL_STATS_KEYS = list(CORE_STATS.keys()) + list(BASE_STATS.keys()) \
                      + list(BONUS_STATS.keys())
     COMBINED_STATS = [CORE_STATS, BASE_STATS, BONUS_STATS]
+
+    player_class_id = 1000  # unique ID for each generation of a player,
+    # used to verify uniqueness
 
     @staticmethod
     def generate_name():
@@ -54,49 +59,167 @@ class Player:
         last_name = random.choice(playerdata.PLAYER_LAST_NAMES)
         return f"{first_name} {last_name}".title()
 
+    @staticmethod
+    def new_cid():
+        Player.player_class_id += 1
+        return Player.player_class_id
+
     def __init__(self, df_row):
-        self.s = df_row
+        self.stat_row = df_row
+        self.cid = -1
+        self.initialize()
 
     def initialize(self):
         for statset in Player.COMBINED_STATS:
             for stat in list(statset.keys()):
-                self.s[stat] = statset[stat]
+                self.stat_row[stat] = statset[stat]
+        self.cid = Player.new_cid()
 
     def randomize(self):
-        self.s["name"] = Player.generate_name()
+        self.stat_row["name"] = Player.generate_name()
         for stat in Player.BASE_STATS:
-            self.s[stat] = random.random()
-        self.s["fingers"] += 1
-        self.s["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
+            self.stat_row[stat] = random.random()
+        self.stat_row["fingers"] += 1
+        self.stat_row["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
+        self.cid = Player.new_cid()
 
-    #TODO: more indexing
+    def id(self):
+        return self.stat_row.name
+
+    def __getitem__(self, item):
+        return self.stat_row[item]
+
+    def __setitem__(self, item, value):
+        self.stat_row[item] = value
+
+    def __eq__(self, other):
+        if isinstance(other, Player):
+            return self.id() == other.id() and self.cid == other.cid
+        elif isinstance(other, pd.Series):
+            for key in other.keys():
+                if self[key] != other[key]:
+                    return False
+            return True
+        else:
+            return False
+
+    def total_stars(self):
+        """Return a string depiction of this player's stars"""
+        average = (self.stat_row[Player.BASE_STATS].sum()
+                   / len(Player.BASE_STATS)) * 5  # 0-5 star rating
+        stars = int(average)
+        half = average % 1 >= 0.5
+        return "*"*stars + ('-' if half else '')
+
+    def __str__(self):
+        return(f"[{self.stat_row.name}] "
+               f"'{self['name']}' ({self['team']}) "
+               f"{self.total_stars()}"
+               )
+
+    def __repr__(self):
+        return (f"<{self.__module__}.{self.__class__.__name__} "
+                f"'{self['name']}' "
+                f"id {self.stat_row.name} "
+                f"(c{self.cid}) at {hex(id(self))}>")
 
 
 class PlayerBase:
     """this class contains the whole set of players and contains operations
     to execute actions on batches of players"""
-    def __init__(self):
-        self.players = pd.DataFrame(columns=Player.ALL_STATS_KEYS)
+    def __init__(self, num_players=0):
+        self.df = pd.DataFrame(columns=Player.ALL_STATS_KEYS)
+        self.players = {}
+
+        if num_players > 0:
+            self.new_players(num_players)
 
     def new_players(self, num_players):
         """batch create new players"""
         # add new players as empty rows:
         old_len = len(self)
-        self.players = self.players.reindex(self.players.index.tolist()
-                                            + list(range(old_len, old_len+num_players)))
-        new_players = self.players.iloc[old_len:old_len+num_players]
+        self.df = self.df.reindex(self.df.index.tolist()
+                                  + list(range(old_len, old_len+num_players)))
+        new_players = self.df.iloc[old_len:old_len + num_players]
+        finished_players = []
         for new_player in new_players.iterrows():
             player = Player(new_player[1])
-            player.initialize()
             player.randomize()
+            self.players[player.id()] = player
+            finished_players.append(player)
+        return finished_players
+
+    def verify_players(self):
+        for key in self.players.keys():
+            if self[key] != self.players[key]:
+                raise RuntimeError(f"Player verification failure! "
+                                   f"Player {key} mismatch:"
+                                   f"{self[key]} vs {self.players[key]}")
+        for row in self.df.iterrows():
+            if self.players[row[1].name] != row[1]:
+                raise RuntimeError(f"Player verification failure! "
+                                   f"Dataframe row {row[0]} mismatch:"
+                                   f"{repr(row[1])} vs {self.players[row[1].name]}")
+        return True
 
     def __len__(self):
-        return len(self.players.index)
+        if len(self.players) != len(self.df.index):
+            raise RuntimeError(f"Player/df mismatch!"
+                               f"{len(self.players)} players vs "
+                               f"{len(self.df.index)} dataframe rows.")
+        return len(self.df.index)
 
-    #TODO: indexing
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            name_index = self.df['name'].index[
+                self.df['name'].tolist().index(item)]
+            return self.players[self.df.index[name_index]]
+        elif isinstance(item, int):
+            return self.players[item]
+        elif isinstance(item, slice):
+            start = 0 if item.start is None else item.start
+            stop = len(self) if item.stop is None else item.stop
+            step = 1 if item.step is None else item.step
+            return self[range(start, stop, step)]
+        elif isinstance(item, (range, list)):
+            return [self[i] for i in item]
+        else:
+            return self.df.iloc[item]
+
+    def __setitem__(self, item, value):
+        item_id = self[item].id()
+        if isinstance(value, Player):
+            self.players[item_id] = value
+            self.df.loc[item_id] = value.stat_row.copy()
+            self.players[item_id].stat_row = self.df.loc[item_id]
+            self.players[item_id].cid = value.cid
+        elif isinstance(value, pd.Series):
+            self.df.loc[item_id] = value
+            self.players[item_id] = Player(self.df.loc[item_id])
+        self.verify_players()
+
+    def __str__(self):
+        return_str = f"PlayerBase {len(self)} players x "
+        return_str += (f"{len(list(self.df.columns))} cols"
+                      f"\r\n{list(self.df.columns)}")
+        if len(self) <= 10:
+            for i in range(0, len(self)):
+                return_str += "\r\n" + self[i].__str__()
+        else:
+            for i in range(0, 5):
+                return_str += "\r\n" + self[i].__str__()
+            return_str += "\r\n..."
+            for i in range(len(self)-5, len(self)):
+                return_str += "\r\n" + self[i].__str__()
+        return return_str
+
+    def __repr__(self):
+        return(f"<{self.__module__}.{self.__class__.__name__} "
+               f"[{len(self)} rows x "
+               f"{len(self.df.columns)} cols] "
+               f"at {hex(id(self))}")
 
 
 if __name__ == "__main__":
-    pb = PlayerBase()
-    pb.new_players(10)
-    print(pb.players)
+    pb = PlayerBase(10)
+    print(pb)

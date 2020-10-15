@@ -6,7 +6,7 @@ from functools import partial
 
 from blaseball.util.qthelper import EasyDialog
 
-from data import teams
+from data import teamdata
 
 class NewGame(EasyDialog):
     """The first dialog that greets users when the application is opened."""
@@ -16,7 +16,7 @@ class NewGame(EasyDialog):
 
         self.main_window = main_window
 
-        for team in teams.TEAMS_99:
+        for team in teamdata.TEAMS_99:
             team_fn = partial(self.main_window.load_game_and_ui.emit,
                               team + ": Day 1")
             self.add_button(team, team_fn)

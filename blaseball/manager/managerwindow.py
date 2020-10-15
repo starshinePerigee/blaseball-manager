@@ -9,12 +9,22 @@ the main window in this is another MainWindow, which holds a tab control
 """
 
 from PySide2.QtWidgets import (QWidget, QMdiArea, QMdiSubWindow, QTabBar,
-                               QVBoxLayout, QFrame)
-from PySide2.QtCore import (Qt, QPoint, QTimer, QPropertyAnimation,
-                            QAbstractAnimation)
+                               QVBoxLayout, QFrame, QStatusBar)
+from PySide2.QtCore import (Qt, QPoint, QTimer, QPropertyAnimation)
 
 from blaseball.util.qthelper import TestWindow
 from blaseball.settings import Settings
+
+
+PLACEHOLDER_WINDOWS = [
+    "News",
+    "Management",
+    "Players",
+    "Team",
+    "Intel",
+    "Politics",
+    "Games"
+]
 
 
 class SubWindow(QMdiSubWindow):
@@ -41,8 +51,12 @@ class SubWindow(QMdiSubWindow):
         # self.showMaximized()
 
 
+class StatusBar(QStatusBar):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+
 class ManagerWindow(QWidget):
-    TASKBAR_BUTTONS = 10
     WINDOW_TRANS_SPEED = 100
 
     """This is the central widget for the standard management window."""
@@ -55,7 +69,10 @@ class ManagerWindow(QWidget):
 
         self.mda = self._init_mda()
         self.bar = self._init_bar()
+        self.status = self._init_status()
         self._init_layout()
+
+        self.status.showMessage(game)
 
         self.windows = []
         self.animations = []
@@ -69,38 +86,40 @@ class ManagerWindow(QWidget):
         mda = QMdiArea(self)
         mda.setFrameStyle(QFrame.NoFrame)
         mda.setStyleSheet("QMdaArea { border: None; }"
-                           "QAbstractScrollArea { border: None; padding: 0px }")
+                        "QAbstractScrollArea { border: None; padding: 0px }")
         return mda
 
     def _init_bar(self):
         bar = QTabBar(self)
         bar.setShape(QTabBar.RoundedSouth)
         bar.setStyleSheet('QTabBar { padding: 0px; }')
-        # bar.setStyleSheet('QTabBar::tab:top { margin-bottom: 0px; margin-left: 1px;'
-        #                   'margin-right: 1px; padding-bottom: 0px; }')
         bar.setStyleSheet('QTabBar::tab:bottom { margin-top: 0px; margin-left: 1px;'
-                          'margin-right: 1px; padding-bottom: 0px; }')
+                          'margin-right: 1px; padding-bottom: 0px; height: 20px}')
         return bar
+
+    def _init_status(self):
+        return StatusBar(self)
 
     def _init_layout(self):
         layout = QVBoxLayout()
         layout.setSpacing(0)
         layout.setMargin(0)
-        layout.addWidget(self.mda)
-        layout.addWidget(self.bar)
+        layout.addWidget(self.status)
+        layout.addWidget(self.mda, stretch=80)
+        layout.addWidget(self.bar, stretch=20)
         self.setLayout(layout)
 
     def _init_windows(self):
         """everything that needs to be drawn after the first draw loop
         execution"""
         self.geometry = self.mda.size()
-        for i in range(0, ManagerWindow.TASKBAR_BUTTONS):
+        for i in range(0, len(PLACEHOLDER_WINDOWS)):
             new_window = SubWindow(TestWindow(), self.mda, self.geometry,
                                    i, 0)
             # new_window.move(self.geometry.width(), 0)
             new_window.move(self.geometry.width(), 0)
             self.windows.append(new_window)
-            self.bar.addTab(str(i))
+            self.bar.addTab(PLACEHOLDER_WINDOWS[i])
         self.windows[0].move(0, 0)
 
     def view_pos(self, new_pos):

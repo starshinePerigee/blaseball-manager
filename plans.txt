@@ -108,14 +108,6 @@ x. navigation
     middle click: pin/unpin, always
         if middle click a base window, it unpins everything
 
-
-7. calendar
-8. notepad
-9. calculator
-
-management view is a qmdi area, to handle multiple windows, cool switch effects,
-tooltips, etc. etc.
-
 you defs need CK3-style expando-tooltips
 
 
@@ -156,4 +148,24 @@ GAME TIME:
         "automation": planned substitutions, manager rules, etc.
             can even tie into games: manager positions with specific calls you
             can assign them
-            
+
+
+WHAT IS THE BARE MINIMUM PRE-ALPHA GAME NEED?
+    a barebones UI
+    a league of teams, each with players, each with some set of stats
+        player vibes
+    a few basic decisions to make for the player:
+        lineup changes and selection
+        weather and weather effects (sunny, eclipse)
+        votes into blessings (blessings are +stat, swap only)
+
+what is barebones player stats:
+    name
+    hitting
+    running
+    defense
+    power
+    accuracy
+    strategy
+    fingers
+    element
