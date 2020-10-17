@@ -50,6 +50,10 @@ class TestPlayer:
             assert player1[key] == player1_deep[key]
         assert playerbase_10[0] != playerbase_10[1]
 
+    def test_iterable(self, player_1):
+        for stat, index in zip(player_1, player_1.stat_row.index):
+            assert player_1[index] == stat
+
 
 class TestPlayerBase:
     def test_generate(self):
@@ -140,3 +144,10 @@ class TestPlayerBase:
     def test_generate_random_stats(self, playerbase_10):
         assert playerbase_10[1]['hitting'] != playerbase_10[2]['hitting']
         assert playerbase_10[1]['name'] != playerbase_10[2]['name']
+
+    def test_iterable(self, playerbase_10):
+        count = 0
+        for player in playerbase_10:
+            count += 1
+            assert isinstance(player, Player)
+        assert count == len(playerbase_10)

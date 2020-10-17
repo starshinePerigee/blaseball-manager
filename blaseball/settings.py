@@ -10,6 +10,7 @@ from blaseball.util.qthelper import EasyDialog
 class Settings():
     resolution = (1024, 768)
     animate_window_transition = True
+    players_per_team = 25
 
 class SettingsWindow(EasyDialog):
     """the main settings window"""

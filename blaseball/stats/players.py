@@ -1,5 +1,10 @@
 """
 Contains database info and stats for a blaseball player and the playerbase.
+
+Typical workflow:
+maintain a single collection of players in the single PlayerBase. Player
+info is pulled as Player instances. Player methods should update the
+playerbase entries as-needed (and vice versa)
 """
 
 import random
@@ -140,6 +145,9 @@ class Player:
                 f"id {self.stat_row.name} "
                 f"(c{self.cid}) at {hex(id(self))}>")
 
+    def __iter__(self):
+        return iter(self.stat_row)
+
 
 class PlayerBase:
     """this class contains the whole set of players and contains operations
@@ -247,6 +255,9 @@ class PlayerBase:
                f"[{len(self)} rows x "
                f"{len(self.df.columns)} cols] "
                f"at {hex(id(self))}")
+
+    def __iter__(self):
+        return iter(self.players.values())
 
 
 if __name__ == "__main__":
