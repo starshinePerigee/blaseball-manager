@@ -170,3 +170,6 @@ what is barebones player stats:
     strategy
     fingers
     element
+
+
+xyzzy
