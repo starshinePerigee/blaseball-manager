@@ -35,19 +35,20 @@ main menu
         teams
 
 management view
-    news
-    manager
-        team politics
-    players
-        relations
-        training
-    team
-        practice
-        lineup
-        strategy
+    news (home page, feed of events, scrollable, next game button, etc)
+    manager (you and your status, how close you are to being canned, resources availible, etc)
+        team politics (adjust and play team politics, per-team setting including all capts, one owner, etc)
+    players (summary of players with stats)
+        relations (summary of player relationships with more detail breakdown)
+        training (player training profiles)
+        specific player breakdown (is this a hover option?)
+    team (summary of team options and strategy)
+        practice (team practice options and management)
+        lineup (lineup settings)
+        strategy (strategy setting )
         coaches
-    intel
-    politics
+    intel (other team details)
+    politics (cross-team meta options)
     next game
         game history
 
@@ -172,4 +173,33 @@ what is barebones player stats:
     element
 
 
-xyzzy
+
+
+picking this back up, where are we:
+MVP:
+ - random generated teams
+ - view player list
+ - blaseball sim
+ - saving and loading
+ - next game
+
+let's do some basic UI outlining for the rev 0
+
+news:
+- game history
+- next game button
+management:
+- win/loss record
+- minimum win/loss record
+- you are: above/below
+players:
+- list of players on team with stats
+team:
+- current rotation
+- can swap players around to positions
+intel:
+- next game's team breakdown
+politics:
+- offered trades (random) with "star bank"
+games:
+- scrollable game schedule

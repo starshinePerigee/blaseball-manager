@@ -2,22 +2,49 @@
 Contains info for handling team actions and team statistics.
 """
 
+from collections.abc import MutableSequence, Sequence
+from typing import Union
 
 from blaseball.settings import Settings
+from blaseball.stats.players import Player, PlayerBase
 
 
-class Team:
+class Team(MutableSequence):  # should probably be a mutablemapping
     """
     Represents a single team, with team stats and team methods.
     """
-    def __init__(self, name, players=None):
+    def __init__(self, name: str, starting_players: [Player]=None) -> None:
         self.name = name
-        self.players = players
+        self.players = starting_players
         for player in self.players:
             player["team"] = name
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.players)
+
+    def get_player_index(self, player: Union[Player, str, int, slice]) -> int:
+        if isinstance(player, (int, slice)):
+            return player
+        elif isinstance(player, Player):
+            key_l = Player.name.lower()
+        else:
+            key_l = player.lower()
+        for i, player in enumerate(self.players):
+            if player.name.lower() == key_l:
+                return i
+        raise KeyError(f"Could not locate {player} on team {self}!")
+
+    def __getitem__(self, key: Union[str, int, slice, Player]) -> Player:
+        return self.players[self.get_player_index(key)]
+
+    def __setitem__(self, key: Union[str, int, slice, Player], value: Player) -> None:
+        self.players[self.get_player_index(key)] = value
+
+    def __delitem__(self, key: Union[str, int, slice, Player]):
+        self.players.remove(self.get_player_index(key))
+
+    def insert(self, index: int, player: Player) -> None:
+        self.players.insert(index, player)
 
     def __str__(self):
         return f"{self.name} ({len(self)})"
@@ -28,24 +55,34 @@ class Team:
                 f"at {hex(id(self))}>")
 
 
-class League:
+class League(Sequence):
     """
     This contains links to every team and contains functions for whole-league
     manipulations.
     """
-    def __init__(self, playerbase, team_names=None):
-        self.teams = {}
+    def __init__(self, playerbase: PlayerBase, team_names: [str] = None) -> None:
+        self.teams = []
         for team_name in team_names:
             self.teams[team_name] = Team(team_name,
                                          playerbase.new_players(Settings.players_per_team))
 
-    def __len__(self):
-        return len(self.teams.keys())
+    def __len__(self) -> int:
+        return len(self.teams)
 
-    def __str__(self):
+    def __getitem__(self, key: Union[str, int, slice]) -> Team:
+        if isinstance(key, str):
+            key_l = key.lower()
+            for team in self.teams:
+                if team.name == key_l:
+                    return team
+            raise KeyError(f"Could not find team {key} in {self}")
+        else:
+            return self.teams[key]
+
+    def __str__(self) -> str:
         return f"THE LEAGUE ({len(self)})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (f"<{self.__module__}.{self.__class__.__name__} "
                 f"'THE LEAGUE' ({len(self)})"
                 f"at {hex(id(self))}>")

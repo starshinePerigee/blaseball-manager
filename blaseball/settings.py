@@ -7,10 +7,13 @@ notifications when they get updated. But for now, it's just globals.
 
 from blaseball.util.qthelper import EasyDialog
 
-class Settings():
+
+class Settings:
     resolution = (1024, 768)
     animate_window_transition = True
     players_per_team = 25
+    min_lineup = 9
+
 
 class SettingsWindow(EasyDialog):
     """the main settings window"""

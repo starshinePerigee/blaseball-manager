@@ -8,13 +8,16 @@ playerbase entries as-needed (and vice versa)
 """
 
 import random
+from collections import Hashable
+from collections.abc import Mapping, MutableMapping
+from typing import Union, List
 
 import pandas as pd
 
 from data import playerdata
 
 
-class Player:
+class Player(Mapping):
     """
     A representation of a single player.
 
@@ -61,14 +64,14 @@ class Player:
         "dread": 0,
     }
     ALL_STATS_KEYS = list(CORE_STATS.keys()) + list(BASE_STATS.keys()) \
-                     + list(BONUS_STATS.keys())
+        + list(BONUS_STATS.keys())
     COMBINED_STATS = [CORE_STATS, BASE_STATS, BONUS_STATS]
 
     player_class_id = 1000  # unique ID for each generation of a player,
     # used to verify uniqueness
 
     @staticmethod
-    def generate_name():
+    def generate_name() -> str:
         """Creates a random name from the playerdata lists.
         Guaranteed to be great."""
         first_name = random.choice(playerdata.PLAYER_FIRST_NAMES)
@@ -76,16 +79,16 @@ class Player:
         return f"{first_name} {last_name}".title()
 
     @staticmethod
-    def new_cid():
+    def new_cid() -> int:
         Player.player_class_id += 1
         return Player.player_class_id
 
-    def __init__(self, df_row):
-        self.stat_row = df_row
-        self.cid = -1
+    def __init__(self, df_row: pd.Series) -> None:
+        self.stat_row = df_row  # pointer to the row of playerbase containing this player's stats
+        self.cid = -1  # players "Character ID", a unique identifier
         self.initialize()
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Create / reset all stats to default values.
         Counts as a new player"""
         for statset in Player.COMBINED_STATS:
@@ -93,7 +96,7 @@ class Player:
                 self.stat_row[stat] = statset[stat]
         self.cid = Player.new_cid()
 
-    def randomize(self):
+    def randomize(self) -> None:
         """Generate random values for applicable stats.
         Call initialize() first.
         Counts as a new player."""
@@ -104,17 +107,27 @@ class Player:
         self.stat_row["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
         self.cid = Player.new_cid()
 
-    def df_index(self):
-        """get the dataframe index of this player."""
-        return self.stat_row.name
+    def df_index(self) -> int:
+        """get the CID / dataframe index of this player."""
+        if self.stat_row.name == self.cid:
+            return self.cid
+        else:
+            raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row.name}"
+                               f"does not match player CID {self.cid}, likely playerbase corruption.")
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> object:
         return self.stat_row[item]
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: Hashable, value: object) -> None:
         self.stat_row[item] = value
 
-    def __eq__(self, other):
+    def __iter__(self) -> iter:
+        return iter(self.stat_row)
+
+    def __len__(self) -> int:
+        return len(self.stat_row)
+
+    def __eq__(self, other: Union['Player', pd.Series]) -> bool:
         if isinstance(other, Player):
             return self.df_index() == other.df_index() and self.cid == other.cid
         elif isinstance(other, pd.Series):
@@ -125,7 +138,7 @@ class Player:
         else:
             return False
 
-    def total_stars(self):
+    def total_stars(self) -> str:
         """Return a string depiction of this player's stars"""
         average = (self.stat_row[Player.BASE_STATS].sum()
                    / len(Player.BASE_STATS)) * 5  # 0-5 star rating
@@ -133,33 +146,30 @@ class Player:
         half = average % 1 >= 0.5
         return "*"*stars + ('-' if half else '')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return(f"[{self.stat_row.name}] "
                f"'{self['name']}' ({self['team']}) "
                f"{self.total_stars()}"
                )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (f"<{self.__module__}.{self.__class__.__name__} "
                 f"'{self['name']}' "
                 f"id {self.stat_row.name} "
                 f"(c{self.cid}) at {hex(id(self))}>")
 
-    def __iter__(self):
-        return iter(self.stat_row)
 
-
-class PlayerBase:
+class PlayerBase(MutableMapping):
     """this class contains the whole set of players and contains operations
     to execute actions on batches of players"""
-    def __init__(self, num_players=0):
+    def __init__(self, num_players: int=0) -> None:
         self.df = pd.DataFrame(columns=Player.ALL_STATS_KEYS)
         self.players = {}
 
         if num_players > 0:
             self.new_players(num_players)
 
-    def new_players(self, num_players):
+    def new_players(self, num_players: int) -> List[Player]:
         """batch create new players. Returns the new players as a list
         of Player"""
 
@@ -178,7 +188,7 @@ class PlayerBase:
             finished_players.append(player)
         return finished_players
 
-    def verify_players(self):
+    def verify_players(self) -> bool:
         """Becasue we have a dataframe with player stats, and a separate
         list of player objects that are linked, it's important to make sure
         these two data sources don't get out of sync with each other.
@@ -199,14 +209,14 @@ class PlayerBase:
                                    f"{repr(row[1])} vs {self.players[row[1].name]}")
         return True
 
-    def __len__(self):
+    def __len__(self) -> int:
         if len(self.players) != len(self.df.index):
             raise RuntimeError(f"Player/df mismatch!"
                                f"{len(self.players)} players vs "
                                f"{len(self.df.index)} dataframe rows.")
         return len(self.df.index)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Hashable) -> Union[Player, List[Player]]:
         if isinstance(item, str):
             name_index = self.df['name'].index[
                 self.df['name'].tolist().index(item)]
@@ -223,7 +233,7 @@ class PlayerBase:
         else:
             return self.df.iloc[item]
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: Hashable, value: Union[Player, Series]) -> None:
         item_index = self[item].df_index()
         if isinstance(value, Player):
             self.players[item_index] = value
@@ -235,7 +245,12 @@ class PlayerBase:
             self.players[item_index] = Player(self.df.loc[item_index])
         self.verify_players()
 
-    def __str__(self):
+    def __delitem__(self, item: Hashable) -> None:
+        del self.players[item]
+        self.df.drop(item)
+        self.verify_players()
+
+    def __str__(self) -> str:
         return_str = f"PlayerBase {len(self)} players x "
         return_str += (f"{len(list(self.df.columns))} cols"
                       f"\r\n{list(self.df.columns)}")
@@ -250,16 +265,18 @@ class PlayerBase:
                 return_str += "\r\n" + self[i].__str__()
         return return_str
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return(f"<{self.__module__}.{self.__class__.__name__} "
                f"[{len(self)} rows x "
                f"{len(self.df.columns)} cols] "
                f"at {hex(id(self))}")
 
-    def __iter__(self):
+    def __iter__(self) -> iter:
         return iter(self.players.values())
 
 
 if __name__ == "__main__":
     pb = PlayerBase(10)
     print(pb)
+    p = Player()
+

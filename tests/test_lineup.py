@@ -1,7 +1,7 @@
 import pytest
 
-from blaseball.stats.teams import Team, League
-from blaseball.stats import players
+from blaseball.stats.teams import League
+from blaseball.stats import players, lineup
 from data import teamdata
 
 
@@ -17,3 +17,7 @@ def team_1(league_20):
     return league_20.teams[0]
 
 
+class TestLineup:
+    def test_generate(self, team_1):
+        test_lineup = lineup.Lineup.generate(team_1)
+        assert test_lineup.validate[0]
