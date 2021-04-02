@@ -8,7 +8,6 @@ playerbase entries as-needed (and vice versa)
 """
 
 import random
-from copy import deepcopy
 from collections.abc import Mapping, MutableMapping, Hashable
 from typing import Union, List
 
@@ -135,7 +134,10 @@ class Player(Mapping):
                                f"does not match player CID {self.cid}, likely playerbase corruption.")
 
     def __getitem__(self, item) -> object:
-        return self.stat_row()[item]
+        if item == 'cid':
+            return self.cid
+        else:
+            return self.stat_row()[item]
 
     def __setitem__(self, item: Hashable, value: object) -> None:
         self.pb.df.loc[self.cid][item] = value
@@ -146,17 +148,21 @@ class Player(Mapping):
     def __len__(self) -> int:
         return len(self.stat_row())
 
-    def __eq__(self, other: Union['Player', pd.Series]) -> bool:
-        for stat in self.stat_row().index:
-            if stat is "cid":
-                break
+    def __eq__(self, other: Union['Player', pd.Series, dict]) -> bool:
+        if isinstance(other, Player):
+            return other.cid == self.cid
+        else:
+            if isinstance(other, pd.Series):
+                keys = other.index
             else:
+                keys = other.keys()
+            for stat in keys:
                 try:
                     if self[stat] != other[stat]:
                         return False
                 except (KeyError, TypeError):
                     return False
-        return True
+            return True
 
     def total_stars(self) -> str:
         """Return a string depiction of this player's stars"""
@@ -209,12 +215,10 @@ class PlayerBase(MutableMapping):
             self.players[player.df_index()] = player
 
             finished_players.append(player)
-
-        self.verify_players()
         return finished_players
 
     def verify_players(self) -> bool:
-        """Becasue we have a dataframe with player stats, and a separate
+        """Because we have a dataframe with player stats, and a separate
         list of player objects that are linked, it's important to make sure
         these two data sources don't get out of sync with each other.
 
@@ -257,18 +261,18 @@ class PlayerBase(MutableMapping):
             )
         return len(self.df.index)
 
-    def __getitem__(self, item: Hashable) -> Union[Player, List[Player]]:
-        if isinstance(item, str):
-            item_row = self.df.loc[self.df['name'] == item.title()]
+    def __getitem__(self, key: Hashable) -> Union[Player, List[Player]]:
+        if isinstance(key, str):
+            item_row = self.df.loc[self.df['name'] == key.title()]
             if len(item_row) > 1:
                 # you have duplicate names!
                 pass
             item_row = item_row.iloc[0]
             return self.players[item_row.name]
-        elif isinstance(item, (int, integer)):
-            return self.players[item]
-        elif isinstance(item, (range, list)):
-            return [self[i] for i in item]
+        elif isinstance(key, (int, integer)):
+            return self.players[key]
+        elif isinstance(key, (range, list)):
+            return [self[i] for i in key]
         else:
             raise KeyError(f"Could not index by type {type(item)}, expected CID int or name string.")
 
@@ -291,16 +295,16 @@ class PlayerBase(MutableMapping):
             return_players.append(self[cid])
         return return_players
 
-    def __setitem__(self, item: Hashable, value: Union[Player, pd.Series]) -> None:
+    def __setitem__(self, key: Hashable, value: Union[Player, pd.Series]) -> None:
         """
         If the value player is in the playerbase, that player will be duplicated!
         Take care with this function!
         """
-        self[item].assign(value)
+        self[key].assign(value)
 
-    def __delitem__(self, item: Hashable) -> None:
-        del self.players[item]
-        self.df.drop(item)
+    def __delitem__(self, key: Hashable) -> None:
+        del self.players[key]
+        self.df.drop(key)
 
     def __str__(self) -> str:
         return_str = f"PlayerBase {len(self)} players x "

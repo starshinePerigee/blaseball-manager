@@ -3,18 +3,61 @@ This function manages a single lineup - ie, a team configuration that is going t
 a game of blaseball.
 """
 
-from blaseball import settings
+from collections.abc import Collection
+from typing import Union
+from random import shuffle
+
+from blaseball.settings import Settings
+from blaseball.stats import players, teams
 
 
-class Lineup:
+class Defense:
+    def __init__(self):
+        self.catcher = None
+        self.shortstop = None
+        self.basepeeps = []
+        self.fielders = []
+        self.extras = []
+
+    def all_players(self) -> None:
+        return self.catcher + self.basepeeps + self.fielders + self.extras
+
+    def to_dict(self, cids=True):
+        if cids:
+            reference = 'cid'
+        else:
+            reference = 'name'
+
+        def_dict = {}
+        def_dict[self.catcher[reference]] = "catcher"
+        def_dict[self.shortstop[reference]] = "shortstop"
+        for i, player in enumerate(self.basepeeps):
+            def_dict[player[reference]] = f"basepeep {i}"
+        for i, player in enumerate(self.fielders):
+            def_dict[player[reference]] = f"fielder {i}"
+        for i, player in enumerate(self.extras):
+            def_dict[player[reference]] = "extra"
+        return def_dict
+
+    def find(self, key: Union[str, int, players.Player]) -> str:
+        if isinstance(key, players.Player):
+            key = key.cid
+        if isinstance(key, int):  # also catches players - do not convert to elif
+            return self.to_dict()[key]
+        elif isinstance(key, str):
+            return self.to_dict(False)[key.title()]
+        raise KeyError(f"Unsupported type: {type(key)}")
+
+
+class Lineup(Collection):
     running_number = 0
 
     @staticmethod
-    def new_num():
+    def new_num() -> int:
         Lineup.running_number += 1
         return Lineup.running_number
 
-    def __init__(self, name=None):
+    def __init__(self, name: str = None) -> None:
         if name is None:
             self.name = "new lineup " + str(Lineup.new_num())
         else:
@@ -22,43 +65,73 @@ class Lineup:
 
         self.batting_order = []
         self.pitcher = None
-        self.fielding = {
-            "Basepeeps": [],
-            "SS": None,
-            "C": None,
-            "RF": None,
-            "CF": None,
-            "LF": None,
-            "Extras": [],
-        }
+        self.defense = Defense()
 
-    def get_all_players(self):
-        all_players = []
+    def get_all_players(self) -> [players.Player]:
+        all_players = [self.pitcher]
+        all_players += self.batting_order
+        return all_players
 
+    def generate(self, team: teams.Team, fuzz: float = 0):
+        """
+        Creates a new lineup, trying to be as optimal as possible. Fuzz is added to the stats
+        randomly to increase randomess - higher fuzz means base stats matter less.
+        """
+        available_players = team.players
+        shuffle(available_players)
+        self.pitcher = available_players[0]
+        self.batting_order = available_players[1:Settings.min_lineup+1]
+        batters = self.batting_order
+        shuffle(batters)
+        for i, batter in enumerate(batters):
+            if i == 0:
+                self.defense.catcher = batter
+            elif i == 1:
+                self.defense.shortstop = batter
+            elif i <= Settings.base_count + 1:
+                self.defense.basepeeps.append(batter)
+            elif i <= Settings.base_count*2 + 1:
+                self.defense.fielders.append(batter)
+            else:
+                self.defense.extras.append(batter)
 
-    def generate(self, team, strength):
-        pass
-
-    def validate(self):
+    def validate(self) -> (bool, str):
         """
         Make sure a lineup is still valid:
-        - all players are on the same team
-        - lineup has at least min_players players
         - lineup has a pitcher
         - all lineup players have positions
         - all positions are in lineup
-        - there's a basepeep for every p
+        - there's a basepeep for every base
+        - lineup has at least min_players players
+        - all players are on the same team
         - all players are in playing condition (TBD)
         """
-        return (False, "Not yet implimented")
+        return False, "Not yet implimented"
 
-    def print_summary(self):
-        pass
+    def string_summary(self):
+        to_print = ""
+        to_print += f"Pitcher: {self.pitcher['name']} {self.pitcher.total_stars()}\r\n"
+        to_print += "Batting order:"
+        for player in self.batting_order:
+            to_print+=f"\r\n\t{player['name']} {player.total_stars()}   " \
+                      f"{self.defense.find(player).title()}"
+        return to_print
 
-    def __str__(self):
-        pass
+    def __len__(self) -> int:
+        return len(self.get_all_players())
 
-    def __repr__(self):
+    def __contains__(self, item) -> bool:
+        return item in self.get_all_players()
+
+    def __iter__(self) -> iter:
+        return iter(self.get_all_players())
+
+    def __str__(self) -> str:
+        return f"Lineup {self.name} " \
+               f"with pitcher {self.pitcher} " \
+               f"and lead-off hitter {self.batting_order[0]}"
+
+    def __repr__(self) -> str:
         return f"Lineup {self.name} at {hex(id(self))}"
 
 
@@ -66,7 +139,10 @@ if __name__ == "__main__":
     from blaseball.stats import players, teams
     from data import teamdata
     pb = players.PlayerBase()
-    l = teams.League(pb, teamdata.TEAMS_99)
+    l = teams.League(pb, teamdata.TEAMS_99[0:1])
 
     lu = Lineup("main lineup")
-    lu.generate(l)
+    lu.generate(l[0])
+    print(str(lu))
+    print(repr(lu))
+    print(lu.string_summary())

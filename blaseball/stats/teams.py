@@ -22,9 +22,9 @@ class Team(MutableSequence):  # should probably be a mutablemapping
     def __len__(self) -> int:
         return len(self.players)
 
-    def get_player_index(self, key: Union[Player, str, int, slice]) -> int:
+    def get_player_index(self, key: Union[Player, str, int, slice]) -> Union[int, slice]:
         if isinstance(key, (int, slice)):
-            return key
+            return key  # assume we already have a key, this is kind of a hack tu support get/set later
         elif isinstance(key, Player):
             for i, player in enumerate(self.players):
                 if player.cid == key.cid:
@@ -55,7 +55,7 @@ class Team(MutableSequence):  # should probably be a mutablemapping
 
     def __repr__(self):
         return (f"<{self.__module__}.{self.__class__.__name__} "
-                f"'{self['name']}' "
+                f"'{self.name}' "
                 f"at {hex(id(self))}>")
 
 
@@ -67,8 +67,10 @@ class League(Sequence):
     def __init__(self, playerbase: PlayerBase, team_names: [str] = None) -> None:
         self.teams = []
         for team_name in team_names:
-            self.teams[team_name] = Team(team_name,
-                                         playerbase.new_players(Settings.players_per_team))
+            self.teams.append(Team(
+                team_name,
+                playerbase.new_players(Settings.players_per_team))
+            )
 
     def __len__(self) -> int:
         return len(self.teams)
@@ -77,7 +79,7 @@ class League(Sequence):
         if isinstance(key, str):
             key_l = key.lower()
             for team in self.teams:
-                if team.name == key_l:
+                if team.name.lower() == key_l:
                     return team
             raise KeyError(f"Could not find team {key} in {self}")
         else:
