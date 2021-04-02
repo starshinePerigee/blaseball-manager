@@ -8,8 +8,8 @@ playerbase entries as-needed (and vice versa)
 """
 
 import random
-from collections import Hashable
-from collections.abc import Mapping, MutableMapping
+from copy import deepcopy
+from collections.abc import Mapping, MutableMapping, Hashable
 from typing import Union, List
 
 import pandas as pd
@@ -83,18 +83,18 @@ class Player(Mapping):
         Player.player_class_id += 1
         return Player.player_class_id
 
-    def __init__(self, df_row: pd.Series) -> None:
-        self.stat_row = df_row  # pointer to the row of playerbase containing this player's stats
-        self.cid = -1  # players "Character ID", a unique identifier
-        self.initialize()
+    def __init__(self) -> None:
+        self.cid = Player.new_cid()  # players "Character ID", a unique identifier
+        self.stat_row = None  # pointer to the row of playerbase containing this player's stats
+        # you MUST call initialize after this.
 
-    def initialize(self) -> None:
+    def initialize(self, df_row: pd.Series) -> None:
         """Create / reset all stats to default values.
         Counts as a new player"""
+        self.stat_row = df_row
         for statset in Player.COMBINED_STATS:
             for stat in list(statset.keys()):
                 self.stat_row[stat] = statset[stat]
-        self.cid = Player.new_cid()
 
     def randomize(self) -> None:
         """Generate random values for applicable stats.
@@ -105,14 +105,25 @@ class Player(Mapping):
             self.stat_row[stat] = random.random()
         self.stat_row["fingers"] += 1
         self.stat_row["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
-        self.cid = Player.new_cid()
+
+    def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
+        if isinstance(values, Player):
+            self.assign(values.stat_row)
+            return
+        elif isinstance(values, pd.Series):
+            keys = values.index
+        else:
+            keys = values.keys()
+
+        for key in keys:
+            self[key] = values[key]
 
     def df_index(self) -> int:
         """get the CID / dataframe index of this player."""
         if self.stat_row.name == self.cid:
             return self.cid
         else:
-            raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row.name}"
+            raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row.name} "
                                f"does not match player CID {self.cid}, likely playerbase corruption.")
 
     def __getitem__(self, item) -> object:
@@ -128,15 +139,16 @@ class Player(Mapping):
         return len(self.stat_row)
 
     def __eq__(self, other: Union['Player', pd.Series]) -> bool:
-        if isinstance(other, Player):
-            return self.df_index() == other.df_index() and self.cid == other.cid
-        elif isinstance(other, pd.Series):
-            for key in other.keys():
-                if self[key] != other[key]:
+        for stat in self.stat_row.index:
+            if stat is "cid":
+                break
+            else:
+                try:
+                    if self[stat] != other[stat]:
+                        return False
+                except (KeyError, TypeError):
                     return False
-            return True
-        else:
-            return False
+        return True
 
     def total_stars(self) -> str:
         """Return a string depiction of this player's stars"""
@@ -161,8 +173,13 @@ class Player(Mapping):
 
 class PlayerBase(MutableMapping):
     """this class contains the whole set of players and contains operations
-    to execute actions on batches of players"""
-    def __init__(self, num_players: int=0) -> None:
+    to execute actions on batches of players
+
+    It has two parts: a dataframe df, which contains the actual stats
+        with players as rows and stats as columns,
+    and players, a dict indext by CID which contains pointers to the Players objects.
+    """
+    def __init__(self, num_players: int = 0) -> None:
         self.df = pd.DataFrame(columns=Player.ALL_STATS_KEYS)
         self.players = {}
 
@@ -173,19 +190,19 @@ class PlayerBase(MutableMapping):
         """batch create new players. Returns the new players as a list
         of Player"""
 
-        # add new players as empty rows:
-        old_len = len(self)
-        self.df = self.df.reindex(self.df.index.tolist()
-                                  + list(range(old_len, old_len+num_players)))
-        new_players = self.df.iloc[old_len:old_len + num_players]
-
-        # breathe life into them:
         finished_players = []
-        for new_player in new_players.iterrows():
-            player = Player(new_player[1])
+        for i in range(num_players):
+            # create a set of new players:
+            player = Player()
+            self.df.loc[player.cid] = None
+            player.initialize(self.df.loc[player.cid])
             player.randomize()
+
             self.players[player.df_index()] = player
+
             finished_players.append(player)
+
+        self.verify_players()
         return finished_players
 
     def verify_players(self) -> bool:
@@ -223,46 +240,55 @@ class PlayerBase(MutableMapping):
             return self.players[self.df.index[name_index]]
         elif isinstance(item, int):
             return self.players[item]
-        elif isinstance(item, slice):
-            start = 0 if item.start is None else item.start
-            stop = len(self) if item.stop is None else item.stop
-            step = 1 if item.step is None else item.step
-            return self[range(start, stop, step)]
         elif isinstance(item, (range, list)):
             return [self[i] for i in item]
         else:
-            return self.df.iloc[item]
+            raise KeyError(f"Could not index by type {type(item)}, expected CID int or name string.")
 
-    def __setitem__(self, item: Hashable, value: Union[Player, Series]) -> None:
-        item_index = self[item].df_index()
-        if isinstance(value, Player):
-            self.players[item_index] = value
-            self.df.loc[item_index] = value.stat_row.copy()
-            self.players[item_index].stat_row = self.df.loc[item_index]
-            self.players[item_index].cid = value.cid
-        elif isinstance(value, pd.Series):
-            self.df.loc[item_index] = value
-            self.players[item_index] = Player(self.df.loc[item_index])
-        self.verify_players()
+    def iloc(self, key: Union[int, slice, range]) -> Union[Player, List[Player]]:
+        """
+        You should not be able to do this. This is a mapping, so order doesn't matter.
+        But dang it, sometimes you just need a player or a handful, and you don't care who you get.
+        Don't expect this to be anything but a random selection!
+        """
+        all_cids = list(self.players.keys())
+
+        if isinstance(key, int):
+            return self[all_cids[key]]
+
+        if isinstance(key, range):
+            key = slice(key.start, key.stop, key.step)
+
+        return_players = []
+        for cid in all_cids[key]:
+            return_players.append(self[cid])
+        return return_players
+
+    def __setitem__(self, item: Hashable, value: Union[Player, pd.Series]) -> None:
+        """
+        If the value player is in the playerbase, that player will be duplicated!
+        Take care with this function!
+        """
+        self[item].assign(value)
 
     def __delitem__(self, item: Hashable) -> None:
         del self.players[item]
         self.df.drop(item)
-        self.verify_players()
 
     def __str__(self) -> str:
         return_str = f"PlayerBase {len(self)} players x "
         return_str += (f"{len(list(self.df.columns))} cols"
                       f"\r\n{list(self.df.columns)}")
+
         if len(self) <= 10:
-            for i in range(0, len(self)):
-                return_str += "\r\n" + self[i].__str__()
+            for player in self.iloc(range(len(self))):
+                return_str += "\r\n" + str(player)
         else:
-            for i in range(0, 5):
-                return_str += "\r\n" + self[i].__str__()
+            for player in self.iloc(range(0, 5)):
+                return_str += "\r\n" + str(player)
             return_str += "\r\n..."
-            for i in range(len(self)-5, len(self)):
-                return_str += "\r\n" + self[i].__str__()
+            for player in self.iloc(range(len(self)-5, len(self))):
+                return_str += "\r\n" + str(player)
         return return_str
 
     def __repr__(self) -> str:
@@ -276,7 +302,6 @@ class PlayerBase(MutableMapping):
 
 
 if __name__ == "__main__":
-    pb = PlayerBase(10)
+    pb = PlayerBase(20)
     print(pb)
     p = Player()
-

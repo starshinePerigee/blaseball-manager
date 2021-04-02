@@ -1,5 +1,7 @@
 import pytest
 
+import pandas as pd
+
 from blaseball.stats.players import Player, PlayerBase
 
 
@@ -14,7 +16,7 @@ def playerbase_10():
 def player_1():
     pb = PlayerBase()
     pb.new_players(1)
-    return pb[0]
+    return pb.iloc(0)
 
 
 class TestPlayer:
@@ -36,23 +38,45 @@ class TestPlayer:
         player_1["hitting"] = 0.5
         assert player_1["hitting"] == 0.5
 
+    stat_dict = {"name": "Test Player2", "fielding": 0.75}
+
+    def test_assign_dict(self, player_1):
+        player_1.assign(TestPlayer.stat_dict)
+        assert player_1["name"] == "Test Player2"
+        assert player_1["fielding"] == 0.75
+
+    def test_assign_series(self, player_1):
+        stat_series = pd.Series(TestPlayer.stat_dict)
+        player_1.assign(stat_series)
+        assert player_1["name"] == "Test Player2"
+        assert player_1["fielding"] == 0.75
+
     def test_eq_1(self, playerbase_10):
-        player1 = Player(playerbase_10.df.iloc[0])
-        assert player1 == player1
-        assert player1 == playerbase_10.df.iloc[0]
-        playerbase_10.df.iloc[0]['name'] = 'Test Bobson'
-        player1_copy = Player(playerbase_10.df.iloc[0])
-        assert player1_copy != player1
-        player1_deep = player1
-        player1_deep['hitting'] = 0.5
-        assert player1 == player1_deep
-        for key in player1.stat_row.keys():
-            assert player1[key] == player1_deep[key]
-        assert playerbase_10[0] != playerbase_10[1]
+        p1 = playerbase_10.iloc(0)
+        p2 = playerbase_10.iloc(1)
+
+        assert p1 != p2
+
+        stat_row = playerbase_10.df.loc[p1.cid]
+        p2.assign(stat_row)
+
+        assert p1 == p2
+
+        for key in p1.stat_row.keys():
+            assert p1[key] == p2[key]
+
+    def test_eq_2(self, player_1):
+        assert player_1 != "player one is not a string"
+        assert player_1 != [1, 2, 3, 4]
 
     def test_iterable(self, player_1):
         for stat, index in zip(player_1, player_1.stat_row.index):
             assert player_1[index] == stat
+
+    def test_strings(self, player_1):
+        assert isinstance(player_1.__str__(), str)
+        assert isinstance(player_1.__repr__(), str)
+        assert isinstance(player_1.total_stars(), str)
 
 
 class TestPlayerBase:
@@ -81,13 +105,14 @@ class TestPlayerBase:
             assert player == pb[player.df_index()]
 
     def test_verify_assign(self, playerbase_10):
-        playerbase_10[0] = playerbase_10[1]
+        cid_0 = playerbase_10.iloc(0).cid
+        playerbase_10[cid_0]["name"] = "Test Bobson"
+        assert playerbase_10[cid_0]["name"] == "Test Bobson"
+
+        cid_1 = playerbase_10.iloc(1).cid
+        playerbase_10[cid_0] = playerbase_10[cid_1]
+        assert playerbase_10[cid_0]["name"] == playerbase_10[cid_1]["Name"]
         assert playerbase_10.verify_players()
-        playerbase_10[2] = playerbase_10.df.loc[3]
-        assert playerbase_10.verify_players()
-        playerbase_10.players[4] = playerbase_10.players[5]
-        with pytest.raises(RuntimeError):
-            playerbase_10.verify_players()
 
     def test_verify_functs(self, playerbase_10):
         playerbase_10[1].initialize()

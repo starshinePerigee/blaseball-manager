@@ -13,7 +13,7 @@ class Team(MutableSequence):  # should probably be a mutablemapping
     """
     Represents a single team, with team stats and team methods.
     """
-    def __init__(self, name: str, starting_players: [Player]=None) -> None:
+    def __init__(self, name: str, starting_players: [Player] = None) -> None:
         self.name = name
         self.players = starting_players
         for player in self.players:
@@ -22,17 +22,21 @@ class Team(MutableSequence):  # should probably be a mutablemapping
     def __len__(self) -> int:
         return len(self.players)
 
-    def get_player_index(self, player: Union[Player, str, int, slice]) -> int:
-        if isinstance(player, (int, slice)):
-            return player
-        elif isinstance(player, Player):
-            key_l = Player.name.lower()
+    def get_player_index(self, key: Union[Player, str, int, slice]) -> int:
+        if isinstance(key, (int, slice)):
+            return key
+        elif isinstance(key, Player):
+            for i, player in enumerate(self.players):
+                if player.cid == key.cid:
+                    return i
+        elif isinstance(key, str):
+            key_case = key.title()
+            for i, player in enumerate(self.players):
+                if player["name"] == key_case:
+                    return i
         else:
-            key_l = player.lower()
-        for i, player in enumerate(self.players):
-            if player.name.lower() == key_l:
-                return i
-        raise KeyError(f"Could not locate {player} on team {self}!")
+            raise IndexError(f"Invalid index type: {type(key)}, expected Player, str, int, or slice")
+        raise KeyError(f"Could not locate {key} on team {self}!")
 
     def __getitem__(self, key: Union[str, int, slice, Player]) -> Player:
         return self.players[self.get_player_index(key)]
