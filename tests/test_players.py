@@ -62,7 +62,7 @@ class TestPlayer:
 
         assert p1 == p2
 
-        for key in p1.stat_row.keys():
+        for key in p1.stat_row().keys():
             assert p1[key] == p2[key]
 
     def test_eq_2(self, player_1):
@@ -70,7 +70,7 @@ class TestPlayer:
         assert player_1 != [1, 2, 3, 4]
 
     def test_iterable(self, player_1):
-        for stat, index in zip(player_1, player_1.stat_row.index):
+        for stat, index in zip(player_1, player_1.stat_row().index):
             assert player_1[index] == stat
 
     def test_strings(self, player_1):
@@ -90,11 +90,20 @@ class TestPlayerBase:
         nb = PlayerBase(15)
         assert len(nb) == 15
 
-    def test_verify_init(self):
+    def test_init_verify(self):
         pb = PlayerBase()
         assert pb.verify_players()
         pb.new_players(10)
         assert pb.verify_players()
+
+    def test_verify_players(self, playerbase_10):
+        assert playerbase_10.verify_players()
+        del_player = playerbase_10.iloc(0)
+        del playerbase_10.players[del_player.cid]
+        with pytest.raises(RuntimeError):
+            playerbase_10.verify_players()
+        playerbase_10.df.drop(axis=1, index=del_player.cid, inplace=True)
+        assert playerbase_10.verify_players()
 
     def test_new_players(self):
         pb = PlayerBase()
@@ -108,67 +117,71 @@ class TestPlayerBase:
         cid_0 = playerbase_10.iloc(0).cid
         playerbase_10[cid_0]["name"] = "Test Bobson"
         assert playerbase_10[cid_0]["name"] == "Test Bobson"
+        assert playerbase_10.df.loc[cid_0]["name"] == "Test Bobson"
 
         cid_1 = playerbase_10.iloc(1).cid
         playerbase_10[cid_0] = playerbase_10[cid_1]
-        assert playerbase_10[cid_0]["name"] == playerbase_10[cid_1]["Name"]
+        assert playerbase_10[cid_0]["name"] == playerbase_10[cid_1]["name"]
         assert playerbase_10.verify_players()
 
     def test_verify_functs(self, playerbase_10):
-        playerbase_10[1].initialize()
+        playerbase_10.iloc(1).initialize(playerbase_10)
         assert playerbase_10.verify_players()
-        playerbase_10[2].randomize()
+        playerbase_10.iloc(2).randomize()
         assert playerbase_10.verify_players()
         playerbase_10.df.iloc[3] = playerbase_10.df.iloc[4]
         assert playerbase_10.verify_players()
-        assert playerbase_10[3]['name'] == playerbase_10[4]['name']
+        assert playerbase_10.iloc(3)['name'] == playerbase_10.iloc(4)['name']
         # playerbase_10.df.drop(5, inplace=True)
         # with pytest.raises(RuntimeError):
         #     playerbase_10.verify_players()
 
     def test_index_get(self, playerbase_10):
-        assert isinstance(playerbase_10[0], Player)
-        first_player = playerbase_10[0]
+        first_player = playerbase_10.iloc(0)
+        assert isinstance(playerbase_10[first_player.cid], Player)
         assert playerbase_10[first_player['name']] == first_player
-        assert isinstance(playerbase_10[0]['hitting'], float)
+        assert isinstance(playerbase_10[first_player.cid]['hitting'], float)
 
-    indexers = [
-        [1, 3, 5],
-        range(1, 5),
-    ]
-    @pytest.mark.parametrize("indexer", indexers)
-    def test_index_lists(self, playerbase_10, indexer):
-        subset = playerbase_10[indexer]
-        assert isinstance(subset, list)
-        assert isinstance(subset[0], Player)
-        for i, j in zip(subset, indexer):
-            assert i.df_index() == j
-
-    def test_index_slice(self, playerbase_10):
-        subset = playerbase_10[:]
-        assert isinstance(subset, list)
-        assert isinstance(subset[0], Player)
-        for i, j in zip(subset, range(0, 10)):
-            assert i.df_index() == j
-        subset = playerbase_10[1:7:2]
-        assert isinstance(subset, list)
-        assert isinstance(subset[0], Player)
-        for i, j in zip(subset, [1, 3, 5, 7]):
-            assert i.df_index() == j
+    # indexers = [
+    #     [1001, 1005, 1003],
+    #     range(1001, 5),
+    # ]
+    # @pytest.mark.parametrize("indexer", indexers)
+    # def test_index_lists(self, playerbase_10, indexer):
+    #     subset = playerbase_10[indexer]
+    #     assert isinstance(subset, list)
+    #     assert isinstance(subset[0], Player)
+    #     for i, j in zip(subset, indexer):
+    #         assert i.df_index() == j
+    #
+    # def test_index_slice(self, playerbase_10):
+    #     subset = playerbase_10[:]
+    #     assert isinstance(subset, list)
+    #     assert isinstance(subset[0], Player)
+    #     for i, j in zip(subset, range(0, 10)):
+    #         assert i.df_index() == j
+    #     subset = playerbase_10[1:7:2]
+    #     assert isinstance(subset, list)
+    #     assert isinstance(subset[0], Player)
+    #     for i, j in zip(subset, [1, 3, 5, 7]):
+    #         assert i.df_index() == j
 
     def test_index_set(self, playerbase_10, player_1):
-        assert playerbase_10[0] != playerbase_10[1]
-        playerbase_10[0] = playerbase_10[1]
-        assert playerbase_10[0]['name'] == playerbase_10[1]['name']
-        playerbase_10[2]['name'] = 'TEST PLAYER'
-        assert playerbase_10[2]['name'] == 'TEST PLAYER'
-        assert playerbase_10[3] != player_1
-        playerbase_10[3] = player_1
-        assert playerbase_10[3]['name'] == player_1['name']
+        player_cids = playerbase_10.df.index
+        assert playerbase_10[player_cids[0]] != playerbase_10[player_cids[1]]
+        playerbase_10[player_cids[0]] = playerbase_10[player_cids[1]]
+        assert playerbase_10[player_cids[0]]['name'] == playerbase_10[player_cids[1]]['name']
+        playerbase_10[player_cids[2]]['name'] = 'TEST PLAYER'
+        assert playerbase_10[player_cids[2]]['name'] == 'TEST PLAYER'
+        assert playerbase_10[player_cids[3]] != player_1
+        playerbase_10[player_cids[3]] = player_1
+        assert playerbase_10[player_cids[3]]['name'] == player_1['name']
 
     def test_generate_random_stats(self, playerbase_10):
-        assert playerbase_10[1]['hitting'] != playerbase_10[2]['hitting']
-        assert playerbase_10[1]['name'] != playerbase_10[2]['name']
+        cid_a = playerbase_10.iloc(0).cid
+        cid_b = playerbase_10.iloc(1).cid
+        assert playerbase_10[cid_a]['hitting'] != playerbase_10[cid_b]['hitting']
+        assert playerbase_10[cid_a]['name'] != playerbase_10[cid_b]['name']
 
     def test_iterable(self, playerbase_10):
         count = 0

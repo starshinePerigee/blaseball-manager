@@ -13,6 +13,7 @@ from collections.abc import Mapping, MutableMapping, Hashable
 from typing import Union, List
 
 import pandas as pd
+from numpy import integer
 
 from data import playerdata
 
@@ -85,30 +86,30 @@ class Player(Mapping):
 
     def __init__(self) -> None:
         self.cid = Player.new_cid()  # players "Character ID", a unique identifier
-        self.stat_row = None  # pointer to the row of playerbase containing this player's stats
+        self.pb = None  # pointer to the row of playerbase containing this player's stats
         # you MUST call initialize after this.
 
-    def initialize(self, df_row: pd.Series) -> None:
+    def initialize(self, playerbase: 'PlayerBase') -> None:
         """Create / reset all stats to default values.
         Counts as a new player"""
-        self.stat_row = df_row
+        self.pb = playerbase
         for statset in Player.COMBINED_STATS:
             for stat in list(statset.keys()):
-                self.stat_row[stat] = statset[stat]
+                self[stat] = statset[stat]
 
     def randomize(self) -> None:
         """Generate random values for applicable stats.
         Call initialize() first.
         Counts as a new player."""
-        self.stat_row["name"] = Player.generate_name()
+        self["name"] = Player.generate_name()
         for stat in Player.BASE_STATS:
-            self.stat_row[stat] = random.random()
-        self.stat_row["fingers"] += 1
-        self.stat_row["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
+            self[stat] = random.random()
+        self["fingers"] += 1
+        self["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
 
     def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
         if isinstance(values, Player):
-            self.assign(values.stat_row)
+            self.assign(values.stat_row())
             return
         elif isinstance(values, pd.Series):
             keys = values.index
@@ -118,28 +119,35 @@ class Player(Mapping):
         for key in keys:
             self[key] = values[key]
 
+    def stat_row(self) -> pd.Series:
+        if self.pb is None:
+            raise RuntimeError(f"{self} not linked to a valid PlayerBase! Call player.initialize"
+                               f"before using this player!")
+        else:
+            return self.pb.df.loc[self.cid]
+
     def df_index(self) -> int:
         """get the CID / dataframe index of this player."""
-        if self.stat_row.name == self.cid:
+        if self.stat_row().name == self.cid:
             return self.cid
         else:
-            raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row.name} "
+            raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row().name} "
                                f"does not match player CID {self.cid}, likely playerbase corruption.")
 
     def __getitem__(self, item) -> object:
-        return self.stat_row[item]
+        return self.stat_row()[item]
 
     def __setitem__(self, item: Hashable, value: object) -> None:
-        self.stat_row[item] = value
+        self.pb.df.loc[self.cid][item] = value
 
     def __iter__(self) -> iter:
-        return iter(self.stat_row)
+        return iter(self.stat_row())
 
     def __len__(self) -> int:
-        return len(self.stat_row)
+        return len(self.stat_row())
 
     def __eq__(self, other: Union['Player', pd.Series]) -> bool:
-        for stat in self.stat_row.index:
+        for stat in self.stat_row().index:
             if stat is "cid":
                 break
             else:
@@ -152,22 +160,22 @@ class Player(Mapping):
 
     def total_stars(self) -> str:
         """Return a string depiction of this player's stars"""
-        average = (self.stat_row[Player.BASE_STATS].sum()
+        average = (self.stat_row()[Player.BASE_STATS].sum()
                    / len(Player.BASE_STATS)) * 5  # 0-5 star rating
         stars = int(average)
         half = average % 1 >= 0.5
         return "*"*stars + ('-' if half else '')
 
     def __str__(self) -> str:
-        return(f"[{self.stat_row.name}] "
+        return(f"[{self.cid}] "
                f"'{self['name']}' ({self['team']}) "
                f"{self.total_stars()}"
                )
 
     def __repr__(self) -> str:
         return (f"<{self.__module__}.{self.__class__.__name__} "
+                f"[{self.cid}] "
                 f"'{self['name']}' "
-                f"id {self.stat_row.name} "
                 f"(c{self.cid}) at {hex(id(self))}>")
 
 
@@ -195,7 +203,7 @@ class PlayerBase(MutableMapping):
             # create a set of new players:
             player = Player()
             self.df.loc[player.cid] = None
-            player.initialize(self.df.loc[player.cid])
+            player.initialize(self)
             player.randomize()
 
             self.players[player.df_index()] = player
@@ -214,31 +222,50 @@ class PlayerBase(MutableMapping):
         links to a valid dataframe row and each dataframe row has a valid
         Player.
         """
-        for key in self.players.keys():
-            if self[key] != self.players[key]:
-                raise RuntimeError(f"Player verification failure! "
-                                   f"Player {key} mismatch:"
-                                   f"{self[key]} vs {self.players[key]}")
-        for row in self.df.iterrows():
-            if self.players[row[1].name] != row[1]:
-                raise RuntimeError(f"Player verification failure! "
-                                   f"Dataframe row {row[0]} mismatch:"
-                                   f"{repr(row[1])} vs {self.players[row[1].name]}")
+        try:
+            for key in self.players.keys():
+                if self.players[key].cid != key:
+                    raise RuntimeError(
+                        f"Player CID and key mismatch:"
+                        f"key {key}, "
+                        f"player {self.players[key]}"
+                    )
+                if self[key] != self.players[key]:
+                    raise RuntimeError(
+                        f"Player verification failure! "
+                        f"Player {key} mismatch: "
+                        f"{self[key]} vs {self.players[key]}"
+                    )
+            for key in self.df.index:
+                if self.players[key] != self.df.loc[key]:
+                    raise RuntimeError(
+                        f"Player verification failure! "
+                        f"Dataframe row key {key} mismatch: "
+                        f"{self.df.loc[key]['name']} "
+                        f"vs {self.players[key]}"
+                    )
+        except KeyError as e:
+            raise RuntimeError(f"KeyError during verification: {e}")
         return True
 
     def __len__(self) -> int:
         if len(self.players) != len(self.df.index):
-            raise RuntimeError(f"Player/df mismatch!"
-                               f"{len(self.players)} players vs "
-                               f"{len(self.df.index)} dataframe rows.")
+            raise RuntimeError(
+                f"Player/df mismatch!"
+                f"{len(self.players)} players vs "
+                f"{len(self.df.index)} dataframe rows."
+            )
         return len(self.df.index)
 
     def __getitem__(self, item: Hashable) -> Union[Player, List[Player]]:
         if isinstance(item, str):
-            name_index = self.df['name'].index[
-                self.df['name'].tolist().index(item)]
-            return self.players[self.df.index[name_index]]
-        elif isinstance(item, int):
+            item_row = self.df.loc[self.df['name'] == item.title()]
+            if len(item_row) > 1:
+                # you have duplicate names!
+                pass
+            item_row = item_row.iloc[0]
+            return self.players[item_row.name]
+        elif isinstance(item, (int, integer)):
             return self.players[item]
         elif isinstance(item, (range, list)):
             return [self[i] for i in item]
