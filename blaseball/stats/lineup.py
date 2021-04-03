@@ -77,11 +77,11 @@ class Lineup(Collection):
         Creates a new lineup, trying to be as optimal as possible. Fuzz is added to the stats
         randomly to increase randomess - higher fuzz means base stats matter less.
         """
-        available_players = team.players
+        available_players = team.players.copy()
         shuffle(available_players)
         self.pitcher = available_players[0]
         self.batting_order = available_players[1:Settings.min_lineup+1]
-        batters = self.batting_order
+        batters = self.batting_order.copy()
         shuffle(batters)
         for i, batter in enumerate(batters):
             if i == 0:
@@ -112,8 +112,8 @@ class Lineup(Collection):
         to_print = ""
         to_print += f"Pitcher: {self.pitcher['name']} {self.pitcher.total_stars()}\r\n"
         to_print += "Batting order:"
-        for player in self.batting_order:
-            to_print+=f"\r\n\t{player['name']} {player.total_stars()}   " \
+        for i, player in enumerate(self.batting_order):
+            to_print+=f"\r\n\t[{i+1}] {player['name']} {player.total_stars()}   " \
                       f"{self.defense.find(player).title()}"
         return to_print
 
@@ -127,12 +127,12 @@ class Lineup(Collection):
         return iter(self.get_all_players())
 
     def __str__(self) -> str:
-        return f"Lineup {self.name} " \
+        return f"Lineup '{self.name}' " \
                f"with pitcher {self.pitcher} " \
                f"and lead-off hitter {self.batting_order[0]}"
 
     def __repr__(self) -> str:
-        return f"Lineup {self.name} at {hex(id(self))}"
+        return f"Lineup '{self.name}' at {hex(id(self))}"
 
 
 if __name__ == "__main__":

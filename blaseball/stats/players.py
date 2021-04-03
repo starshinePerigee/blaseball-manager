@@ -34,26 +34,34 @@ class Player(Mapping):
     }
     BASE_STATS = {
         "hitting": 0,  # base hitting ability
+        "running": 0, # base running ability
         "fielding": 0,  # base defense ability
         "pitching": 0,  # base pitching ability
-        "charisma": 0, # base off-field ability
+        "charisma": 0,  # base off-field ability
         "power": 0,
-        # for pitchers: pitch speed/power,
+        # for pitchers: pitch speed,
+        # for defense: throw speed (ground out chances, double chances)
         # for hitters: clean hit power
-        # for defense: throw speed
+        # for runners: steal attempt chance
+        # off field: confidence
         "technique": 0,
-        # for pitchers: pitch accuracy
+        # for pitchers: pitch wobbliness
+        # for defence: chance of error
         # for batters: hit "direction" - reduce chance of fly out
-        # for defence: chance of misplay
+        # for runners: steal success
+        # off field: understanding
         "strategy": 0,
-        # for pitchers: pitch choice
-        # for batters: pitch prediction
+        # for pitchers: pitch accuracy
         # for defense: chance of incorrect fielder's choice,
+        # for batters: pitch prediction
+        # for runners: lead-off bonus / throw out chance
+        # off field: intelligence
         "speed": 0,
+        # for pitchers: stealing defense
+        # for defenders: fly out chances
         # for batters: fastball defense,
         # for runners: base speed,
-        # for pitchers: stealing defense
-        # for defenders: ground out chances
+        # off field: humor
         "durability": 0,  # stat loss per game
     }
     BONUS_STATS = {
