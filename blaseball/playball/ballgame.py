@@ -73,9 +73,56 @@ class BallGame:
         self.bases = [None] * Settings.base_count
 
         self.summary = BallGameSummary(print_events)
+        self.complete = False
 
-    def next(self) -> str:
-        pass
+    def offense_i(self) -> int:
+        return self.inning_half
+
+    def defense_i(self) -> int:
+        return self.inning_half + 1 % 2
+
+    def batter_out(self) -> None:
+        self.outs += 1
+        self.balls = 0
+        self.at_bat_numbers[self.offense_i()] += 1
+        if self.outs > 2:
+            self.outs = 0
+            self.strikes = 0
+            self.inning_half -= 1
+            if self.inning_half < 0:
+                self.inning_half = 1
+                self.inning += 1
+                if self.inning > 9 and max(self.scores) != min(self.scores):
+                    self.complete = True
+                    self.summary += f"Game over! Final score: " \
+                                    f"{self.teams[0]['pitcher']['team']} {self.scores[0]}, " \
+                                    f"{self.teams[1]['pitcher']['team']} {self.scores[1]}."
+                    return
+            else:
+                if self.inning_half == 0:
+                    half_str = "bottom"
+                else:
+                    half_str = "top"
+                self.summary += f"{half_str.title()} of inning {self.inning}, " \
+                                f"{self.teams[self.defense_i()]['pitcher']['name']} of the " \
+                                f"{self.teams[self.defense_i()]['pitcher']['team']} pitching."
+
+    def next(self) -> None:
+        if self.complete:
+            return
+
+        current_pitcher = self.teams[self.defense_i()]["pitcher"]
+        current_batter = self.teams[self.offense_i()]["batting_order"][self.at_bat_numbers[self.offense_i()]]
+        if current_batter["hitting"] >= current_pitcher["pitching"]:
+            # it's a good hit
+            self.scores[self.offense_i()] += 1
+            self.at_bat_numbers[self.offense_i()] += 1
+            self.summary += f"{current_batter['name']} scores! score is {self.scores[0]}-{self.scores[1]}"
+        else:
+            # strikeout
+            self.summary += f"{current_batter['name']} is struck out by {current_pitcher['name']}! " \
+                            f"{self.outs+1} outs."
+            self.batter_out()
 
 
 class BallGameSummary(MutableSequence):
@@ -140,4 +187,6 @@ if __name__ == "__main__":
     sleep(1)
 
     g = BallGame(l1, l2, True)
+    while not g.complete:
+        g.next()
 

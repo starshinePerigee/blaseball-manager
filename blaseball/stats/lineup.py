@@ -4,8 +4,9 @@ a game of blaseball.
 """
 
 from collections.abc import Collection
-from typing import Union
+from typing import Union, List
 from random import shuffle
+import re
 
 from blaseball.settings import Settings
 from blaseball.stats import players, teams
@@ -19,16 +20,16 @@ class Defense:
         self.fielders = []
         self.extras = []
 
-    def all_players(self) -> None:
-        return self.catcher + self.basepeeps + self.fielders + self.extras
+    def all_players(self) -> List[players.Player]:
+        return [self.catcher] + [self.shortstop] + self.basepeeps + self.fielders + self.extras
 
-    def to_dict(self, cids=True):
+    def to_flat_dict(self, cids=True):
         if cids:
             reference = 'cid'
         else:
             reference = 'name'
 
-        def_dict = {}
+        def_dict = {}  # noqa
         def_dict[self.catcher[reference]] = "catcher"
         def_dict[self.shortstop[reference]] = "shortstop"
         for i, player in enumerate(self.basepeeps):
@@ -43,10 +44,19 @@ class Defense:
         if isinstance(key, players.Player):
             key = key.cid
         if isinstance(key, int):  # also catches players - do not convert to elif
-            return self.to_dict()[key]
+            return self.to_flat_dict()[key]
         elif isinstance(key, str):
-            return self.to_dict(False)[key.title()]
+            return self.to_flat_dict(False)[key.title()]
         raise KeyError(f"Unsupported type: {type(key)}")
+
+    def __getitem__(self, key: str) -> Union[players.Player, List[players.Player]]:
+        if key == "catcher":
+            return self.catcher
+        elif key == "shortstop":
+            return self.shortstop
+
+    def __len__(self) -> int:
+        return len(self.all_players())
 
 
 class Lineup(Collection):
@@ -89,11 +99,11 @@ class Lineup(Collection):
             elif i == 1:
                 self.defense.shortstop = batter
             elif i <= Settings.base_count + 1:
-                self.defense.basepeeps.append(batter)
+                self.defense.basepeeps.append([batter])
             elif i <= Settings.base_count*2 + 1:
-                self.defense.fielders.append(batter)
+                self.defense.fielders.append([batter])
             else:
-                self.defense.extras.append(batter)
+                self.defense.extras.append([batter])
 
     def validate(self) -> (bool, str):
         """
@@ -133,6 +143,15 @@ class Lineup(Collection):
 
     def __repr__(self) -> str:
         return f"Lineup '{self.name}' at {hex(id(self))}"
+
+    def __getitem__(self, key: str) -> Union[players.Player, List[players.Player]]:
+        key_l = key.lower()
+        if key_l == "pitcher":
+            return self.pitcher
+        elif key_l == "batter" or key_l == "batting_order":
+            return self.batting_order
+        else:
+            return dict(self.defense)[key]
 
 
 if __name__ == "__main__":
