@@ -50,10 +50,13 @@ class Defense:
         raise KeyError(f"Unsupported type: {type(key)}")
 
     def __getitem__(self, key: str) -> Union[players.Player, List[players.Player]]:
-        if key == "catcher":
-            return self.catcher
-        elif key == "shortstop":
-            return self.shortstop
+        # if key == "catcher":
+        #     return self.catcher
+        # elif key == "shortstop":
+        #     return self.shortstop
+        # elif
+        # hacky:
+        return vars(self)[key]
 
     def __len__(self) -> int:
         return len(self.all_players())
@@ -82,28 +85,30 @@ class Lineup(Collection):
         all_players += self.batting_order
         return all_players
 
-    def generate(self, team: teams.Team, fuzz: float = 0):
+    def generate(self, team: teams.Team, fuzz: float = 0, in_order: bool = False):
         """
         Creates a new lineup, trying to be as optimal as possible. Fuzz is added to the stats
         randomly to increase randomess - higher fuzz means base stats matter less.
         """
         available_players = team.players.copy()
-        shuffle(available_players)
+        if not in_order:
+            shuffle(available_players)
         self.pitcher = available_players[0]
         self.batting_order = available_players[1:Settings.min_lineup+1]
         batters = self.batting_order.copy()
-        shuffle(batters)
+        if not in_order:
+            shuffle(batters)
         for i, batter in enumerate(batters):
             if i == 0:
                 self.defense.catcher = batter
             elif i == 1:
                 self.defense.shortstop = batter
             elif i <= Settings.base_count + 1:
-                self.defense.basepeeps.append([batter])
+                self.defense.basepeeps.append(batter)
             elif i <= Settings.base_count*2 + 1:
-                self.defense.fielders.append([batter])
+                self.defense.fielders.append(batter)
             else:
-                self.defense.extras.append([batter])
+                self.defense.extras.append(batter)
 
     def validate(self) -> (bool, str):
         """
@@ -148,10 +153,10 @@ class Lineup(Collection):
         key_l = key.lower()
         if key_l == "pitcher":
             return self.pitcher
-        elif key_l == "batter" or key_l == "batting_order":
+        elif key_l == "batters" or key_l == "batting_order":
             return self.batting_order
         else:
-            return dict(self.defense)[key]
+            return self.defense[key]
 
 
 if __name__ == "__main__":

@@ -79,7 +79,7 @@ class BallGame:
         return self.inning_half
 
     def defense_i(self) -> int:
-        return self.inning_half + 1 % 2
+        return (self.inning_half + 1) % 2
 
     def batter_out(self) -> None:
         self.outs += 1
@@ -136,10 +136,11 @@ class BallGameSummary(MutableSequence):
         self.s = []
         self.print_events = print_events
 
-    def __iadd__(self, other:str) -> None:
+    def __iadd__(self, other:str) -> 'BallGameSummary':
         if self.print_events:
             print(other)
         self.s.append(other)
+        return self
 
     def __len__(self) -> int:
         return len(self.s)
