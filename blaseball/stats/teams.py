@@ -93,6 +93,9 @@ class League(Sequence):
                 f"'THE LEAGUE' ({len(self)})"
                 f"at {hex(id(self))}>")
 
+    # def __iter__(self):
+    #     return iter(self.teams)
+
 
 if __name__ == "__main__":
     from blaseball.stats import players

@@ -44,6 +44,9 @@ during idle play:
 from collections.abc import MutableSequence
 from typing import Hashable, Union, List
 
+from random import random
+from decimal import Decimal
+
 from blaseball.stats import lineup
 from blaseball.settings import Settings
 
@@ -69,7 +72,7 @@ class BallGame:
         self.at_bat_count = 0
 
         self.at_bat_numbers = [0, 0]  # home, away
-        self.scores = [0.0, 0.0]  # home, away
+        self.scores = [Decimal('0.0')] * 2  # home, away
 
         self.bases = [None] * Settings.base_count
 
@@ -86,55 +89,62 @@ class BallGame:
         self.at_bat_count += 1
         at_bat_length = len(self.teams[self.offense_i()]['batting_order'])
         self.at_bat_numbers[self.offense_i()] = (self.at_bat_numbers[self.offense_i()] + 1) % at_bat_length
+        if self.at_bat_count > 255:
+            self.summary += f"Time Out! {self.teams[self.offense_i()]['pitcher']['team']} cashes out the perfect inning!"
+            self.scores[self.offense_i()] += Decimal('0.1')
+            self.next_inning()
+
+    def next_inning(self) -> None:
+        self.outs = 0
+        self.strikes = 0
+        self.at_bat_count = 0
+        self.inning_half -= 1
+        if self.inning_half < 0:
+            self.inning_half = 1
+            self.inning += 1
+            game_over = self.inning > 9 and max(self.scores) != min(self.scores)
+            if game_over or self.inning > 255:
+                self.complete = True
+                self.summary += f"Game over! Final score: " \
+                                f"{self.teams[0]['pitcher']['team']} {self.scores[0]}, " \
+                                f"{self.teams[1]['pitcher']['team']} {self.scores[1]}."
+                return
+        else:
+            if self.inning_half == 0:
+                half_str = "bottom"
+            else:
+                half_str = "top"
+            self.summary += f"{half_str.title()} of inning {self.inning}, " \
+                            f"{self.teams[self.defense_i()]['pitcher']['name']} of the " \
+                            f"{self.teams[self.defense_i()]['pitcher']['team']} pitching."
 
     def batter_out(self) -> None:
         self.outs += 1
         self.balls = 0
         self.increment_batting_order()
-        if self.outs > 2 or self.at_bat_count > 255:
-            self.outs = 0
-            self.strikes = 0
-            self.inning_half -= 1
-            if self.inning_half < 0:
-                self.inning_half = 1
-                self.inning += 1
-                if self.inning > 9 and max(self.scores) != min(self.scores):
-                    self.complete = True
-                    self.summary += f"Game over! Final score: " \
-                                    f"{self.teams[0]['pitcher']['team']} {self.scores[0]}, " \
-                                    f"{self.teams[1]['pitcher']['team']} {self.scores[1]}."
-                    return
-            else:
-                if self.inning_half == 0:
-                    half_str = "bottom"
-                else:
-                    half_str = "top"
-                self.summary += f"{half_str.title()} of inning {self.inning}, " \
-                                f"{self.teams[self.defense_i()]['pitcher']['name']} of the " \
-                                f"{self.teams[self.defense_i()]['pitcher']['team']} pitching."
+        if self.outs > 2:
+            self.next_inning()
 
     def next(self) -> None:
         if self.complete:
             return
 
         current_pitcher = self.teams[self.defense_i()]["pitcher"]
-
-        try:
-            current_batter = self.teams[self.offense_i()]["batting_order"][self.at_bat_numbers[self.offense_i()]]
-        except IndexError:
-            print(f"break! {self.offense_i()} {self.at_bat_numbers}")
-
         current_batter = self.teams[self.offense_i()]["batting_order"][self.at_bat_numbers[self.offense_i()]]
-        if current_batter["hitting"] >= current_pitcher["pitching"]:
+        if current_batter["hitting"] >= current_pitcher["pitching"] + random():
             # it's a good hit
             self.scores[self.offense_i()] += 1
-            self.increment_batting_order()
             self.summary += f"{current_batter['name']} scores! score is {self.scores[0]}-{self.scores[1]}"
+            self.increment_batting_order()
         else:
-            # strikeout
-            self.summary += f"{current_batter['name']} is struck out by {current_pitcher['name']}! " \
-                            f"{self.outs+1} outs."
-            self.batter_out()
+            # strike
+            self.strikes += 1
+            if self.strikes < 3:
+                self.summary += f"Strike, swinging. {self.strikes}-0."
+            else:
+                self.summary += f"{current_batter['name']} is struck out by {current_pitcher['name']}! " \
+                                f"{self.outs+1} {'outs' if self.outs+1 > 1 else 'out'}."
+                self.batter_out()
 
 
 class BallGameSummary(MutableSequence):
@@ -202,4 +212,5 @@ if __name__ == "__main__":
     g = BallGame(l1, l2, True)
     while not g.complete:
         g.next()
+
 
