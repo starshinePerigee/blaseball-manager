@@ -66,6 +66,7 @@ class BallGame:
         self.outs = 0
         self.strikes = 0
         self.balls = 0
+        self.at_bat_count = 0
 
         self.at_bat_numbers = [0, 0]  # home, away
         self.scores = [0.0, 0.0]  # home, away
@@ -81,11 +82,16 @@ class BallGame:
     def defense_i(self) -> int:
         return (self.inning_half + 1) % 2
 
+    def increment_batting_order(self):
+        self.at_bat_count += 1
+        at_bat_length = len(self.teams[self.offense_i()]['batting_order'])
+        self.at_bat_numbers[self.offense_i()] = (self.at_bat_numbers[self.offense_i()] + 1) % at_bat_length
+
     def batter_out(self) -> None:
         self.outs += 1
         self.balls = 0
-        self.at_bat_numbers[self.offense_i()] += 1
-        if self.outs > 2:
+        self.increment_batting_order()
+        if self.outs > 2 or self.at_bat_count > 255:
             self.outs = 0
             self.strikes = 0
             self.inning_half -= 1
@@ -112,11 +118,17 @@ class BallGame:
             return
 
         current_pitcher = self.teams[self.defense_i()]["pitcher"]
+
+        try:
+            current_batter = self.teams[self.offense_i()]["batting_order"][self.at_bat_numbers[self.offense_i()]]
+        except IndexError:
+            print(f"break! {self.offense_i()} {self.at_bat_numbers}")
+
         current_batter = self.teams[self.offense_i()]["batting_order"][self.at_bat_numbers[self.offense_i()]]
         if current_batter["hitting"] >= current_pitcher["pitching"]:
             # it's a good hit
             self.scores[self.offense_i()] += 1
-            self.at_bat_numbers[self.offense_i()] += 1
+            self.increment_batting_order()
             self.summary += f"{current_batter['name']} scores! score is {self.scores[0]}-{self.scores[1]}"
         else:
             # strikeout

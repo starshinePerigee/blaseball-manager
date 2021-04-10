@@ -5,11 +5,11 @@ as python directly, and not as JSON monsters
 
 TEAMS_99 = [
     "Chicago EMT",
-    "Dallas Meat",
-    "San Fransisco Pals",
+    "Dallas Ribs",
+    "San Fransisco Mathematicians",
     "Kansas City Toothpaste Tubes",
     "Los Angeles Crunchwrap Supreme",
-    "Hades Lions",
+    "Hades Housecats",
     "Philly Baker's Dozen",
     "Baltimore Crabs",
     "Mexico City Chicken Strips",
@@ -20,8 +20,12 @@ TEAMS_99 = [
     "Boston Blooms",
     "Hawai'i Weekends",
     "Breckenridge Thumbs Up",
-    "Canada Lickers",
+    "Canada Lick Face",
     "Seattle Smash Mouth",
     "Miami YOLO",
     "Houston Infiltration",
+    "Tokyo Leg",
+    "Ohio Curiosity",
+    "OSHA Inspectors",
+    "Atlanta Coelecanth",
 ]
