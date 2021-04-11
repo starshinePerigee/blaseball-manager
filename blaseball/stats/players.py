@@ -34,10 +34,12 @@ class Player(Mapping):
     }
     BASE_STATS = {
         "hitting": 0,  # base hitting ability
-        "running": 0, # base running ability
+        "running": 0,  # base running ability
         "fielding": 0,  # base defense ability
         "pitching": 0,  # base pitching ability
         "charisma": 0,  # base off-field ability
+    }
+    SWING_STATS = {
         "power": 0,
         # for pitchers: pitch speed,
         # for defense: throw speed (ground out chances, double chances)
@@ -72,8 +74,8 @@ class Player(Mapping):
         "dread": 0,
     }
     ALL_STATS_KEYS = list(CORE_STATS.keys()) + list(BASE_STATS.keys()) \
-        + list(BONUS_STATS.keys())
-    COMBINED_STATS = [CORE_STATS, BASE_STATS, BONUS_STATS]
+        + list(SWING_STATS.keys()) + list(BONUS_STATS.keys())
+    COMBINED_STATS = [CORE_STATS, BASE_STATS, SWING_STATS, BONUS_STATS]
 
     player_class_id = 1000  # unique ID for each generation of a player,
     # used to verify uniqueness
@@ -111,6 +113,15 @@ class Player(Mapping):
         self["name"] = Player.generate_name()
         for stat in Player.BASE_STATS:
             self[stat] = random.random()
+        swing_weights = {}
+        for stat in Player.SWING_STATS:
+            swing_weights[stat] = random.random()
+        total_weight = sum(swing_weights.values())
+        # we want these stats to average to 0.5, so build your factor:
+        swing_factor = (len(Player.SWING_STATS) * 0.5 / total_weight)
+        for stat in swing_weights:
+            self[stat] = swing_weights[stat] * swing_factor
+
         self["fingers"] += 1
         self["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
 

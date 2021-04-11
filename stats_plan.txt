@@ -1,0 +1,84 @@
+Here are the stats from players.py:
+
+    "hitting": 0,  # base hitting ability
+    "running": 0,  # base running ability
+    "fielding": 0,  # base defense ability
+    "pitching": 0,  # base pitching ability
+    "charisma": 0,  # base off-field ability
+    "power": 0,
+        # for pitchers: pitch speed (difficulty to hit)
+        # for defense: throw speed (ground out chances, double chances)
+        # for hitters: clean hit power
+        # for runners: steal attempt chance
+        # off field: confidence
+    "technique": 0,
+        # for pitchers: pitch wobbliness (difficulty to hit far)
+        # for defence: chance of error
+        # for batters: hit "direction" - reduce chance of fly out
+        # for runners: lead-off bonus / throw out chance
+        # off field: understanding
+    "strategy": 0,
+        # for pitchers: pitch accuracy (does not throw balls)
+        # for defense: chance of incorrect fielder's choice,
+        # for batters: pitch prediction
+        # for runners: steal success
+        # off field: intelligence
+    "speed": 0,
+        # for pitchers: stealing defense
+        # for defenders: fly out chances
+        # for batters: fastball defense,
+        # for runners: base speed,
+        # off field: humor
+    "durability": 0,  # stat loss per game
+
+a POWERFUL player:
+- strikes out weak players (good for no defense)
+- hits dingers
+- steals frequently (bad)
+- will exploit flies and ground outs
+- is cocky
+
+a TECHNIQUE player:
+- does not give up homers (good with defense)
+- hits away from fly outs (infield double/triple)
+- has a good lead-off
+- makes no defensive errors
+- is nice to talk to
+
+a STRATEGY player:
+- throws very few walks
+- hits curveballs (strongest contact, bad with runners on base)
+- succeeds when they steal
+- fields correctly
+- is thoughtful
+
+a FAST player:
+- throws out steals (but is not a great pitcher)
+- catches fly outs
+- is a fantastic runner
+- can hit da ball
+
+
+
+
+
+
+~~~~~~~~~~~
+
+you have a STRONG player:
+- put them as a clean-up hitter
+- put them on third, and left outfield
+- put them as a pitcher to shutdown weak hitters and other sluggers
+
+you have a FAST player:
+- put them at the top of the lineup
+- put them on second, mid outfield
+- put them in against a fast team
+
+you have a TECHNIQUE player:
+- put them second for contact to get batted in
+- catcher, first base - lots of receiving but block errors
+-
+
+you have a STRATEGY player:
+-
