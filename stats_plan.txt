@@ -81,4 +81,68 @@ you have a TECHNIQUE player:
 -
 
 you have a STRATEGY player:
--
+- first up
+- late in rotation to enable handling weird situations
+- catcher, for pitching bonuses
+
+
+
+
+
+~~~~~~
+
+BATTERS:
+power is slugging and steal attempts  (divinity + basethirst)
+tech is contact (thwack)
+speed is running and steal success  (laserlikeness)
+strat is plate discipline, leadoff avoiding outs, special plays (all around low-level good bonuses ig)
+(continuation + ground friction + indulgence)
+
+power is a slugger who if they don't dinger, sits down
+tech is a player who hits every time but can't get home
+speed is a player who if they get on base they're amazing
+strat is a player who can get walked a lot but otherwise no bueno
+
+a "contact" player is tech / strat
+a "power" player is power
+
+1 tech / speed
+2 strat / speed
+3 tech / power
+4 power
+5 power / strat
+6 strat / speed
+7 w/e
+8 w/e
+9 tech / speed
+
+RUNNERS:
+(extension of batting, basically)
+- SPEED
+- power to STEAL (eg: power is a disadvantage on base)
+- strat to NOT STEAL, correct leadoff
+
+
+FIELDERS:
+- power is throw speed, distance
+- speed is "width" and getting fly and ground outs (when close)
+- technique is receiving and avoiding errors
+- strat is choosing the right target in a double play situation
+
+catcher: STRAT / tech
+1st: TECH
+2nd: speed / tech
+3rd: power / tech
+SS: speed / power
+RF: speed / strat
+CF: speed / power / strat
+LF: power / speed / strat
+
+
+PITCHERS:
+power increases your fastball (chance to hit) (unthack)
+speed is for defensive stats and throwing out steals (coldness/shakespearianism)
+technique is for pitching where needed (avoiding unnecessary balls, ruth)
+strategy is for specialty pitches, which reduce impact (overpowerment)
+
+(pitch CALLING is catcher strategy)
