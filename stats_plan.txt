@@ -1,69 +1,453 @@
 Here are the stats from players.py:
 
-    "hitting": 0,  # base hitting ability
-    "running": 0,  # base running ability
-    "fielding": 0,  # base defense ability
-    "pitching": 0,  # base pitching ability
-    "charisma": 0,  # base off-field ability
-    "power": 0,
-        # for pitchers: pitch speed (difficulty to hit)
-        # for defense: throw speed (ground out chances, double chances)
+ok, NEW FINAL PASS
+
+players have four groups:
+
+personality stats are "who the player is at the core"
+traits (permanent and temporary) summed = stats
+traits can be pure good, pure bad, or balanced (think ck3 but more variety)
+goes into the "Big Five"
+- determination
+- excitement
+- cleverness
+- positivity
+
+- toughness
+- strength
+- speed
+-
+
+- energy (resource?)
+
+- introversion/extraversion
+
+- humor
+- sparkle
+
+- element
+
+(base element off of the big five?)
+(single relationship stat + single blaseball outlook predictor)
+
+
+condition stats change quickly, and represent mood, endurance, overall arc
+- fatigue
+- vibes
+- injuries
+
+
+relationship stats dictate overall mood, compatibility, and the RELATIONSHIP CHART shows who is good with who
+use the Big Five, plus relationship links on the chart
+
+
+blaseball stats represent specific ways a player can play blaseball
+they are based on other stats, training, coaching, etc.
+
+top level summary stats (stars + descriptor) and then underneath the gory details
+
+
+
+
+
+
+
+all of these are a combination of constant numbers + discrete options,
+with a strong bias for discrete options on the personality stats and lots of numbers for the blaseball stats
+
+
+
+
+
+
+
+working backwards for the big five:
+
+hitting has the following stats:
+- power
+- pitch reading
+- contact vs fastballs
+- contact vs curves
+- contact vs changeups
+- plate discipline
+- hit accuracy
+- ground vs fly
+- hit control
+- special skills (bunts, choking up)
+- clutch
+
+(OOTP has contact, HR power, gap power, eye (discipline), avoid Ks, sac bunt, bunt for hit)
+(Blaseball has HR power (divinity), bunting (martyrdom), Discipline (moxie),
+1 -> 2 conversion (musclitude), contact (path), gap power (thwack))
+
+pitch reading (B / K, fly vs ground, decide ideal)
+contact (decide if hit is possible)
+power (decide power for swinging for power)
+hit accuracy (gap accuracy, ground / fly accuracy)
+bunt accuracy/success
+
+
+
+
+running has the following stats:
+- speed
+- leadoff
+- reaction time
+- jukes (rundown ability)
+- steal success
+- steal willingness
+- strategy / errors
+
+(OOTP has running speed, stealing bases, baserunning instincts (taking advantage of misplays, etc.))
+(Blaseball has steal chance (basethirst), overall speed (lazer), advancement on hits (continuation),
+1 -> 3 odds (ground friction), advancement on outs (indulgence))
+
+running speed (helps with defense too?)
+bravery (diving, leadoff, steal willingness - bonus bases)
+rundown ability (jukes)
+strategy (steal timing, base running)
+
+
+
+
+fielding has the following stats:
+- speed (fly out interception)
+- reaction
+- ground fielding
+- catching
+- error rate
+- strategy
+
+(OOTP has range (speed), error, and arm (strength) for each infield, outfield, and catcher,
+ plus turn double play and catcher ability)
+(Blaseball has steal prevention (anticap), avoid extra base hits (chasiness), catching (omni),
+some other unknown junk)
+
+
+- range (possible overlap with speed)
+- reaction (ground reactions, anti-steal, doubles)
+- strength (pitch length, speed)
+- accuracy (overlap with pitching accuracy?)
+- error rate
+
+
+
+pitching has the following:
+- speed (fastball speed)
+- technique (curve curve)
+- trickiness (changeup effect)
+- defense
+- steal awareness
+- accuracy (B vs K)
+- strategy
+
+(OOTP has Stuff (goodness), Movement (reduce hit power), and Control (BB vs K),
+and then fastball, slider, changeup, splitter, and forkball)
+(Blaseball has reduce power (overpowerment), K chance (unthwack), double play chance (shakesp), other stuff)
+
+each pitch has:
+- accuracy (does it go where you want)
+- movement (how hard is it to hit well)
+- speed (how hard is it to hit)
+each type of pitch has a combination of the above
+
+plus
+steal awareness, and fielding
+
+
+
+SO in total:
+
+--HITTING--
+pitch reading (B / K, fly vs ground, decide ideal)
+contact (decide if hit is possible)
+power (decide power for swinging for power)
+hit accuracy (gap accuracy, ground / fly accuracy)
+bunt accuracy/success
+--RUNNING--
+running speed (helps with defense too?)
+bravery (diving, leadoff, steal willingness - bonus bases)
+rundown ability (jukes)
+strategy (steal timing, base running)
+--FIELDING--
+range (possible overlap with speed)
+reaction (ground reactions, anti-steal, doubles)
+strength (pitch length, speed)
+accuracy (overlap with pitching accuracy?)
+error rate
+--PITCHING--
+accuracy (does it go where you want)
+movement (how hard is it to hit well)
+speed (how hard is it to hit)
+awareness (anti-stealing)
+pitches
+
+
+
+
+Boiling this down to be:
+- simple
+- clear
+- readable
+
+
+--HITTING--
+pitch reading (B / K, fly vs ground, decide ideal)
+contact (decide if hit is possible)
+power (decide power for swinging for power)
+hit accuracy (gap accuracy, ground / fly accuracy)
+bunt accuracy/success
+--RUNNING--
+running speed (helps with defense too?)
+bravery (diving, leadoff, steal willingness - bonus bases)
+rundown ability (jukes)
+--FIELDING--
+range (possible overlap with speed)
+reaction (ground reactions, anti-steal, doubles)
+strength (pitch length, speed)
+accuracy (overlap with pitching accuracy?)
+error rate
+--PITCHING--
+accuracy (does it go where you want)
+movement (how hard is it to hit well)
+speed (how hard is it to hit)
+awareness (anti-stealing)
+pitches
+--META--
+Strategy (steal timing, base running, pitch selection, fielding decisions)
+Clutch
+Sparkle
+
+
+
+FULL STATS:
+
+
+HITTING: *** Contact
+power: **
+contact: ***
+control: ****  (includes bunts)
+discipline: ****
+
+RUNNING: *** Sneaky
+speed: **
+bravery: ***
+awareness: ***
+
+FIELDING: ** Coverage
+reach: *** (based on speed)
+reaction: **
+throwing: **** (based on pitching)
+
+PITCHING: **** Fastball
+force: *****
+accuracy: ***
+movement: **
+awareness: *** (shared with running)
+
+pitches:
+fastball 3
+juicy 1
+bounceball 2
+
+SPECIAL:
+strategy: *
+sparkle: ****
+clutch: ** (starts hidden)
+
+
+SUMMARY STATS:
+HITTING: *** Contact
+RUNNING: *** Sneaky
+FIELDING: ** Coverage
+PITCHING: **** Fastball
+SPECIAL: *** Magical
+
+
+
+
+
+So if we grouped these by type:
+
+Group A: fire (determination)
+power: **
+force: *****
+bravery: ***
+clutch: ** (starts hidden)
+
+Group B: wind (excitement)
+speed: **
+reach: *** (based on speed)
+contact: ***
+movement: **
+
+Group C: water (cleverness)
+control: ****  (includes bunts)
+accuracy: ***
+sparkle: ****
+
+Group D: earth (insight)
+discipline: ****
+awareness: ***
+reaction: **
+strategy: *
+
+
+
+fire players:
+power hitters, fastball players, terrible at running and fielding
+
+wind players:
+contact hitters, get on base, go fast, pitches are hard to hit, play outfield
+
+water players:
+specialty hitters, high accuracy pitchers, have tricks, good 3b/ss
+
+earth players:
+high moxie, bad against good pitchers, stop stealing, great catchers and infielders
+
+
+
+
+
+
+
+
+
+
+
+baseball stats (how "good" is this player at blaseball):
+- hitting
+- running
+- pitching
+- fielding
+
+social stats (how good is this player not at blaseball, although these do affect on-field as well):
+- strategy
+- charisma
+- sparkle
+
+other:
+- durability
+- stability
+
+(vibes is the dependant variable)
+
+core stats (the ways a player is good, equalized. each one should help all
+of the above seven stats, ):
+    - power
         # for hitters: clean hit power
-        # for runners: steal attempt chance
-        # off field: confidence
-    "technique": 0,
-        # for pitchers: pitch wobbliness (difficulty to hit far)
-        # for defence: chance of error
-        # for batters: hit "direction" - reduce chance of fly out
-        # for runners: lead-off bonus / throw out chance
-        # off field: understanding
-    "strategy": 0,
-        # for pitchers: pitch accuracy (does not throw balls)
-        # for defense: chance of incorrect fielder's choice,
-        # for batters: pitch prediction
-        # for runners: steal success
-        # off field: intelligence
-    "speed": 0,
-        # for pitchers: stealing defense
+        # for runners: steal attempt chance (can be a negative for strong, slow runners)
+        # for pitchers: pitch speed (difficulty to hit)
+        # for defence: throw speed (ground out chances, double chances)
+        # off field: confidence, directness
+    - speed
+        # for batters: plate discipline
+        # for runners: base speed (single > double > triple, stealing chance)
+        # for pitchers: defence, stealing defence
         # for defenders: fly out chances
-        # for batters: fastball defense,
-        # for runners: base speed,
         # off field: humor
-    "durability": 0,  # stat loss per game
+    - technique
+        # for batters: contact chance
+        # for runners: lead-off bonus / throw out chance
+        # for pitchers: pitch accuracy (does not throw balls, reduces hit power)
+        # for defence: chance of error
+        # off field: understanding
 
-a POWERFUL player:
-- strikes out weak players (good for no defense)
-- hits dingers
-- steals frequently (bad)
-- will exploit flies and ground outs
-- is cocky
+    - strategy
+        # for batters: plate discipline
+        # for runners: steal success
+        # for pitchers: pitch accuracy (does not throw balls)
+        # for defence: chance of incorrect fielder's choice,
+        # off field: primary coaching stat
+    - charisma
+        # for batters: pitch prediction
+        # for runners: steal throwout defence
+        # for pitchers: hit prediction, heckle batters 
+        # for defence: heckle batters, runners 
+        # off field: primary hangout stat
+    - sparkle 
+        # for batters: special hit chance 
+        # for runners: special run chance 
+        # for pitchers: special pitch chance 
+        # for defense: special defense chance 
+        # off field: special event chance 
+        
 
-a TECHNIQUE player:
-- does not give up homers (good with defense)
-- hits away from fly outs (infield double/triple)
-- has a good lead-off
-- makes no defensive errors
-- is nice to talk to
-
-a STRATEGY player:
-- throws very few walks
-- hits curveballs (strongest contact, bad with runners on base)
-- succeeds when they steal
-- fields correctly
-- is thoughtful
-
-a FAST player:
-- throws out steals (but is not a great pitcher)
-- catches fly outs
-- is a fantastic runner
-- can hit da ball
-
-
+~~~~~~~~~~~~~~~~~~
 
 
+BATTING EFFECTS:
+batting stars: primary "goodness"
+
+power: clean hit distance (slugging)
+speed: pitch reading (not swinging at balls, swinging at strikes)
+technique: contact chance
+
+strategy: plate discipline (not swinging on 0-3 count, etc. +walks)
+charisma: pitch prediction (similar to speed? +contact)
+sparkle: unique hit chance (probably a slugging boost more often than not? +slugging)
 
 
-~~~~~~~~~~~
+BASERUNNING EFFECTS:
+baserunning stars: primary "goodness"
+
+power: steal attempt chance, extra base chance (can be a negative for strong, slow runners)
+speed: base speed (single > double > triple, stealing chance)
+technique: lead-off bonus / throw out chance / double play avoidance
+
+strategy: extra base chance  (+ running)
+charisma: throwout defense, steal success (+ steal)
+sparkle: special run chance (steal, throwout ignore, rundown win)
+
+
+PITCHING EFFECTS:
+pitching stars: primary "goodness"
+
+strength: pitch speed (difficulty to hit)
+speed: defence, stealing defence
+technique: pitch accuracy (does not throw balls, reduces hit power)
+
+strategy: pitch accuracy (does not throw balls)
+charisma: hit prediction, heckle batters
+sparkle: special pitch chance (mostly strikeout, some softballs, etc)
+
+
+DEFENSE EFFECTS:
+defense stars: primary stat
+
+power: throw speed (ground out chances, double chances)
+speed: fly out chances, double play cooldown
+technique: chance of error
+
+strategy: chance of incorrect fielder's choice,
+charisma: heckle batters, runners
+sparkle: special defense chance, buff pitcher
+
+
+DUGOUT EFFECTS:
+strategy: overall strategy/coaching/focus (generalized player buffs)
+charisma: primary stat for vibes and heckling (opposing team debuffs, team vibes)
+sparkle: random events (team vibes)
+
+power: temporary vibe boosts (confidence, leaderiness),
+speed: long term team boosts (humor),
+technique: reduce negative effects (listening)
+
+
+OFF FIELD EFFECTS:
+strategy: coaching, player development
+charisma: team relationships, vibes
+sparkle: big events, random chance
+
+
+
+
+
+
+
+
+~~~~~~~~~~~~~~~~~~~~
 
 you have a STRONG player:
 - put them as a clean-up hitter
@@ -78,25 +462,51 @@ you have a FAST player:
 you have a TECHNIQUE player:
 - put them second for contact to get batted in
 - catcher, first base - lots of receiving but block errors
--
-
-you have a STRATEGY player:
-- first up
-- late in rotation to enable handling weird situations
-- catcher, for pitching bonuses
-
-
-
+- put them as a pitcher for high-defense teams
 
 
 ~~~~~~
+
+
+BATTING STRATEGY:
+
+for hitting:
+batting stars is overall "goodness" - contact + power
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
 
 BATTERS:
 power is slugging and steal attempts  (divinity + basethirst)
 tech is contact (thwack)
 speed is running and steal success  (laserlikeness)
-strat is plate discipline, leadoff avoiding outs, special plays (all around low-level good bonuses ig)
+
+strat is plate discipline,
+sparkle is special plays
 (continuation + ground friction + indulgence)
+
+
+
+
 
 power is a slugger who if they don't dinger, sits down
 tech is a player who hits every time but can't get home
@@ -146,3 +556,40 @@ technique is for pitching where needed (avoiding unnecessary balls, ruth)
 strategy is for specialty pitches, which reduce impact (overpowerment)
 
 (pitch CALLING is catcher strategy)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OK, so we have two options:
+core stats lead blaseball stat development
+or core stats ARE blaseball stats
+
+in a way, this is about if we want to be a game or a management sim?
+
+ideally, we focus more on out of game management. A single star pitcher needs 5 games to play once, and
+baseball is very high variance - so we want to get a lot of games underway. (Especially if end of season
+work is the ideal time to trade players, etc.)
+
+
+
+
+
+What you actually want in a game:
+- venue for weird effects
+- highlights (for memory system)
+- strategy testing
+
+
+putting together "ideal" baseball positions should be as straightforward as possible.
+
+HITTING: ***** contact
