@@ -1,67 +1,447 @@
-Here are the stats from players.py:
+Players are defined by a fairly complicated series of attributes. A handful are up-front to managers,
+to help them understand and make decisions for players, but most are buried for true statheads
+and game developers.
 
-ok, NEW FINAL PASS
-
-players have four groups:
-
-personality stats are "who the player is at the core"
-traits (permanent and temporary) summed = stats
-traits can be pure good, pure bad, or balanced (think ck3 but more variety)
-goes into the "Big Five"
-- determination
-- excitement
-- cleverness
-- positivity
-
-- toughness
-- strength
-- speed
--
-
-- energy (resource?)
-
-- introversion/extraversion
-
-- humor
-- sparkle
-
-- element
-
-(base element off of the big five?)
-(single relationship stat + single blaseball outlook predictor)
+Note: RATINGS are what define a player. STATISTICS are the measured performance of that player.
 
 
-condition stats change quickly, and represent mood, endurance, overall arc
-- fatigue
-- vibes
-- injuries
+1. Rating Overview:
+
+The most import and and fundamental rating governing a player are the "Personality Ratings".
+These represent who a character is "at the core".
+
+They are rolled and modified sharply by a set of traits that describe who a character is (ref CK3)
+Traits can be pure good, pure bad, or balanced.
+
+These are known as the "P5", and are (currently) as follows:
+
+Determination
+Enthusiasm
+Stability
+Insight
+Mysticism
+
+These are difficult to change directly, but can change over time as traits are added / removed.
+
+A manager should be able to look at the big five and tell what kind of role a player would play
+on the team - on and off the field.
+
+The P5 are used to determine the functional ratings. These are split into three groups:
+
+- condition
+- social
+- baseball
+
+Each category represents a wide array of "deep ratings", which are initially obscured from the manager.
+These are grouped into the "derived ratings" (the DR), which are straightforward representations of how
+good a player is in each category:
+P5 x D6 = performance characteristics = deep ratings
+
+The deep ratings are them summarized in rating descriptors, which are attached to the D6 to give a
+quick english representation of how a player plays in each type.
+
+Lastly, condition deep ratings don't round up to derived ratings, but to the actual condition ratings -
+three ratings that change frequently day-to-day that represent a player's current readiness to
+engage in blaseball.
 
 
-relationship stats dictate overall mood, compatibility, and the RELATIONSHIP CHART shows who is good with who
-use the Big Five, plus relationship links on the chart
+2. The Personality Ratings
+
+There are five personality ratings, which each affect a wide swath of that player's activity, both
+on and off the field. Reading the personality ratings gives a good idea what kind of hitter, runner,
+fielder, pitcher, and friend the player would be - assuming their base stars in that category are
+sufficient.
+
+- Determination: determination leads to power and willpower. Determined players hit hard and throw
+fast. They're a "three true outcome" player - both as a hitter and a pitcher. Determination doesn't
+help a ton with baserunning or fielding. Off the field, determination is cool and makes good leaders.
+
+- Enthusiasm: enthusiasm affects a player's movement. Enthusiastic players like to hit and run, and
+make great contact players who are fast on the basepaths and in the outfield. Enthusiasm helps with
+pitch movement and trickery. They're fun in group settings, both in the dugout and off the field.
+
+- Stability: stability is a player's centeredness and control. High stability players make the ball
+go where they want, if they're hitting, pitching, or fielding. Stable players can fill gaps both
+in the lineup and moment-to-moment in the game, and can be good friends who don't need a lot of
+manager attention.
+
+- Insight: insight let's a player see and react to things inside and outside of the game. Insight
+affects strategy, reaction time, and infield defense. Insight is useful in all positions, but is
+critical to be a reliable catcher or coach.
+
+- Mysticism: mysticism affects sparkle, which lets a player use special abilities. It also affects
+a player's recovery rate, so a high mysticism means a higher potential for their regular skills.
+Mysticism also affects the rate at which they teach knowledge to others.
 
 
-blaseball stats represent specific ways a player can play blaseball
-they are based on other stats, training, coaching, etc.
+3. Condition
 
-top level summary stats (stars + descriptor) and then underneath the gory details
+Condition represents several factors that tie into a player's day-to-day effectiveness on and off the field.
+This overall effectiveness is represented by a single rating: Condition
+
+- Condition: A player's overall effectiveness at the current moment.
+
+Condition is determined by multiplying three dependent ratings together:
+
+- Stamina: physical ability, used up by play and strenuous practice. Harder, more physical work drains
+           more stamina, and playing a full blaseball game is extremely draining. Stamina trends towards
+           100% over time, but recovery helps it reach 100% faster and can even get it above 100% for
+           temporary boosts.
+
+- Vibes: mental mood, affected by teammates and memories. Making a player do things they don't want to
+         affects vibes, but so does a player's memories and relationships. Vibes don't have a fixed
+         setpoint the same way Stamina does, but instead follows relationships and memory -
+         a happy and well supported player can stay at 150% vibes and get the condition bonuses that
+         come with it
+
+- Corporeality: the player's overall presence and "age"
+                Corporeality starts high, and trends ierreversably lower over play and time.
+
+Corporeality doesn't directly affect condition; instead as it falls falls:
+1. first, they have a harder time gaining ratings
+2. past a certain threshold, durability degrades faster with use
+3. past a final threshold, the overall condition is permanently affected.
+
+There is little you can do to prevent Corporeality from falling, but stamina and vibes are both affected
+by their condition ratings - deep ratings set in part by a player's personality.
+
+- Endurance: affects how much a player loses durability from physical activity
+- Positivity: how much a player loses vibes from negative memories and actions
+- Extroversion: affects how much a player loses vibes from social activities
+- Introversion: affects how much a player loses vibes from individual activities
+- Recovery: how much a player recovers durability / vibes when not taxed
+
+Lastly, injuries and other happenstance will affect stamina, vibes, and often directly impact condition
+as well.
 
 
+4. Social Ratings
+
+The primary modifiers for a player's relationships, happiness, and actions are contained in
+THE GRID and THE MEMORY LINE; but the social ratings help shape how a player reacts (and will
+especially determine how vibes are spent in routine training).
+
+There are five social ratings:
+
+- Teaching: how good they are at conveying information when coaching or training
+- Patience: how nice a player is to work with (lower patience means other players spend more vibes)
+- Cool: how much a player stands out to other players and fans, how good they are at intimidation
+- Hang: how good a player is during non-work sections, such as benchwarming and parties, and also how good they
+are at heckling
+- Support: how good a player is at providing support to players during hard times
+
+A player's top 1 or 2 social ratings combine to create their Element, which goes into the type compatibility
+chart to determine who they would get along with.
 
 
+5. Blaseball Ratings
+
+Blaseball ratings are the most straightforward - how does a player actually play the game?
+Four of the derived blaseball ratings should be familiar to anyone who plays blaseball:
+
+- Batting
+- Baserunning
+- Defense
+- Pitching
+- Edge
+
+"Edge" represents additional bonuses a player has over other players: strategy, sparkle, and clutch.
+
+Deep blaseball ratings are used by the baseball engine to actually roll for player performance,
+and can be viewed through a deeper screen, possibly after being unlocked by the manager.
+
+Batting:
+- Power: How likely a good hit is to travel far, how good a player is at hitting HRs
+- Contact: How good a player is at hitting difficult pitches
+- Control: A player's ability to direct the ball in an ideal direction: ground, fly, and avoiding fielders.
+           Control also dictates a player's ability to bunt
+- Discipline: A player's ability to read pitches - to let balls be balls and swing at strikes,
+              as well as their ability to decide if special hits are required.
+
+Baserunning:
+- Speed: A player's base speed, helps in all baserunning attempts, but is a larger advantage when running
+         multiple bases and when getting to first.
+- Bravery: A player's willingness to take a large leadoff, dive, rundown, and their willingness to steal.
+           If a player has bad enough timing and strategy, bravery is a downside.
+- Timing: A player's decision-making while on the bases. Prevents being thrown out and lets them take
+          extra bases.
+
+Defense:
+- Reach: The amount of ground a player can cover, and how good they are at catching fly outs.
+- Reaction: A player's reaction times. Helps with ground outs and creating double plays.
+- Throwing: A player's ability to throw the ball
+Fielding errors are decided by the respective reach, reaction, and throwing of the players involved.
+
+Pitching:
+- Force: A pitcher's speed, represents how difficult the pitch is to read and hit.
+- Accuracy: A pitcher's ability to throw the pitch at their target, dictating the ball and strike rate.
+- Trickery: How much a pitch moves, which makes it harder to hit will and reduces power if the pitch is hit.
+- Awareness: A pitcher's awareness of the field while they're not pitching. Prevents steals.
+
+Edge:
+- Strategy: A player's gamesense. Affects hit choice, pitch selection, steal timing, fielding decisions, etc.
+- Sparkle: A player's ability to use special abilities during the game
+- Clutch: How good a player is when the game is close and in late innings. Can have negative effects
+          at low clutch.
 
 
+6. Rating Descriptors
 
-all of these are a combination of constant numbers + discrete options,
-with a strong bias for discrete options on the personality stats and lots of numbers for the blaseball stats
+This is a *TON* of ratings. However, most of these shouldn't be exposed to the average manager, so
+summary ratings and "rating descriptors" are used.
+
+For each of the following, an average of their total stars is created and displayed, as well as a
+two or three word descriptor that identifies their strong points and suggested role. This will
+also help identify how the AI treats these players:
+
+Personality
+Offense
+Defense
+Off Field
+
+The following ratings are presented slightly removed, and are also summaries with a one-word descriptor:
+Batting
+Baserunning
+Defense
+Pitching
+Edge
+Condition
+Social
 
 
+7. Overall Goals and Player Experience
+
+Ratings serve three purposes:
+1. To make players different, to create interesting strategic decisions
+2. To allow players to develop and grow in meaningful and distinct ways
+3. To help shape how game logic functions
+
+To enable these, managers need to be able to tell at a glance, in order:
+1. how good is this player
+2. what issues do they currently have
+3. what role do they fill
+4. will they work for my team
+5. what place are they in their career
+6. what strengths and weaknesses do they have
+7. what should be developed in this player
 
 
+8. Training
+
+XYZZY
+
+Players will have opportunities to develop their skills over time. This will be based on what skills they use,
+but also who their coaches, friends, and memories guide them as. This lets specific deep ratings be worked on
+
+However, training against personality can be more difficult; so personality will always be an effective guide
+on both how to develop a player and what their capabilities are.
+
+Note that this focus goes even further: A number of the deep ratings are "linked" - they are less important
+than other weighted ratings, but are trained together with a second rating from a different derived rating.
+
+These are the pairs:
+Reach (Defense) / Speed (Baserunning)
+Discipline (Batting) / Reaction (Defense)
+Timing (Baserunning) / Awareness (Pitching)
+Throwing (Defense) / All (Pitching)
+Bravery (Baserunning) / Clutch (Edge)
+
+    bat run def pit edg
+bat     --- dis --- ---
+run ---     spd tmg brv
+def rct rng     trw ---
+pit --- awr all     ---
+edg --- clt --- ---
+
+The remaining ratings to be trained are:
+Power
+Contact
+Control
+Force
+Accuracy
+Trickery
+Strategy
+Sparkle
+
+Effectively, "weaker" and "less necessary" top level ratings (baserunning especially) are trained naturally,
+and come with side rewards for focusing on them. Training just batting makes them a better batter only;
+training pitching increases defense (and vice versa) but pitching and defense are mutually exclusive, so this
+just means it's slightly easier to shuffle pitchers and defense around.
 
 
+Here are the deep ratings affected by each personality:
 
-working backwards for the big five:
+DETERMINATION
+power: hitting
+force: pitching
+bravery: running
+endurance: condition
+cool: social
+
+ENTHUSIASM
+contact: hitting
+speed / reach: running, fielding
+trickery: pitching
+extroversion: condition
+hang: social
+
+STABILITY
+control: hitting
+accuracy: pitching
+positivity: condition
+support: social
+
+INSIGHT
+discipline / reaction: hitting, fielding
+timing / awareness: pitching, running
+strategy: edge
+introversion: condition
+patience: social
+
+MYSTICISM
+recovery: condition
+sparkle: edge
+clutch: edge
+teaching: social
+
+
+9. Example player breakdown
+
+Shortest version:
+Basilio Mason *****- SS
+
+Player pages, in order:
+
+52: Basilio Mason
+*****- Cautious Speedster
+Shortstop
+Bats 2nd
+RBI: 52 OPS: 0.653
+ERA: --- WHIP: ---
+
+Condition: 88%
+Personality: Enthusiastic
+Offense: ***** *** Contact Runner
+Defense: ***** **** Fast Infield
+
+Injury: Aura (85% healed)
+Underappreciated
+
+~~~
+
+Key Ratings
+
+Stamina: 98%
+Vibes: 110%
+Corporeality: 65%
+
+Hitting: ***** *-
+Running: ***** ***-
+Fielding: ***** **
+Pitching: ****
+Edge: **-
+Condition: ****-
+Social: ***
+
+Determination: ***-
+Enthusiasm: ***** ***
+Stability: *-
+Insight: ***** *-
+Mysticism: ****-
+Element: Rain
+
+~~~
+
+Traits and Conditions
+
+Jokester (+2 enth, -1 stab)
+Fashion (+1 det, -2 myst)
+Swagger (+3 enth, +1 myst)
+Cat eyes (+2 insight)
+Pregame Ritual: wind sprints (+3 enth, -1 det)
+Coffee Preference: Black
+
+Injured Aura (-10 cond, 85% healed)
+Underappreciated
+
+~~~
+
+Stats
+(da baseball stats)
+
+~~~
+
+Deep Ratings
+
+Batting:
+Power ****-
+Contact ***** **-
+Control **
+Discipline ***** *****
+
+Baserunning:
+Speed ***** ****-
+Bravery ***-
+Timing ***** **-
+
+Defense:
+Reach ***** ****-
+Reaction ***** *****
+Throwing ****
+
+Pitching:
+Force **
+Accuracy *-
+Trickery ****-
+Awareness ***** **-
+
+Edge:
+Strategy: ***** -
+Sparkle: **-
+Clutch: 0
+
+Condition:
+Endurance: ***
+Positivity: *
+Extroversion: ***** ****
+Introversion: ***** *-
+Recovery: ***** -
+
+Social
+Teaching: ***-
+Patience: ***
+Cool: *****
+Hang: ***** *-
+Support: ***
+
+~~~
+
+Position Assessment
+
+C: ***** *-
+1B: ***** *****
+2B: ***** ****-
+3B: ***** **-
+SS: ***** ***-
+LF: ***** **
+CF: ***** ***
+RF: ***** ***-
+P: ****
+
+~~~
+
+Relationships
+
+Element: Rain
+(list relationships and DA GRID)
+
+~~~
+
+Memories
+(TBR)
+
+
+10. Possible game stats considered
 
 hitting has the following stats:
 - power
@@ -80,13 +460,12 @@ hitting has the following stats:
 (Blaseball has HR power (divinity), bunting (martyrdom), Discipline (moxie),
 1 -> 2 conversion (musclitude), contact (path), gap power (thwack))
 
+We'll use:
 pitch reading (B / K, fly vs ground, decide ideal)
 contact (decide if hit is possible)
 power (decide power for swinging for power)
 hit accuracy (gap accuracy, ground / fly accuracy)
 bunt accuracy/success
-
-
 
 
 running has the following stats:
@@ -102,12 +481,11 @@ running has the following stats:
 (Blaseball has steal chance (basethirst), overall speed (lazer), advancement on hits (continuation),
 1 -> 3 odds (ground friction), advancement on outs (indulgence))
 
+We'll use:
 running speed (helps with defense too?)
 bravery (diving, leadoff, steal willingness - bonus bases)
 rundown ability (jukes)
 strategy (steal timing, base running)
-
-
 
 
 fielding has the following stats:
@@ -123,13 +501,12 @@ fielding has the following stats:
 (Blaseball has steal prevention (anticap), avoid extra base hits (chasiness), catching (omni),
 some other unknown junk)
 
-
-- range (possible overlap with speed)
-- reaction (ground reactions, anti-steal, doubles)
-- strength (pitch length, speed)
-- accuracy (overlap with pitching accuracy?)
-- error rate
-
+We'll use:
+range (possible overlap with speed)
+reaction (ground reactions, anti-steal, doubles)
+strength (pitch length, speed)
+accuracy (overlap with pitching accuracy?)
+error rate
 
 
 pitching has the following:
@@ -153,443 +530,3 @@ each type of pitch has a combination of the above
 
 plus
 steal awareness, and fielding
-
-
-
-SO in total:
-
---HITTING--
-pitch reading (B / K, fly vs ground, decide ideal)
-contact (decide if hit is possible)
-power (decide power for swinging for power)
-hit accuracy (gap accuracy, ground / fly accuracy)
-bunt accuracy/success
---RUNNING--
-running speed (helps with defense too?)
-bravery (diving, leadoff, steal willingness - bonus bases)
-rundown ability (jukes)
-strategy (steal timing, base running)
---FIELDING--
-range (possible overlap with speed)
-reaction (ground reactions, anti-steal, doubles)
-strength (pitch length, speed)
-accuracy (overlap with pitching accuracy?)
-error rate
---PITCHING--
-accuracy (does it go where you want)
-movement (how hard is it to hit well)
-speed (how hard is it to hit)
-awareness (anti-stealing)
-pitches
-
-
-
-
-Boiling this down to be:
-- simple
-- clear
-- readable
-
-
---HITTING--
-pitch reading (B / K, fly vs ground, decide ideal)
-contact (decide if hit is possible)
-power (decide power for swinging for power)
-hit accuracy (gap accuracy, ground / fly accuracy)
-bunt accuracy/success
---RUNNING--
-running speed (helps with defense too?)
-bravery (diving, leadoff, steal willingness - bonus bases)
-rundown ability (jukes)
---FIELDING--
-range (possible overlap with speed)
-reaction (ground reactions, anti-steal, doubles)
-strength (pitch length, speed)
-accuracy (overlap with pitching accuracy?)
-error rate
---PITCHING--
-accuracy (does it go where you want)
-movement (how hard is it to hit well)
-speed (how hard is it to hit)
-awareness (anti-stealing)
-pitches
---META--
-Strategy (steal timing, base running, pitch selection, fielding decisions)
-Clutch
-Sparkle
-
-
-
-FULL STATS:
-
-
-HITTING: *** Contact
-power: **
-contact: ***
-control: ****  (includes bunts)
-discipline: ****
-
-RUNNING: *** Sneaky
-speed: **
-bravery: ***
-awareness: ***
-
-FIELDING: ** Coverage
-reach: *** (based on speed)
-reaction: **
-throwing: **** (based on pitching)
-
-PITCHING: **** Fastball
-force: *****
-accuracy: ***
-movement: **
-awareness: *** (shared with running)
-
-pitches:
-fastball 3
-juicy 1
-bounceball 2
-
-SPECIAL:
-strategy: *
-sparkle: ****
-clutch: ** (starts hidden)
-
-
-SUMMARY STATS:
-HITTING: *** Contact
-RUNNING: *** Sneaky
-FIELDING: ** Coverage
-PITCHING: **** Fastball
-SPECIAL: *** Magical
-
-
-
-
-
-So if we grouped these by type:
-
-Group A: fire (determination)
-power: **
-force: *****
-bravery: ***
-clutch: ** (starts hidden)
-
-Group B: wind (excitement)
-speed: **
-reach: *** (based on speed)
-contact: ***
-movement: **
-
-Group C: water (cleverness)
-control: ****  (includes bunts)
-accuracy: ***
-sparkle: ****
-
-Group D: earth (insight)
-discipline: ****
-awareness: ***
-reaction: **
-strategy: *
-
-
-
-fire players:
-power hitters, fastball players, terrible at running and fielding
-
-wind players:
-contact hitters, get on base, go fast, pitches are hard to hit, play outfield
-
-water players:
-specialty hitters, high accuracy pitchers, have tricks, good 3b/ss
-
-earth players:
-high moxie, bad against good pitchers, stop stealing, great catchers and infielders
-
-
-
-
-
-
-
-
-
-
-
-baseball stats (how "good" is this player at blaseball):
-- hitting
-- running
-- pitching
-- fielding
-
-social stats (how good is this player not at blaseball, although these do affect on-field as well):
-- strategy
-- charisma
-- sparkle
-
-other:
-- durability
-- stability
-
-(vibes is the dependant variable)
-
-core stats (the ways a player is good, equalized. each one should help all
-of the above seven stats, ):
-    - power
-        # for hitters: clean hit power
-        # for runners: steal attempt chance (can be a negative for strong, slow runners)
-        # for pitchers: pitch speed (difficulty to hit)
-        # for defence: throw speed (ground out chances, double chances)
-        # off field: confidence, directness
-    - speed
-        # for batters: plate discipline
-        # for runners: base speed (single > double > triple, stealing chance)
-        # for pitchers: defence, stealing defence
-        # for defenders: fly out chances
-        # off field: humor
-    - technique
-        # for batters: contact chance
-        # for runners: lead-off bonus / throw out chance
-        # for pitchers: pitch accuracy (does not throw balls, reduces hit power)
-        # for defence: chance of error
-        # off field: understanding
-
-    - strategy
-        # for batters: plate discipline
-        # for runners: steal success
-        # for pitchers: pitch accuracy (does not throw balls)
-        # for defence: chance of incorrect fielder's choice,
-        # off field: primary coaching stat
-    - charisma
-        # for batters: pitch prediction
-        # for runners: steal throwout defence
-        # for pitchers: hit prediction, heckle batters 
-        # for defence: heckle batters, runners 
-        # off field: primary hangout stat
-    - sparkle 
-        # for batters: special hit chance 
-        # for runners: special run chance 
-        # for pitchers: special pitch chance 
-        # for defense: special defense chance 
-        # off field: special event chance 
-        
-
-~~~~~~~~~~~~~~~~~~
-
-
-BATTING EFFECTS:
-batting stars: primary "goodness"
-
-power: clean hit distance (slugging)
-speed: pitch reading (not swinging at balls, swinging at strikes)
-technique: contact chance
-
-strategy: plate discipline (not swinging on 0-3 count, etc. +walks)
-charisma: pitch prediction (similar to speed? +contact)
-sparkle: unique hit chance (probably a slugging boost more often than not? +slugging)
-
-
-BASERUNNING EFFECTS:
-baserunning stars: primary "goodness"
-
-power: steal attempt chance, extra base chance (can be a negative for strong, slow runners)
-speed: base speed (single > double > triple, stealing chance)
-technique: lead-off bonus / throw out chance / double play avoidance
-
-strategy: extra base chance  (+ running)
-charisma: throwout defense, steal success (+ steal)
-sparkle: special run chance (steal, throwout ignore, rundown win)
-
-
-PITCHING EFFECTS:
-pitching stars: primary "goodness"
-
-strength: pitch speed (difficulty to hit)
-speed: defence, stealing defence
-technique: pitch accuracy (does not throw balls, reduces hit power)
-
-strategy: pitch accuracy (does not throw balls)
-charisma: hit prediction, heckle batters
-sparkle: special pitch chance (mostly strikeout, some softballs, etc)
-
-
-DEFENSE EFFECTS:
-defense stars: primary stat
-
-power: throw speed (ground out chances, double chances)
-speed: fly out chances, double play cooldown
-technique: chance of error
-
-strategy: chance of incorrect fielder's choice,
-charisma: heckle batters, runners
-sparkle: special defense chance, buff pitcher
-
-
-DUGOUT EFFECTS:
-strategy: overall strategy/coaching/focus (generalized player buffs)
-charisma: primary stat for vibes and heckling (opposing team debuffs, team vibes)
-sparkle: random events (team vibes)
-
-power: temporary vibe boosts (confidence, leaderiness),
-speed: long term team boosts (humor),
-technique: reduce negative effects (listening)
-
-
-OFF FIELD EFFECTS:
-strategy: coaching, player development
-charisma: team relationships, vibes
-sparkle: big events, random chance
-
-
-
-
-
-
-
-
-~~~~~~~~~~~~~~~~~~~~
-
-you have a STRONG player:
-- put them as a clean-up hitter
-- put them on third, and left outfield
-- put them as a pitcher to shutdown weak hitters and other sluggers
-
-you have a FAST player:
-- put them at the top of the lineup
-- put them on second, mid outfield
-- put them in against a fast team
-
-you have a TECHNIQUE player:
-- put them second for contact to get batted in
-- catcher, first base - lots of receiving but block errors
-- put them as a pitcher for high-defense teams
-
-
-~~~~~~
-
-
-BATTING STRATEGY:
-
-for hitting:
-batting stars is overall "goodness" - contact + power
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-
-BATTERS:
-power is slugging and steal attempts  (divinity + basethirst)
-tech is contact (thwack)
-speed is running and steal success  (laserlikeness)
-
-strat is plate discipline,
-sparkle is special plays
-(continuation + ground friction + indulgence)
-
-
-
-
-
-power is a slugger who if they don't dinger, sits down
-tech is a player who hits every time but can't get home
-speed is a player who if they get on base they're amazing
-strat is a player who can get walked a lot but otherwise no bueno
-
-a "contact" player is tech / strat
-a "power" player is power
-
-1 tech / speed
-2 strat / speed
-3 tech / power
-4 power
-5 power / strat
-6 strat / speed
-7 w/e
-8 w/e
-9 tech / speed
-
-RUNNERS:
-(extension of batting, basically)
-- SPEED
-- power to STEAL (eg: power is a disadvantage on base)
-- strat to NOT STEAL, correct leadoff
-
-
-FIELDERS:
-- power is throw speed, distance
-- speed is "width" and getting fly and ground outs (when close)
-- technique is receiving and avoiding errors
-- strat is choosing the right target in a double play situation
-
-catcher: STRAT / tech
-1st: TECH
-2nd: speed / tech
-3rd: power / tech
-SS: speed / power
-RF: speed / strat
-CF: speed / power / strat
-LF: power / speed / strat
-
-
-PITCHERS:
-power increases your fastball (chance to hit) (unthack)
-speed is for defensive stats and throwing out steals (coldness/shakespearianism)
-technique is for pitching where needed (avoiding unnecessary balls, ruth)
-strategy is for specialty pitches, which reduce impact (overpowerment)
-
-(pitch CALLING is catcher strategy)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-OK, so we have two options:
-core stats lead blaseball stat development
-or core stats ARE blaseball stats
-
-in a way, this is about if we want to be a game or a management sim?
-
-ideally, we focus more on out of game management. A single star pitcher needs 5 games to play once, and
-baseball is very high variance - so we want to get a lot of games underway. (Especially if end of season
-work is the ideal time to trade players, etc.)
-
-
-
-
-
-What you actually want in a game:
-- venue for weird effects
-- highlights (for memory system)
-- strategy testing
-
-
-putting together "ideal" baseball positions should be as straightforward as possible.
-
-HITTING: ***** contact
