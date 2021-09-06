@@ -274,7 +274,7 @@ Here are the deep ratings affected by each personality:
 DETERMINATION
 power: hitting
 force: pitching
-bravery: running
+bravery/clutch: running/edge
 endurance: condition
 cool: social
 
@@ -301,7 +301,6 @@ patience: social
 MYSTICISM
 recovery: condition
 sparkle: edge
-clutch: edge
 teaching: social
 
 
@@ -319,11 +318,11 @@ Bats 2nd
 RBI: 52 OPS: 0.653
 ERA: --- WHIP: ---
 
-Condition: 88%
 Personality: Enthusiastic
 Offense: ***** *** Contact Runner
 Defense: ***** **** Fast Infield
 
+Condition: 88%
 Injury: Aura (85% healed)
 Underappreciated
 
@@ -530,3 +529,122 @@ each type of pitch has a combination of the above
 
 plus
 steal awareness, and fielding
+
+
+OK, so this is A Lot
+but here's the dilemma:
+
+Do you want deep stats to be 100% tied to personality stats?
+
+Options:
+1. Yes
+- then why have the deep stats displayed at all?
+
+2. No
+- Then this gets really deep
+- unless you go super clear with your intel
+
+OK THEORETICALLY
+What's the fewest stats we could have?
+
+
+Batting:
+Power
+Contact
+Control
+
+Pitching:
+Force
+Accuracy
+Trickery
+
+Utility:
+Speed
+Awareness
+Sparkle
+
+Out of game:
+Recovery
+Teaching
+Hang
+
+
+Or even simpler:
+
+Batting:
+Batting type:
+Pitching:
+Pitching type:
+Defense
+Defense type:
+Baserunning:
+
+
+Justify these stats:
+
+S Tier
+Power
+Contact
+
+A Tier
+Discipline
+
+B Tier
+
+C Tier
+
+D Tier
+
+F Tier
+
+
+
+Control
+
+
+Speed
+Bravery
+Timing
+
+Reach
+Reaction
+Throwing
+
+Force
+Accuracy
+Trickery
+Awareness
+
+Strategy:
+Sparkle:
+Clutch: 0
+
+Endurance:
+Positivity:
+Extroversion:
+Introversion:
+Recovery:
+
+Teaching:
+Patience:
+Cool:
+Hang:
+Support:
+
+
+What about social types?
+
+The problem I have is this:
+1. The best teachers are high myst high insight
+2. this means the easiest things to teach are:
+
+INSIGHT
+discipline / reaction: hitting, fielding
+timing / awareness: pitching, running
+strategy: edge
+
+MYSTICISM
+sparkle: edge
+teaching: social
+
+Which is actually fair?
