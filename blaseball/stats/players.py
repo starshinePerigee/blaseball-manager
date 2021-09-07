@@ -15,6 +15,7 @@ import pandas as pd
 from numpy import integer
 
 from data import playerdata
+from blaseball.stats import traits
 
 
 class Player(Mapping):
@@ -22,60 +23,109 @@ class Player(Mapping):
     A representation of a single player.
 
     This includes a link to a line in a PlayerBase, which uses a pandas
-    dataframe to store the bulk of numeric statistics. However, player is
+    dataframe to store the bulk of numeric ratings and stats. However, player is
     implemented as a separate class to support advanced functionality best not
     stored in a dataframe (like play logs, special ability functions, etc.)
     """
 
     # default values
-    CORE_STATS = {
+    CORE_ATTRIBUTES = {
         "name": "UNDEFINED PLAYER",
         "team": "N/A TEAM",
+        "number": -1
     }
-    BASE_STATS = {
-        "hitting": 0,  # base hitting ability
-        "running": 0,  # base running ability
-        "fielding": 0,  # base defense ability
-        "pitching": 0,  # base pitching ability
-        "charisma": 0,  # base off-field ability
-    }
-    SWING_STATS = {
-        "power": 0,
-        # for pitchers: pitch speed,
-        # for defense: throw speed (ground out chances, double chances)
-        # for hitters: clean hit power
-        # for runners: steal attempt chance
-        # off field: confidence
-        "technique": 0,
-        # for pitchers: pitch wobbliness
-        # for defence: chance of error
-        # for batters: hit "direction" - reduce chance of fly out
-        # for runners: steal success
-        # off field: understanding
-        "strategy": 0,
-        # for pitchers: pitch accuracy
-        # for defense: chance of incorrect fielder's choice,
-        # for batters: pitch prediction
-        # for runners: lead-off bonus / throw out chance
-        # off field: intelligence
-        "speed": 0,
-        # for pitchers: stealing defense
-        # for defenders: fly out chances
-        # for batters: fastball defense,
-        # for runners: base speed,
-        # off field: humor
-        "durability": 0,  # stat loss per game
+    PERSONALITY_FIVE = [
+        "determination",
+        "enthusiasm",
+        "stability",
+        "insight",
+        "mysticism"
+    ]
+    
+    DETERMINATION_RATINGS = ["power", "force", "bravery", "endurance", "cool"]
+    ENTHUSASM_RATINGS = ["contact", "speed", "trickery", "extroversion", "hang"]
+    STABILITY_RATINGS = ["control", "accuracy", "positivity", "support"]
+    INSIGHT_RATINGS = ["discipline", "awareness", "strategy", "introversion", "patience"]
+    MYSTICISM_RATINGS = ["recovery", "sparkle", "teaching"]
+
+    BATTING_RATINGS = ["power", "contact", "control", "discipline"]
+    BASERUNNING_RATINGS = ["speed", "bravery", "timing"]
+    DEFENSE_RATINGS = ["reach", "reaction", "timing"]
+    PITCHING_RATINGS = ["force", "accuracy", "trickery"]
+    EDGE_RATINGS = ["strategy", "sparkle", "clutch"]
+    CONSTITUTION_RATINGS = ["endurance", "positivity", "extroversion", "introversion", "recovery"]
+    SOCIAL_RATINGS = ["teaching", "patience", "cool", "hang", "support"]
+
+    DEEP_RATINGS = [
+        "power",
+        "contact",
+        "control",
+        "discipline",
+        "speed",
+        "timing",
+        "reaction",
+        "force",
+        "accuracy",
+        "trickery",
+        "awareness",
+        "strategy",
+        "sparkle",
+        "endurance",
+        "positivity",
+        "extroversion",
+        "introversion",
+        "recovery",
+        "teaching",
+        "patience",
+        "cool",
+        "hang",
+        "support",
+    ]
+    DERIVED_DEEP = [
+        "reach",  # speed
+        "reaction",  # discipline
+        "timing",  # awareness
+        "throwing",  # accuracy
+        "clutch",  # bravery
+    ]
+    DERIVED_RATINGS = [
+        "total_offense",
+        "total_defense",
+        "batting",
+        "baserunning",
+        "defense",
+        "pitching",
+        "edge",
+        "constitution",
+        "social"
+    ]
+
+    CONDITION_STATUS = {
+        "stamina": 1.0,
+        "vibes": 1.0,
+        "corporeality": 1.0,
     }
     BONUS_STATS = {
         "fingers": 9,
+        "is_pitcher": False,
         "element": "Basic",
-        "sleepy": 0,
-        "vibes": 0,
-        "dread": 0,
     }
-    ALL_STATS_KEYS = list(CORE_STATS.keys()) + list(BASE_STATS.keys()) \
-        + list(SWING_STATS.keys()) + list(BONUS_STATS.keys())
-    COMBINED_STATS = [CORE_STATS, BASE_STATS, SWING_STATS, BONUS_STATS]
+
+    COMBINED_STATS = [
+        CORE_ATTRIBUTES,
+        PERSONALITY_FIVE,
+        DEEP_RATINGS,
+        DERIVED_DEEP,
+        DERIVED_RATINGS,
+        CONDITION_STATUS,
+        BONUS_STATS
+    ]
+    ALL_KEYS = []
+    for statset in COMBINED_STATS:
+        if isinstance(statset, list):
+            ALL_KEYS += statset
+        else:
+            ALL_KEYS += list(statset.keys())
 
     player_class_id = 1000  # unique ID for each generation of a player,
     # used to verify uniqueness
@@ -96,6 +146,7 @@ class Player(Mapping):
     def __init__(self) -> None:
         self.cid = Player.new_cid()  # players "Character ID", a unique identifier
         self.pb = None  # pointer to the row of playerbase containing this player's stats
+        self.traits = []
         # you MUST call initialize after this.
 
     def initialize(self, playerbase: 'PlayerBase') -> None:
@@ -103,27 +154,63 @@ class Player(Mapping):
         Counts as a new player"""
         self.pb = playerbase
         for statset in Player.COMBINED_STATS:
-            for stat in list(statset.keys()):
-                self[stat] = statset[stat]
+            if isinstance(statset, list):
+                for stat in statset:
+                    self[stat] = 0.0
+            else:
+                for stat in list(statset.keys()):
+                    self[stat] = statset[stat]
+
+    def generate_player_number(self) -> int:
+        """dumb fun function to create a player number based partially on CID"""
+        unusual = random.random() < 0.10
+
+        low_thresh = max(random.randrange(-20, 20, 2), (-20 if unusual else 0))
+        high_thresh = random.randrange(45, random.randrange(50, (1000 if unusual else 100)))
+        base = self.cid % 100
+
+        if (base < high_thresh) and (base > low_thresh) and not unusual:
+            return base
+        else:
+            ones = base % 10
+            tens = int(((base % high_thresh) + low_thresh) / 10) * 10
+            return ones + tens
 
     def randomize(self) -> None:
         """Generate random values for applicable stats.
         Call initialize() first.
         Counts as a new player."""
         self["name"] = Player.generate_name()
-        for stat in Player.BASE_STATS:
-            self[stat] = random.random()
-        swing_weights = {}
-        for stat in Player.SWING_STATS:
-            swing_weights[stat] = random.random()
-        total_weight = sum(swing_weights.values())
-        # we want these stats to average to 0.5, so build your factor:
-        swing_factor = (len(Player.SWING_STATS) * 0.5 / total_weight)
-        for stat in swing_weights:
-            self[stat] = swing_weights[stat] * swing_factor
+        self["number"] = self.generate_player_number()
 
-        self["fingers"] += 1
-        self["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
+
+
+        #
+        # for stat in Player.BASE_STATS:
+        #     self[stat] = random.random()
+        # swing_weights = {}
+        # for stat in Player.SWING_STATS:
+        #     swing_weights[stat] = random.random()
+        # total_weight = sum(swing_weights.values())
+        # # we want these stats to average to 0.5, so build your factor:
+        # swing_factor = (len(Player.SWING_STATS) * 0.5 / total_weight)
+        # for stat in swing_weights:
+        #     self[stat] = swing_weights[stat] * swing_factor
+        #
+        # self["fingers"] += 1
+        # self["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
+
+    def derive(self) -> None:
+        pass
+
+    def add_trait(self, trait: traits.Trait) -> None:
+        self.traits += trait
+        for stat in trait:
+            self[stat] += trait[stat]
+
+    def remove_trait(self, trait: traits.Trait) -> None:
+        if trait not in self.traits:
+            raise KeyError(f"Trait {trait} not on player {self}")
 
     def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
         if isinstance(values, Player):
@@ -184,12 +271,13 @@ class Player(Mapping):
             return True
 
     def total_stars(self) -> str:
-        """Return a string depiction of this player's stars"""
-        average = (self.stat_row()[Player.BASE_STATS].sum()
-                   / len(Player.BASE_STATS)) * 5  # 0-5 star rating
-        stars = int(average)
-        half = average % 1 >= 0.5
-        return "*"*stars + ('-' if half else '')
+        # """Return a string depiction of this player's stars"""
+        # average = (self.stat_row()[Player.BASE_STATS].sum()
+        #            / len(Player.BASE_STATS)) * 5  # 0-5 star rating
+        # stars = int(average)
+        # half = average % 1 >= 0.5
+        # return "*"*stars + ('-' if half else '')
+        return "***"
 
     def __str__(self) -> str:
         return(f"[{self.cid}] "
@@ -213,7 +301,7 @@ class PlayerBase(MutableMapping):
     and players, a dict indext by CID which contains pointers to the Players objects.
     """
     def __init__(self, num_players: int = 0) -> None:
-        self.df = pd.DataFrame(columns=Player.ALL_STATS_KEYS)
+        self.df = pd.DataFrame(columns=Player.ALL_KEYS)
         self.players = {}
 
         if num_players > 0:
@@ -305,7 +393,6 @@ class PlayerBase(MutableMapping):
 
         if isinstance(key, int):
             return self[all_cids[key]]
-
         if isinstance(key, range):
             key = slice(key.start, key.stop, key.step)
 
@@ -352,6 +439,6 @@ class PlayerBase(MutableMapping):
 
 
 if __name__ == "__main__":
-    pb = PlayerBase(20)
+    pb = PlayerBase(1000)
     print(pb)
     p = Player()

@@ -99,17 +99,17 @@ Condition is determined by multiplying three dependent ratings together:
 
 Corporeality doesn't directly affect condition; instead as it falls falls:
 1. first, they have a harder time gaining ratings
-2. past a certain threshold, durability degrades faster with use
+2. past a certain threshold, stamina degrades faster with use
 3. past a final threshold, the overall condition is permanently affected.
 
 There is little you can do to prevent Corporeality from falling, but stamina and vibes are both affected
-by their condition ratings - deep ratings set in part by a player's personality.
+by a player's constitution ratings - deep ratings set in part by a player's personality.
 
-- Endurance: affects how much a player loses durability from physical activity
+- Endurance: affects how much a player loses stamina from physical activity
 - Positivity: how much a player loses vibes from negative memories and actions
 - Extroversion: affects how much a player loses vibes from social activities
 - Introversion: affects how much a player loses vibes from individual activities
-- Recovery: how much a player recovers durability / vibes when not taxed
+- Recovery: how much a player recovers stamina / vibes when not taxed
 
 Lastly, injuries and other happenstance will affect stamina, vibes, and often directly impact condition
 as well.
@@ -141,7 +141,7 @@ Four of the derived blaseball ratings should be familiar to anyone who plays bla
 
 - Batting
 - Baserunning
-- Defense
+- Fielding
 - Pitching
 - Edge
 
@@ -169,7 +169,7 @@ Baserunning:
 Defense:
 - Reach: The amount of ground a player can cover, and how good they are at catching fly outs.
 - Reaction: A player's reaction times. Helps with ground outs and creating double plays.
-- Throwing: A player's ability to throw the ball
+- Throwing: A player's ability to throw the ball accurately and without error
 Fielding errors are decided by the respective reach, reaction, and throwing of the players involved.
 
 Pitching:
@@ -202,10 +202,10 @@ Off Field
 The following ratings are presented slightly removed, and are also summaries with a one-word descriptor:
 Batting
 Baserunning
-Defense
+Fielding
 Pitching
 Edge
-Condition
+Constitution
 Social
 
 
@@ -240,17 +240,17 @@ Note that this focus goes even further: A number of the deep ratings are "linked
 than other weighted ratings, but are trained together with a second rating from a different derived rating.
 
 These are the pairs:
-Reach (Defense) / Speed (Baserunning)
-Discipline (Batting) / Reaction (Defense)
-Timing (Baserunning) / Awareness (Pitching)
-Throwing (Defense) / All (Pitching)
-Bravery (Baserunning) / Clutch (Edge)
+Speed (Baserunning) -> Reach (Defense)
+Discipline (Batting) -> Reaction (Fielding)
+Awareness (Pitching) -> Timing (Baserunning)
+Accuracy (Pitching) -> Throwing (Defense)
+Bravery (Baserunning) -> Clutch (Edge)
 
     bat run def pit edg
 bat     --- dis --- ---
 run ---     spd tmg brv
 def rct rng     trw ---
-pit --- awr all     ---
+pit --- awr acc     ---
 edg --- clt --- ---
 
 The remaining ratings to be trained are:
@@ -258,7 +258,6 @@ Power
 Contact
 Control
 Force
-Accuracy
 Trickery
 Strategy
 Sparkle
@@ -272,34 +271,34 @@ just means it's slightly easier to shuffle pitchers and defense around.
 Here are the deep ratings affected by each personality:
 
 DETERMINATION
-power: hitting
+power: batting
 force: pitching
-bravery/clutch: running/edge
-endurance: condition
+bravery / clutch: running / edge
+endurance: constitution
 cool: social
 
 ENTHUSIASM
-contact: hitting
-speed / reach: running, fielding
+contact: batting
+speed / reach: running / fielding
 trickery: pitching
-extroversion: condition
+extroversion: constitution
 hang: social
 
 STABILITY
-control: hitting
-accuracy: pitching
-positivity: condition
+control: batting
+accuracy / throwing: pitching / defense
+positivity: constitution
 support: social
 
 INSIGHT
-discipline / reaction: hitting, fielding
+discipline / reaction: batting, fielding
 timing / awareness: pitching, running
 strategy: edge
-introversion: condition
+introversion: constitution
 patience: social
 
 MYSTICISM
-recovery: condition
+recovery: constitution
 sparkle: edge
 teaching: social
 
@@ -334,12 +333,12 @@ Stamina: 98%
 Vibes: 110%
 Corporeality: 65%
 
-Hitting: ***** *-
+Batting: ***** *-
 Running: ***** ***-
-Fielding: ***** **
+Defense: ***** **
 Pitching: ****
 Edge: **-
-Condition: ****-
+Constitution: ****-
 Social: ***
 
 Determination: ***-
@@ -399,7 +398,7 @@ Strategy: ***** -
 Sparkle: **-
 Clutch: 0
 
-Condition:
+Durability:
 Endurance: ***
 Positivity: *
 Extroversion: ***** ****
@@ -531,120 +530,15 @@ plus
 steal awareness, and fielding
 
 
-OK, so this is A Lot
-but here's the dilemma:
+11. How are ratings actually generated?
 
-Do you want deep stats to be 100% tied to personality stats?
+- a player's base personality is rolled, 0-1 down the middle
+- traits are rolled and attached, affecting the player's personality for the deep ratings
+-- these can push a player above 1 (5 stars)
+- deep ratings are rolled, max(0, 1-personality) to min(personality, 0.6)
+- derived ratings are derived and applied
+- identifiers are applied
 
-Options:
-1. Yes
-- then why have the deep stats displayed at all?
+modify methods include derived stat updates
 
-2. No
-- Then this gets really deep
-- unless you go super clear with your intel
-
-OK THEORETICALLY
-What's the fewest stats we could have?
-
-
-Batting:
-Power
-Contact
-Control
-
-Pitching:
-Force
-Accuracy
-Trickery
-
-Utility:
-Speed
-Awareness
-Sparkle
-
-Out of game:
-Recovery
-Teaching
-Hang
-
-
-Or even simpler:
-
-Batting:
-Batting type:
-Pitching:
-Pitching type:
-Defense
-Defense type:
-Baserunning:
-
-
-Justify these stats:
-
-S Tier
-Power
-Contact
-
-A Tier
-Discipline
-
-B Tier
-
-C Tier
-
-D Tier
-
-F Tier
-
-
-
-Control
-
-
-Speed
-Bravery
-Timing
-
-Reach
-Reaction
-Throwing
-
-Force
-Accuracy
-Trickery
-Awareness
-
-Strategy:
-Sparkle:
-Clutch: 0
-
-Endurance:
-Positivity:
-Extroversion:
-Introversion:
-Recovery:
-
-Teaching:
-Patience:
-Cool:
-Hang:
-Support:
-
-
-What about social types?
-
-The problem I have is this:
-1. The best teachers are high myst high insight
-2. this means the easiest things to teach are:
-
-INSIGHT
-discipline / reaction: hitting, fielding
-timing / awareness: pitching, running
-strategy: edge
-
-MYSTICISM
-sparkle: edge
-teaching: social
-
-Which is actually fair?
+All ratings are 0-20, where each "1" is worth half a star
