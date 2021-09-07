@@ -18,6 +18,144 @@ from data import playerdata
 from blaseball.stats import traits
 
 
+CORE_ATTRIBUTES = {
+    "name": "UNDEFINED PLAYER",
+    "team": "N/A TEAM",
+    "number": -1
+}
+PERSONALITY_FIVE = [
+    "determination",
+    "enthusiasm",
+    "stability",
+    "insight",
+    "mysticism"
+]
+
+DETERMINATION_RATINGS = ["power", "force", "bravery", "endurance", "cool"]
+ENTHUSIASM_RATINGS = ["contact", "speed", "trickery", "extroversion", "hang"]
+STABILITY_RATINGS = ["control", "accuracy", "positivity", "support"]
+INSIGHT_RATINGS = ["discipline", "awareness", "strategy", "introversion", "patience"]
+MYSTICISM_RATINGS = ["recovery", "sparkle", "teaching"]
+
+BATTING_RATINGS = ["power", "contact", "control", "discipline"]
+BASERUNNING_RATINGS = ["speed", "bravery", "timing"]
+DEFENSE_RATINGS = ["reach", "reaction", "throwing"]
+PITCHING_RATINGS = ["force", "accuracy", "trickery", "awareness"]
+EDGE_RATINGS = ["strategy", "sparkle", "clutch"]
+CONSTITUTION_RATINGS = ["endurance", "positivity", "extroversion", "introversion", "recovery"]
+SOCIAL_RATINGS = ["teaching", "patience", "cool", "hang", "support"]
+
+DEEP_RATINGS = [
+    "power",
+    "contact",
+    "control",
+    "discipline",
+    "speed",
+    "bravery",
+    "force",
+    "accuracy",
+    "trickery",
+    "awareness",
+    "strategy",
+    "sparkle",
+    "endurance",
+    "positivity",
+    "extroversion",
+    "introversion",
+    "recovery",
+    "teaching",
+    "patience",
+    "cool",
+    "hang",
+    "support",
+]
+RATING_PERSONALITY_LOOKUP = {}
+for rating_list, personality in zip([
+    DETERMINATION_RATINGS,
+    ENTHUSIASM_RATINGS,
+    STABILITY_RATINGS,
+    INSIGHT_RATINGS,
+    MYSTICISM_RATINGS,
+],["determination", "enthusiasm", "stability", "insight", "mysticism"]):
+    for rating in rating_list:
+        RATING_PERSONALITY_LOOKUP[rating] = personality
+DERIVED_DEEP = [
+    "reach",  # speed
+    "reaction",  # discipline
+    "timing",  # awareness
+    "throwing",  # accuracy
+    "clutch",  # bravery
+]
+DERIVED_DEEP_LOOKUP = {
+    rating[0]: rating[1] for rating in
+    zip(DERIVED_DEEP, ["speed", "discipline", "awareness", "accuracy", "bravery"])
+}
+DERIVED_RATINGS = [
+    "total_offense",
+    "total_defense",
+    "total_off_field",
+    "batting",
+    "baserunning",
+    "defense",
+    "pitching",
+    "edge",
+    "constitution",
+    "social"
+]
+RATING_DESCRIPTORS = {
+    "overall_descriptor": "Unevaluated Player",
+    "offense_descriptor": "Hits for Beans",
+    "defense_descriptor": "Can't Catch A Cold",
+    "personality_descriptor": "Is Smol Bean",
+}
+POSITION_INFO = {
+    "offense_position": "Bench",
+    "defense_position": "Bullpen"
+}
+CONDITION_STATUS = {
+    "stamina": 1.0,
+    "vibes": 1.0,
+    "corporeality": 1.0,
+    "condition": 1.0
+}
+BONUS_STATS = {
+    "fingers": 9,
+    "is_pitcher": False,
+    "element": "Basic",
+}
+
+COMBINED_STATS = [
+    CORE_ATTRIBUTES,
+    PERSONALITY_FIVE,
+    DEEP_RATINGS,
+    DERIVED_DEEP,
+    DERIVED_RATINGS,
+    CONDITION_STATUS,
+    BONUS_STATS,
+    RATING_DESCRIPTORS,
+    POSITION_INFO
+]
+ALL_KEYS = []
+for statset in COMBINED_STATS:
+    if isinstance(statset, list):
+        ALL_KEYS += statset
+    else:
+        ALL_KEYS += list(statset.keys())
+
+BATTING_WEIGHTS = (("power", 2), ("contact", 3), ("control", 2), ("discipline", 1))
+BASERUNNING_WEIGHTS = (("speed", 3), ("bravery", 1), ("timing", 2))
+DEFENSE_WEIGHTS = (("reach", 1), ("reaction", 1), ("throwing", 1))
+PITCHING_WEIGHTS = (("force", 2), ("accuracy", 1), ("trickery", 1.5), ("awareness", 0.5))
+EDGE_WEIGHTS = (("strategy", 1), ("sparkle", 1), ("clutch", 1))
+DURABILITY_WEIGHTS = (("endurance", 1), ("positivity", 1), ("extroversion", 1),
+                      ("introversion", 1), ("recovery", 2))
+SOCIAL_WEIGHTS = (("teaching", 2), ("patience", 2), ("cool", 1), ("hang", 1), ("support", 1))
+TOTAL_OFFENSE_WEIGHTS = (("batting", 2), ("baserunning", 1), ("edge", 0.5))
+TOTAL_DEFENSE_WEIGHTS_PITCHING = (("pitching", 2), ("defense", 1), ("edge", 0.5))
+TOTAL_DEFENSE_WEIGHTS_FIELDING = (("pitching", 0.5), ("defense", 2), ("edge", 0.5))
+TOTAL_OFF_FIELD_WEIGHTS = (("constitution", 2), ("social", 2))
+
+
 class Player(Mapping):
     """
     A representation of a single player.
@@ -27,105 +165,6 @@ class Player(Mapping):
     implemented as a separate class to support advanced functionality best not
     stored in a dataframe (like play logs, special ability functions, etc.)
     """
-
-    # default values
-    CORE_ATTRIBUTES = {
-        "name": "UNDEFINED PLAYER",
-        "team": "N/A TEAM",
-        "number": -1
-    }
-    PERSONALITY_FIVE = [
-        "determination",
-        "enthusiasm",
-        "stability",
-        "insight",
-        "mysticism"
-    ]
-    
-    DETERMINATION_RATINGS = ["power", "force", "bravery", "endurance", "cool"]
-    ENTHUSASM_RATINGS = ["contact", "speed", "trickery", "extroversion", "hang"]
-    STABILITY_RATINGS = ["control", "accuracy", "positivity", "support"]
-    INSIGHT_RATINGS = ["discipline", "awareness", "strategy", "introversion", "patience"]
-    MYSTICISM_RATINGS = ["recovery", "sparkle", "teaching"]
-
-    BATTING_RATINGS = ["power", "contact", "control", "discipline"]
-    BASERUNNING_RATINGS = ["speed", "bravery", "timing"]
-    DEFENSE_RATINGS = ["reach", "reaction", "timing"]
-    PITCHING_RATINGS = ["force", "accuracy", "trickery"]
-    EDGE_RATINGS = ["strategy", "sparkle", "clutch"]
-    CONSTITUTION_RATINGS = ["endurance", "positivity", "extroversion", "introversion", "recovery"]
-    SOCIAL_RATINGS = ["teaching", "patience", "cool", "hang", "support"]
-
-    DEEP_RATINGS = [
-        "power",
-        "contact",
-        "control",
-        "discipline",
-        "speed",
-        "timing",
-        "reaction",
-        "force",
-        "accuracy",
-        "trickery",
-        "awareness",
-        "strategy",
-        "sparkle",
-        "endurance",
-        "positivity",
-        "extroversion",
-        "introversion",
-        "recovery",
-        "teaching",
-        "patience",
-        "cool",
-        "hang",
-        "support",
-    ]
-    DERIVED_DEEP = [
-        "reach",  # speed
-        "reaction",  # discipline
-        "timing",  # awareness
-        "throwing",  # accuracy
-        "clutch",  # bravery
-    ]
-    DERIVED_RATINGS = [
-        "total_offense",
-        "total_defense",
-        "batting",
-        "baserunning",
-        "defense",
-        "pitching",
-        "edge",
-        "constitution",
-        "social"
-    ]
-
-    CONDITION_STATUS = {
-        "stamina": 1.0,
-        "vibes": 1.0,
-        "corporeality": 1.0,
-    }
-    BONUS_STATS = {
-        "fingers": 9,
-        "is_pitcher": False,
-        "element": "Basic",
-    }
-
-    COMBINED_STATS = [
-        CORE_ATTRIBUTES,
-        PERSONALITY_FIVE,
-        DEEP_RATINGS,
-        DERIVED_DEEP,
-        DERIVED_RATINGS,
-        CONDITION_STATUS,
-        BONUS_STATS
-    ]
-    ALL_KEYS = []
-    for statset in COMBINED_STATS:
-        if isinstance(statset, list):
-            ALL_KEYS += statset
-        else:
-            ALL_KEYS += list(statset.keys())
 
     player_class_id = 1000  # unique ID for each generation of a player,
     # used to verify uniqueness
@@ -153,7 +192,7 @@ class Player(Mapping):
         """Create / reset all stats to default values.
         Counts as a new player"""
         self.pb = playerbase
-        for statset in Player.COMBINED_STATS:
+        for statset in COMBINED_STATS:
             if isinstance(statset, list):
                 for stat in statset:
                     self[stat] = 0.0
@@ -183,34 +222,76 @@ class Player(Mapping):
         self["name"] = Player.generate_name()
         self["number"] = self.generate_player_number()
 
+        for stat in PERSONALITY_FIVE:
+            self[stat] = random.random()
 
+        for i in range(0, random.randrange(3, 6)):
+            self.add_trait(traits.personality_traits.draw())
 
-        #
-        # for stat in Player.BASE_STATS:
-        #     self[stat] = random.random()
-        # swing_weights = {}
-        # for stat in Player.SWING_STATS:
-        #     swing_weights[stat] = random.random()
-        # total_weight = sum(swing_weights.values())
-        # # we want these stats to average to 0.5, so build your factor:
-        # swing_factor = (len(Player.SWING_STATS) * 0.5 / total_weight)
-        # for stat in swing_weights:
-        #     self[stat] = swing_weights[stat] * swing_factor
-        #
-        # self["fingers"] += 1
-        # self["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
+        for stat in DEEP_RATINGS:
+            self[stat] = random.random() * max(self[RATING_PERSONALITY_LOOKUP[stat]], 0.5)
+            if self[RATING_PERSONALITY_LOOKUP[stat]] > 1:
+                # this is a dumb hack - contrary to the plan, this can result in deep stats higher than
+                # the respective personalities. In my defense, it'll be rare and cool when it happens.
+                self[stat] += self[RATING_PERSONALITY_LOOKUP[stat]] - 1
+
+        for stat in DERIVED_DEEP_LOOKUP:
+            self[stat] = self[DERIVED_DEEP_LOOKUP[stat]]
+
+        self.derive()
+
+        self["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
+
+    def _derive_weighted(self, stat, weights):
+        weight = sum([x[1] for x in weights])
+        total = sum([self[x[0]] * x[1] for x in weights])
+        self[stat] = total / weight
+
+    def write_descriptors(self) -> None:
+        """Updates the descriptor fields for this player"""
+
+        self["overall_descriptor"] = "The Observed"
+        self["offense_descriptor"] = "Possible Hitter"
+        if self["is_pitcher"]:
+            self["defense_descriptor"] = "Might Pitch"
+        else:
+            self["defense_descriptor"] = "Lackluster Fielder"
 
     def derive(self) -> None:
-        pass
+        for stat, weights in zip(
+                ["batting", "baserunning", "defense", "pitching", "edge",
+                 "durability", "social", "total_offense", "total_off_field"],
+                [BATTING_WEIGHTS, BASERUNNING_WEIGHTS, DEFENSE_WEIGHTS, PITCHING_WEIGHTS,
+                 EDGE_WEIGHTS, DURABILITY_WEIGHTS, SOCIAL_WEIGHTS, TOTAL_OFFENSE_WEIGHTS,
+                 TOTAL_OFF_FIELD_WEIGHTS]
+        ):
+            self._derive_weighted(stat, weights)
+
+        self["is_pitcher"] = self["pitching"] > self["defense"] * 1.1
+
+        if self["is_pitcher"]:
+            self._derive_weighted("total_defense", TOTAL_DEFENSE_WEIGHTS_PITCHING)
+        else:
+            self._derive_weighted("total_defense", TOTAL_DEFENSE_WEIGHTS_FIELDING)
+
+        self.write_descriptors()
+
+        self["fingers"] += 1
 
     def add_trait(self, trait: traits.Trait) -> None:
-        self.traits += trait
+        self.traits += [trait]
         for stat in trait:
             self[stat] += trait[stat]
+        self.derive()
 
     def remove_trait(self, trait: traits.Trait) -> None:
         if trait not in self.traits:
             raise KeyError(f"Trait {trait} not on player {self}")
+        else:
+            for stat in trait:
+                self[stat] -= trait[stat]
+        self.traits.remove(trait)
+        self.derive()
 
     def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
         if isinstance(values, Player):
@@ -239,7 +320,7 @@ class Player(Mapping):
             raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row().name} "
                                f"does not match player CID {self.cid}, likely playerbase corruption.")
 
-    def __getitem__(self, item) -> object:
+    def __getitem__(self, item) -> float:
         if item == 'cid':
             return self.cid
         else:
@@ -270,14 +351,69 @@ class Player(Mapping):
                     return False
             return True
 
+    @staticmethod
+    def _to_stars(stat: float) -> str:
+        """converts a 0 - 2 float number into a star string"""
+        stars = int(stat * 5)
+        half = (stat * 5) % 1 >= 0.5
+        star_string = "*" * stars + ('-' if half else '')
+        if len(star_string) > 5:
+            star_string = star_string[0:5] + " " + star_string[5:]
+        elif len(star_string) == 0:
+            return "0"
+        return star_string
+
     def total_stars(self) -> str:
         # """Return a string depiction of this player's stars"""
-        # average = (self.stat_row()[Player.BASE_STATS].sum()
-        #            / len(Player.BASE_STATS)) * 5  # 0-5 star rating
-        # stars = int(average)
-        # half = average % 1 >= 0.5
-        # return "*"*stars + ('-' if half else '')
-        return "***"
+        return self._to_stars((self["total_offense"] + self["total_defense"]) / 2)
+
+    def text_breakdown(self) -> str:
+        text = (
+            f"{self['name']} {self.total_stars()}\r\n"
+            f"\r\n~ ~ ~ ~ ~ \r\n\r\n"
+            f"{self['number']}: {self['name']}\r\n"
+            f"{self.total_stars()} {self['overall_descriptor']}\r\n"
+            f"{self['offense_position']}\r\n{self['defense_position']}\r\n"
+            f"RBI: ?? OPS: ???\r\nERA: --- WHIP: ---\r\n\r\n"
+            f"Personality: {self['personality_descriptor']}\r\n"
+            f"Offense: {self._to_stars(self['total_offense'])} {self['offense_descriptor']}\r\n"
+            f"Defense: {self._to_stars(self['total_defense'])} {self['defense_descriptor']}\r\n"
+            f"Off-Field: {self._to_stars(self['total_off_field'])}\r\n"
+            f"\r\n"
+            f"Condition: {self['condition']}\r\n"
+            f"\r\n~ ~ ~ ~ ~\r\n\r\n"
+        )
+        text += "Key Ratings\r\n\r\n"
+        text += "\r\n".join(
+            [f"{r.title()}: {self[r] * 100:.0f}%" for r in ["stamina", "vibes", "corporeality"]])
+        text += "\r\n\r\n"
+        text += "\r\n".join(
+            [f"{r.title()}: {self._to_stars(self[r])}" for r in [
+                "batting", "baserunning", "defense", "pitching", "edge", "constitution", "social"
+            ]]
+        )
+        text += "\r\n\r\n"
+        text += "\r\n".join(
+            [f"{r.title()}: {self._to_stars(self[r])}" for r in [
+                "determination", "enthusiasm", "stability", "insight", "mysticism"
+            ]]
+        )
+        text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
+        text += "Traits and Conditions\r\n\r\n"
+        text += "\r\n".join([
+            trait.nice_string() for trait in self.traits
+        ])
+        text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
+        text += "Deep Ratings\r\n"
+        for top, group in zip(DERIVED_RATINGS[3:], [
+            BATTING_RATINGS, BASERUNNING_RATINGS, DEFENSE_RATINGS, PITCHING_RATINGS,
+            EDGE_RATINGS, CONSTITUTION_RATINGS, SOCIAL_RATINGS
+        ]):
+            text += f"\r\n{top.title()}:\r\n"
+            for rating in group:
+                text += f"{rating.title()} {self._to_stars(self[rating])}\r\n"
+
+        return text
 
     def __str__(self) -> str:
         return(f"[{self.cid}] "
@@ -301,7 +437,7 @@ class PlayerBase(MutableMapping):
     and players, a dict indext by CID which contains pointers to the Players objects.
     """
     def __init__(self, num_players: int = 0) -> None:
-        self.df = pd.DataFrame(columns=Player.ALL_KEYS)
+        self.df = pd.DataFrame(columns=ALL_KEYS)
         self.players = {}
 
         if num_players > 0:
@@ -381,7 +517,7 @@ class PlayerBase(MutableMapping):
         elif isinstance(key, (range, list)):
             return [self[i] for i in key]
         else:
-            raise KeyError(f"Could not index by type {type(item)}, expected CID int or name string.")
+            raise KeyError(f"Could not index by type {type(key)}, expected CID int or name string.")
 
     def iloc(self, key: Union[int, slice, range]) -> Union[Player, List[Player]]:
         """
@@ -439,6 +575,6 @@ class PlayerBase(MutableMapping):
 
 
 if __name__ == "__main__":
-    pb = PlayerBase(1000)
+    pb = PlayerBase(10)
     print(pb)
-    p = Player()
+    print(pb[1001].text_breakdown())

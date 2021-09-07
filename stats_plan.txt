@@ -398,7 +398,7 @@ Strategy: ***** -
 Sparkle: **-
 Clutch: 0
 
-Durability:
+Constitution:
 Endurance: ***
 Positivity: *
 Extroversion: ***** ****
@@ -535,7 +535,7 @@ steal awareness, and fielding
 - a player's base personality is rolled, 0-1 down the middle
 - traits are rolled and attached, affecting the player's personality for the deep ratings
 -- these can push a player above 1 (5 stars)
-- deep ratings are rolled, max(0, 1-personality) to min(personality, 0.6)
+- deep ratings are rolled, max(0, 1-personality) to min(personality, 0.5)
 - derived ratings are derived and applied
 - identifiers are applied
 

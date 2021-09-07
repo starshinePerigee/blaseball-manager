@@ -68,6 +68,10 @@ class Trait(Mapping):
         self.ratings = trait.ratings
         return self
 
+    def nice_string(self):
+        rate_str = " ".join([f"{short[rating]} {self.ratings[rating]*20:+.1f}" for rating in self.ratings])
+        return f"{self.name.title()} ({rate_str})"
+
     def __str__(self):
         rate_str = " ".join([f"{short[rating]}:{self.ratings[rating]:.2f}" for rating in self.ratings])
         return f"Trait '{self.name}': {rate_str}"
@@ -80,11 +84,11 @@ class TraitsList:
     """A helper class to pull traits from a dictionary
     """
     def __init__(self, traits: list):
-        self.traitnames = []
+        self.trait_names = []
         self.traits = {}
 
         for trait in traits:
-            self.traitnames += [trait]
+            self.trait_names += [trait]
             self.traits[trait] = traits[trait]
 
         self.shuffle_threshold = len(traits) / 2
@@ -93,10 +97,13 @@ class TraitsList:
 
     def shuffle(self):
         """re-shuffle the traits deck"""
-        self.trait_deck = self.traitnames
+        self.trait_deck = self.trait_names.copy()
         shuffle(self.trait_deck)
 
     def draw(self):
+        """
+        Draw a new trait from the deck, shuffling if needed.
+        """
         if len(self.trait_deck) < self.shuffle_threshold:
             self.shuffle()
         new_trait_name = self.trait_deck.pop()
