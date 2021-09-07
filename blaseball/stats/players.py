@@ -16,6 +16,7 @@ from numpy import integer
 
 from data import playerdata
 from blaseball.stats import traits
+from blaseball.util.weighter import calculate_weighted
 
 
 CORE_ATTRIBUTES = {
@@ -142,19 +143,6 @@ for statset in COMBINED_STATS:
     else:
         ALL_KEYS += list(statset.keys())
 
-BATTING_WEIGHTS = (("power", 2), ("contact", 3), ("control", 2), ("discipline", 1))
-BASERUNNING_WEIGHTS = (("speed", 3), ("bravery", 1), ("timing", 2))
-DEFENSE_WEIGHTS = (("reach", 1), ("reaction", 1), ("throwing", 1))
-PITCHING_WEIGHTS = (("force", 2), ("accuracy", 1), ("trickery", 1.5), ("awareness", 0.5))
-EDGE_WEIGHTS = (("strategy", 1), ("sparkle", 1), ("clutch", 1))
-DURABILITY_WEIGHTS = (("endurance", 1), ("positivity", 1), ("extroversion", 1),
-                      ("introversion", 1), ("recovery", 2))
-SOCIAL_WEIGHTS = (("teaching", 2), ("patience", 2), ("cool", 1), ("hang", 1), ("support", 1))
-TOTAL_OFFENSE_WEIGHTS = (("batting", 2), ("baserunning", 1), ("edge", 0.5))
-TOTAL_DEFENSE_WEIGHTS_PITCHING = (("pitching", 2), ("defense", 1), ("edge", 0.5))
-TOTAL_DEFENSE_WEIGHTS_FIELDING = (("pitching", 0.5), ("defense", 2), ("edge", 0.5))
-TOTAL_OFF_FIELD_WEIGHTS = (("constitution", 2), ("social", 2))
-
 
 class Player(Mapping):
     """
@@ -242,11 +230,6 @@ class Player(Mapping):
 
         self["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
 
-    def _derive_weighted(self, stat, weights):
-        weight = sum([x[1] for x in weights])
-        total = sum([self[x[0]] * x[1] for x in weights])
-        self[stat] = total / weight
-
     def write_descriptors(self) -> None:
         """Updates the descriptor fields for this player"""
 
@@ -258,21 +241,16 @@ class Player(Mapping):
             self["defense_descriptor"] = "Lackluster Fielder"
 
     def derive(self) -> None:
-        for stat, weights in zip(
-                ["batting", "baserunning", "defense", "pitching", "edge",
-                 "durability", "social", "total_offense", "total_off_field"],
-                [BATTING_WEIGHTS, BASERUNNING_WEIGHTS, DEFENSE_WEIGHTS, PITCHING_WEIGHTS,
-                 EDGE_WEIGHTS, DURABILITY_WEIGHTS, SOCIAL_WEIGHTS, TOTAL_OFFENSE_WEIGHTS,
-                 TOTAL_OFF_FIELD_WEIGHTS]
-        ):
-            self._derive_weighted(stat, weights)
+        for stat in ["batting", "baserunning", "defense", "pitching", "edge",
+                     "durability", "social", "total_offense", "total_off_field"]:
+            self[stat] = calculate_weighted(self, stat)
 
         self["is_pitcher"] = self["pitching"] > self["defense"] * 1.1
 
         if self["is_pitcher"]:
-            self._derive_weighted("total_defense", TOTAL_DEFENSE_WEIGHTS_PITCHING)
+            self['total_defense'] = calculate_weighted(self, 'total_defense_pitching')
         else:
-            self._derive_weighted("total_defense", TOTAL_DEFENSE_WEIGHTS_FIELDING)
+            self['total_defense'] = calculate_weighted(self, 'total_defense_fielding')
 
         self.write_descriptors()
 
