@@ -1,5 +1,7 @@
 '''
 This is the arbitrary rating dictionary for composite / derived stats.
+
+Note that an 'extra_weight' factor can be applied to lower (or raise, in the case of a negative)
 '''
 
 WEIGHTS = {
@@ -63,5 +65,26 @@ WEIGHTS = {
         'constitution': 2,
         'social': 2,
         'edge': 0.5
+    },
+    'descriptor_slugging': {
+        'power': 2,
+        'contact': 1,
+        'extra_weight': 0.5
+    },
+    'descriptor_smallball': {
+        'contact': 1,
+        'control': 1,
+        'speed': 1,
+    },
+    'descriptor_manufacture': {
+        'discipline': 1,
+        'speed': 1,
+        'bravery': 1,
+        'timing': 1,
+    },
+    'descriptor_utility_hitter': {
+        'control': 1,
+        'sparkle': 1,
+        'strategy': 1
     }
 }

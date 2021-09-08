@@ -17,6 +17,7 @@ from numpy import integer
 from data import playerdata
 from blaseball.stats import traits
 from blaseball.util.weighter import calculate_weighted
+from blaseball.util.descriptors import get_descriptor
 
 
 CORE_ATTRIBUTES = {
@@ -214,7 +215,7 @@ class Player(Mapping):
             self[stat] = random.random()
 
         for i in range(0, random.randrange(3, 6)):
-            self.add_trait(traits.personality_traits.draw())
+            self.add_trait(traits.personality_traits.draw(), derive=False)
 
         for stat in DEEP_RATINGS:
             self[stat] = random.random() * max(self[RATING_PERSONALITY_LOOKUP[stat]], 0.5)
@@ -234,7 +235,7 @@ class Player(Mapping):
         """Updates the descriptor fields for this player"""
 
         self["overall_descriptor"] = "The Observed"
-        self["offense_descriptor"] = "Possible Hitter"
+        self["offense_descriptor"] = get_descriptor(self, 'batting')
         if self["is_pitcher"]:
             self["defense_descriptor"] = "Might Pitch"
         else:
@@ -256,11 +257,12 @@ class Player(Mapping):
 
         self["fingers"] += 1
 
-    def add_trait(self, trait: traits.Trait) -> None:
+    def add_trait(self, trait: traits.Trait, derive=True) -> None:
         self.traits += [trait]
         for stat in trait:
             self[stat] += trait[stat]
-        self.derive()
+        if derive:
+            self.derive()
 
     def remove_trait(self, trait: traits.Trait) -> None:
         if trait not in self.traits:

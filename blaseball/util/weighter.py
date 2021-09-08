@@ -10,6 +10,6 @@ from data.weights import WEIGHTS
 def calculate_weighted(player, stat) -> float:
     weight = sum(WEIGHTS[stat].values())
     total = sum(
-        [player[s] * WEIGHTS[stat][s] for s in WEIGHTS[stat]]
+        [(0 if s == 'extra_weight' else player[s]) * WEIGHTS[stat][s] for s in WEIGHTS[stat]]
     )
     return total / weight
