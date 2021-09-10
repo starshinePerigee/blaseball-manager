@@ -542,3 +542,18 @@ steal awareness, and fielding
 modify methods include derived stat updates
 
 All ratings are 0-20, where each "1" is worth half a star
+
+
+
+
+OK:
+
+A couple big issues.
+1. strategy sucks, it's going to suck to implement, it's going to suck to use
+1a. if strategy is gone, edge is going to be super empty
+1b. add heckle and cheer as edge stats
+2. catchability (grabbiness) would be nice as a generalized defense stat
+3. some of the other stat names could be clearer: reaction, reach (coverage?)
+
+
+downstream effects:
