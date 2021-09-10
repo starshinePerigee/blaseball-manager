@@ -13,20 +13,19 @@ These represent who a character is "at the core".
 They are rolled and modified sharply by a set of traits that describe who a character is (ref CK3)
 Traits can be pure good, pure bad, or balanced.
 
-These are known as the "P5", and are (currently) as follows:
+These are known as the "Big Four", and are (currently) as follows:
 
 Determination
 Enthusiasm
 Stability
 Insight
-Mysticism
 
 These are difficult to change directly, but can change over time as traits are added / removed.
 
-A manager should be able to look at the big five and tell what kind of role a player would play
+A manager should be able to look at the big four and tell what kind of role a player would play
 on the team - on and off the field.
 
-The P5 are used to determine the functional ratings. These are split into three groups:
+The Big Four are used to determine the functional ratings. These are split into three groups:
 
 - condition
 - social
@@ -35,7 +34,7 @@ The P5 are used to determine the functional ratings. These are split into three 
 Each category represents a wide array of "deep ratings", which are initially obscured from the manager.
 These are grouped into the "derived ratings" (the DR), which are straightforward representations of how
 good a player is in each category:
-P5 x D6 = performance characteristics = deep ratings
+B4 x D6 = performance characteristics = deep ratings
 
 The deep ratings are them summarized in rating descriptors, which are attached to the D6 to give a
 quick english representation of how a player plays in each type.
@@ -47,31 +46,30 @@ engage in blaseball.
 
 2. The Personality Ratings
 
-There are five personality ratings, which each affect a wide swath of that player's activity, both
+There are four personality ratings, which each affect a wide swath of that player's activity, both
 on and off the field. Reading the personality ratings gives a good idea what kind of hitter, runner,
 fielder, pitcher, and friend the player would be - assuming their base stars in that category are
 sufficient.
 
 - Determination: determination leads to power and willpower. Determined players hit hard and throw
 fast. They're a "three true outcome" player - both as a hitter and a pitcher. Determination doesn't
-help a ton with baserunning or fielding. Off the field, determination is cool and makes good leaders.
+help a ton with baserunning or fielding. Off the field, determined players are cool and respected,
+and make good leaders and stars.
 
-- Enthusiasm: enthusiasm affects a player's movement. Enthusiastic players like to hit and run, and
-make great contact players who are fast on the basepaths and in the outfield. Enthusiasm helps with
-pitch movement and trickery. They're fun in group settings, both in the dugout and off the field.
+- Enthusiasm: enthusiasm affects a player's movement and excitement. Enthusiastic players like to hit
+and run, and make great contact players who are fast on the basepaths and in the outfield. A very
+high-enthusiasm player is also fun off the field, whether they're on the bench or in a scrimmage;
+their jokes and taunts help their friends and distract their opponents.
 
-- Stability: stability is a player's centeredness and control. High stability players make the ball
-go where they want, if they're hitting, pitching, or fielding. Stable players can fill gaps both
-in the lineup and moment-to-moment in the game, and can be good friends who don't need a lot of
-manager attention.
+- Stability is a player's centeredness and control. A high stability player makes few errors
+and is hard to shake - their throws (both fielding and pitching) are accurate and precise, and they
+fill most roles in defense. Stable players support themselves and their teammates off field and
+make solid friends in tough times.
 
-- Insight: insight let's a player see and react to things inside and outside of the game. Insight
-affects strategy, reaction time, and infield defense. Insight is useful in all positions, but is
-critical to be a reliable catcher or coach.
-
-- Mysticism: mysticism affects sparkle, which lets a player use special abilities. It also affects
-a player's recovery rate, so a high mysticism means a higher potential for their regular skills.
-Mysticism also affects the rate at which they teach knowledge to others.
+- Insight is the key to special techniques of blaseball, from regular tricky pitches and bunts,
+to control of the ball after it's hit, all the way up to special abilities unique to that player.
+Insight lets players understand when to steal, and how to stop it, as well as all other forms
+of blaseball strategy. This helps them become catchers and coaches.
 
 
 3. Condition
@@ -109,7 +107,6 @@ by a player's constitution ratings - deep ratings set in part by a player's pers
 - Positivity: how much a player loses vibes from negative memories and actions
 - Extroversion: affects how much a player loses vibes from social activities
 - Introversion: affects how much a player loses vibes from individual activities
-- Recovery: how much a player recovers stamina / vibes when not taxed
 
 Lastly, injuries and other happenstance will affect stamina, vibes, and often directly impact condition
 as well.
@@ -121,14 +118,12 @@ The primary modifiers for a player's relationships, happiness, and actions are c
 THE GRID and THE MEMORY LINE; but the social ratings help shape how a player reacts (and will
 especially determine how vibes are spent in routine training).
 
-There are five social ratings:
+There are four social ratings:
 
 - Teaching: how good they are at conveying information when coaching or training
-- Patience: how nice a player is to work with (lower patience means other players spend more vibes)
 - Cool: how much a player stands out to other players and fans, how good they are at intimidation
-- Hang: how good a player is during non-work sections, such as benchwarming and parties, and also how good they
-are at heckling
-- Support: how good a player is at providing support to players during hard times
+- Hang: how good a player is when hanging out during non-work sections, such as benchwarming and parties
+- Support: how good a player is at providing support to players, helping them deal with stress and bad memories
 
 A player's top 1 or 2 social ratings combine to create their Element, which goes into the type compatibility
 chart to determine who they would get along with.
@@ -145,7 +140,8 @@ Four of the derived blaseball ratings should be familiar to anyone who plays bla
 - Pitching
 - Edge
 
-"Edge" represents additional bonuses a player has over other players: strategy, sparkle, and clutch.
+"Edge" represents additional bonuses a player can contribute while not on the field: heckling. cheering,
+and strategy. Clutch is there too.
 
 Deep blaseball ratings are used by the baseball engine to actually roll for player performance,
 and can be viewed through a deeper screen, possibly after being unlocked by the manager.
@@ -171,6 +167,7 @@ Defense:
 - Reaction: A player's reaction times. Helps with ground outs and creating double plays.
 - Throwing: A player's ability to throw the ball accurately and without error
 Fielding errors are decided by the respective reach, reaction, and throwing of the players involved.
+- Calling: The player's ability to signal and assist the pitcher as catcher
 
 Pitching:
 - Force: A pitcher's speed, represents how difficult the pitch is to read and hit.
@@ -179,10 +176,13 @@ Pitching:
 - Awareness: A pitcher's awareness of the field while they're not pitching. Prevents steals.
 
 Edge:
-- Strategy: A player's gamesense. Affects hit choice, pitch selection, steal timing, fielding decisions, etc.
-- Sparkle: A player's ability to use special abilities during the game
-- Clutch: How good a player is when the game is close and in late innings. Can have negative effects
-          at low clutch.
+- Heckle: How good a player is at getting under another player's skin; this can work from the dugout, but
+this is most effective when there is a relationship between a player and victim, and there are
+bonuses to proximity when players are at bat or on base.
+- Cheer: How good a player is at supporting their teammates in the moment-to-moment of a game; this can
+work from the dugout to help a hitter or from the infield to help a pitcher if their relationship is strong.
+- Strategy: A player's understanding of the game, which is required to operate office equipment.
+- Leadership: how much of a boost a player can provide in close, critical situations.
 
 
 6. Rating Descriptors
@@ -240,68 +240,35 @@ Note that this focus goes even further: A number of the deep ratings are "linked
 than other weighted ratings, but are trained together with a second rating from a different derived rating.
 
 These are the pairs:
+Trickery (Pitching) -> Control (Batting)
 Speed (Baserunning) -> Reach (Defense)
 Discipline (Batting) -> Reaction (Fielding)
 Awareness (Pitching) -> Timing (Baserunning)
 Accuracy (Pitching) -> Throwing (Defense)
-Bravery (Baserunning) -> Clutch (Edge)
+Strategy (Edge) -> Calling (Defense)
 
     bat run def pit edg
 bat     --- dis --- ---
-run ---     spd tmg brv
-def rct rng     trw ---
+run ---     spd tmg ---
+def rct rng     trw cll
 pit --- awr acc     ---
-edg --- clt --- ---
+edg --- --- sat ---
 
 The remaining ratings to be trained are:
 Power
 Contact
 Control
+Bravery
 Force
 Trickery
-Strategy
-Sparkle
+
+(Leadership, Heckle and Cheer can not be directly trained, but are trained by creating friendship and rivalry links.)
 
 Effectively, "weaker" and "less necessary" top level ratings (baserunning especially) are trained naturally,
-and come with side rewards for focusing on them. Training just batting makes them a better batter only;
-training pitching increases defense (and vice versa) but pitching and defense are mutually exclusive, so this
-just means it's slightly easier to shuffle pitchers and defense around.
+and come with side rewards for focusing on them. Developing a three true outcome hitter or ace fastball pitcher
+means neglecting other stats, while building an all-rounder has an advantage to make up for the lack of focus.
 
-
-Here are the deep ratings affected by each personality:
-
-DETERMINATION
-power: batting
-force: pitching
-bravery / clutch: running / edge
-endurance: constitution
-cool: social
-
-ENTHUSIASM
-contact: batting
-speed / reach: running / fielding
-trickery: pitching
-extroversion: constitution
-hang: social
-
-STABILITY
-control: batting
-accuracy / throwing: pitching / defense
-positivity: constitution
-support: social
-
-INSIGHT
-discipline / reaction: batting, fielding
-timing / awareness: pitching, running
-strategy: edge
-introversion: constitution
-patience: social
-
-MYSTICISM
-recovery: constitution
-sparkle: edge
-teaching: social
-
+[Ratings per personality and vice versa exist in stats arranger.xlsx]
 
 9. Example player breakdown
 
@@ -345,7 +312,6 @@ Determination: ***-
 Enthusiasm: ***** ***
 Stability: *-
 Insight: ***** *-
-Mysticism: ****-
 Element: Rain
 
 ~~~
@@ -353,9 +319,9 @@ Element: Rain
 Traits and Conditions
 
 Jokester (+2 enth, -1 stab)
-Fashion (+1 det, -2 myst)
-Swagger (+3 enth, +1 myst)
-Cat eyes (+2 insight)
+Fashion (+1 det, -2 insi)
+Swagger (+3 enth)
+Cat eyes (+2 insit)
 Pregame Ritual: wind sprints (+3 enth, -1 det)
 Coffee Preference: Black
 
@@ -386,6 +352,7 @@ Defense:
 Reach ***** ****-
 Reaction ***** *****
 Throwing ****
+Calling *-
 
 Pitching:
 Force **
@@ -395,7 +362,8 @@ Awareness ***** **-
 
 Edge:
 Strategy: ***** -
-Sparkle: **-
+Heckle: ***** ***-
+Cheer: *****
 Clutch: 0
 
 Constitution:
@@ -403,20 +371,18 @@ Endurance: ***
 Positivity: *
 Extroversion: ***** ****
 Introversion: ***** *-
-Recovery: ***** -
 
 Social
-Teaching: ***-
-Patience: ***
 Cool: *****
 Hang: ***** *-
 Support: ***
+Teach: ***-
 
 ~~~
 
 Position Assessment
 
-C: ***** *-
+C: ****-
 1B: ***** *****
 2B: ***** ****-
 3B: ***** **-
@@ -551,9 +517,34 @@ OK:
 A couple big issues.
 1. strategy sucks, it's going to suck to implement, it's going to suck to use
 1a. if strategy is gone, edge is going to be super empty
-1b. add heckle and cheer as edge stats
-2. catchability (grabbiness) would be nice as a generalized defense stat
-3. some of the other stat names could be clearer: reaction, reach (coverage?)
+3. myst kind of sucks
+4. coaching is as important as hitting and fielding, but the stats aren't balanced
+
+After some time wiggling stats in the stats wiggler,
+here's the new plan, and it's a big one.
+
+mysticism always felt out of place, and overlapped a ton with insight. this caused insight to edge in on stability.
+REMOVE MYSTICISM
+
+This lets insight step up for a lot of the things reserved for mysticism - insight is now all about
+special techniques, including bunts, hit control, pitch trickery, etc.
+
+Stability becomes a bit of a catch-all, but it's fine.
+
+Sparkle is gone; special abilities should be used freely.
+
+Strategy becomes a requirement for office equipment, replacing sparkle for a "this is for team builders"
+Likewise edge is for dugout support - how a player affects the team when not on the field.
+
+ clutch gets moved to a secret player stat.
 
 
-downstream effects:
+
+checklist:
+update shortener
+update player
+update weights
+update descriptors
+update traits and trait sheet
+
+1. reach
