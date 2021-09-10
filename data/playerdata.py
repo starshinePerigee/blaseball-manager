@@ -4001,16 +4001,3 @@ PLAYER_LAST_NAMES = [
     "dasher",
     "summaiya",
 ]
-
-PLAYER_ELEMENTS = [
-    "Wind",
-    "Fire",
-    "Earth",
-    "Water",
-    "Ice",
-    "Lightning",
-    "Bright",
-    "Arcane",
-    "Purple",
-    "Machine"
-]

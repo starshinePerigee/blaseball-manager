@@ -1,8 +1,8 @@
-'''
+"""
 This is the arbitrary rating dictionary for composite / derived stats.
 
 Note that an 'extra_weight' factor can be applied to lower (or raise, in the case of a negative)
-'''
+"""
 
 WEIGHTS = {
     'batting': {
@@ -66,6 +66,30 @@ WEIGHTS = {
         'social': 2,
         'edge': 0.5
     },
+    'descriptor_o_slugging': {
+        'power': 1,
+    },
+    'descriptor_o_smallball': {
+        'contact': 1,
+    },
+    'descriptor_o_baserunning': {
+        'speed': 1,
+    },
+    'descriptor_o_fielding': {
+        'reaction': 1,
+    },
+    'descriptor_o_fastball': {
+        'force': 1,
+    },
+    'descriptor_o_tricky': {
+        'trickery': 1,
+    },
+    'descriptor_o_utility': {
+        'sparkle': 1,
+    },
+    'descriptor_o_coach': {
+        'patience': 1,
+    },
     'descriptor_slugging': {
         'power': 2,
         'contact': 1,
@@ -86,5 +110,50 @@ WEIGHTS = {
         'control': 1,
         'sparkle': 1,
         'strategy': 1
+    },
+    'descriptor_fastball': {
+        'force': 2,
+    },
+    'descriptor_curveball': {
+        'trickery': 2,
+    },
+    'descriptor_utility_pitcher': {
+        'strategy': 1,
+        'sparkle': 1,
+        'awareness': 1,
+        'reaction': 1,
+        'extra_weight': -0.5
+    },
+    'descriptor_infield_potential': {
+        'reaction': 1,
+    },
+    'descriptor_outfield_potential': {
+        'reach': 1,
+    },
+    'descriptor_catcher_potential': {
+        'strategy': 1,
+    },
+    'descriptor_pitcher_potential': {
+        'force': 1,
+    },
+    'descriptor_determination': {
+        'determination': 1,
+    },
+    'descriptor_enthusiasm': {
+        'enthusiasm': 1,
+    },
+    'descriptor_stability': {
+        'stability': 1,
+    },
+    'descriptor_insight': {
+        'insight': 1,
+    },
+    'descriptor_mysticism': {
+        'mysticism': 1,
+    },
+    'position_C': {
+        'strategy': 1,
+        'reaction': 1,
+        'throwing': 1
     }
 }

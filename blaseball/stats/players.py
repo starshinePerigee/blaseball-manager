@@ -105,8 +105,8 @@ DERIVED_RATINGS = [
     "social"
 ]
 RATING_DESCRIPTORS = {
-    "overall_descriptor": "Unevaluated Player",
-    "offense_descriptor": "Hits for Beans",
+    "overall_descriptor": "The Observed",
+    "offense_descriptor": "Unevaluated Hitter",
     "defense_descriptor": "Can't Catch A Cold",
     "personality_descriptor": "Is Smol Bean",
 }
@@ -214,6 +214,8 @@ class Player(Mapping):
         for stat in PERSONALITY_FIVE:
             self[stat] = random.random()
 
+        self["element"] = get_descriptor(self, 'element', extras=False)
+
         for i in range(0, random.randrange(3, 6)):
             self.add_trait(traits.personality_traits.draw(), derive=False)
 
@@ -229,17 +231,17 @@ class Player(Mapping):
 
         self.derive()
 
-        self["element"] = random.choice(playerdata.PLAYER_ELEMENTS)
 
     def write_descriptors(self) -> None:
         """Updates the descriptor fields for this player"""
 
-        self["overall_descriptor"] = "The Observed"
+        self["overall_descriptor"] = get_descriptor(self, 'overall')
         self["offense_descriptor"] = get_descriptor(self, 'batting')
         if self["is_pitcher"]:
-            self["defense_descriptor"] = "Might Pitch"
+            self["defense_descriptor"] = get_descriptor(self, 'pitching')
         else:
-            self["defense_descriptor"] = "Lackluster Fielder"
+            self["defense_descriptor"] = get_descriptor(self, 'fielding')
+        self['personality_descriptor'] = get_descriptor(self, 'personality')
 
     def derive(self) -> None:
         for stat in ["batting", "baserunning", "defense", "pitching", "edge",
@@ -300,7 +302,7 @@ class Player(Mapping):
             raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row().name} "
                                f"does not match player CID {self.cid}, likely playerbase corruption.")
 
-    def __getitem__(self, item) -> float:
+    def __getitem__(self, item) -> Union[float, str]:
         if item == 'cid':
             return self.cid
         else:
@@ -359,6 +361,7 @@ class Player(Mapping):
             f"Offense: {self._to_stars(self['total_offense'])} {self['offense_descriptor']}\r\n"
             f"Defense: {self._to_stars(self['total_defense'])} {self['defense_descriptor']}\r\n"
             f"Off-Field: {self._to_stars(self['total_off_field'])}\r\n"
+            f"Element: {self['element'].title()}\r\n"
             f"\r\n"
             f"Condition: {self['condition']}\r\n"
             f"\r\n~ ~ ~ ~ ~\r\n\r\n"

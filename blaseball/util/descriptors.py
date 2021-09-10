@@ -13,15 +13,16 @@ How does this work?
 2. run them through the name grid
 """
 
-from data.playerdescriptors import ASPECTS, THRESHOLDS, DESCRIPTOR_DB
+from data.playerdescriptors import ASPECTS, DESCRIPTOR_DB
 from blaseball.util.weighter import calculate_weighted
 
 
 ASPECT_THRESHOLD = 0.8
 
 
-def get_descriptor(player, stat) -> str:
-    aspect_weights = {aspect: calculate_weighted(player, ("descriptor_" + aspect)) for aspect in ASPECTS[stat]}
+def get_descriptor(player, stat, extras=True) -> str:
+    aspect_weights = {aspect: calculate_weighted(player, ("descriptor_" + aspect))
+                      for aspect in ASPECTS[stat][0]}
     aspects_sorted = sorted((v, k) for k, v in aspect_weights.items())
     aspects_sorted.reverse()
     high_threshold = aspects_sorted[0][0] * ASPECT_THRESHOLD
@@ -29,10 +30,10 @@ def get_descriptor(player, stat) -> str:
     if total_above_threshold == 1:
         primary = aspects_sorted[0][1]
         secondary = primary
-    elif total_above_threshold == len(aspect_weights):
+    elif total_above_threshold == len(aspect_weights) and extras:
         primary = 'All'
         secondary = aspects_sorted[0][1]
-    elif total_above_threshold == len(aspect_weights) - 1:
+    elif total_above_threshold == len(aspect_weights) - 1 and extras:
         primary = 'Not'
         secondary = aspects_sorted[-1][1]
     else:
@@ -40,7 +41,7 @@ def get_descriptor(player, stat) -> str:
         secondary = aspects_sorted[1][1]
     descriptor_options = DESCRIPTOR_DB[stat][primary][secondary]
 
-    for option, threshold in zip(descriptor_options, THRESHOLDS):
+    for option, threshold in zip(descriptor_options, ASPECTS[stat][1]):
         if high_threshold < threshold:
             return option
     raise RuntimeError(f"Could not build a descriptor for {stat} and player {player}!"
@@ -52,13 +53,18 @@ if __name__ == "__main__":
     pb = players.PlayerBase(3)
     for i in range(1001, 1004):
         text = pb[i].text_breakdown().split("\r\n")
-        lines = [4, 5, 10, 11, 12, 13, 14, 15] + list(range(53, 94))
+        lines = [4, 5, 10, 11, 12, 13, 14, 15, 16] + list(range(55, 94))
+        # lines = range(0, len(text))
         for j in lines:
-            #print(f"{j}: {text[j]}")
-            print(text[j])
+            # print(f"{j}: {text[j]}")
+            try:
+                print(text[j])
+            except IndexError:
+                print(f"INDEXERROR: Line {j}, text len {len(text)}")
 
-        for stat in ['batting']:
-            p_weights = {aspect: calculate_weighted(pb[i], ("descriptor_" + aspect)) for aspect in ASPECTS[stat]}
+        for stat in ['overall', 'batting', 'fielding', 'pitching']:
+            p_weights = {aspect: calculate_weighted(pb[i], ("descriptor_" + aspect))
+                         for aspect in ASPECTS[stat][0]}
             p_sorted = sorted((v, k) for k, v in p_weights.items())
             p_sorted.reverse()
             for weight in p_sorted:
