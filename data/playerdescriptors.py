@@ -95,10 +95,10 @@ ASPECTS = {
     ),
     'pitching': (
         ['fastball', 'curveball', 'utility_pitcher'],
-        [0.4, 0.8, 2]
+        [0.4, 0.7, 1.1, 1.5, 2]
     ),
     'fielding': (
-        ['infield_potential', 'outfield_potential', 'catcher_potential', 'pitcher_potential'],
+        ['infield', 'outfield', 'catcher', 'pitcher_generic'],
         [0.4, 0.8, 2]
     ),
     'personality': (
@@ -216,112 +216,90 @@ OVERALL_DESCRIPTORS = {
 
 BATTING_DESCRIPTORS = {
     'slugging': {
-        'slugging': ['Slugger Only', 'Power Slugger', 'Power Slugger',],
-        'smallball': ['Weak Slugger', 'Complete Hitter', 'Complete Hitter',],
-        'manufacture': ['Weak Slugger', 'Fast Slugger', 'Fast Slugger',],
-        'utility_hitter': ['Weak Slugger', 'Utility Slugger', 'Utility Slugger',],
+        'slugging': ['Pathetic Slugger', 'Power Slugger', 'Power Slugger', ],
+        'smallball': ['Weak Slugger', 'Complete Hitter', 'Complete Hitter', ],
+        'manufacture': ['Weak Slugger', 'Fast Slugger', 'Fast Slugger', ],
+        'utility_hitter': ['Weak Slugger', 'Utility Slugger', 'Utility Slugger', ],
     },
     'smallball': {
-        'slugging': ['Weak Contact', 'Complete Hitter', 'Complete Hitter',],
-        'smallball': ['Contact Only', 'Pure Contact', 'Pure Contact',],
-        'manufacture': ['Weak Contact', 'Fast Contact', 'Fast Contact',],
-        'utility_hitter': ['Weak Contact', 'Utility Contact', 'Utility Contact',],
+        'slugging': ['Weak Contact', 'Complete Hitter', 'Complete Hitter', ],
+        'smallball': ['Pathetic Contact', 'Pure Contact', 'Pure Contact', ],
+        'manufacture': ['Weak Contact', 'Fast Contact', 'Fast Contact', ],
+        'utility_hitter': ['Weak Contact', 'Utility Contact', 'Utility Contact', ],
     },
     'manufacture': {
-        'slugging': ['Weak Baserunner', 'Fast Slugger', 'Fast Slugger',],
-        'smallball': ['Weak Baserunner', 'Fast Contact', 'Fast Contact',],
-        'manufacture': ['Baserunning Only', 'Pure Runner', 'Pure Runner',],
-        'utility_hitter': ['Weak Baserunner', 'Fast Utility', 'Fast Utility',],
+        'slugging': ['Weak Baserunner', 'Fast Slugger', 'Fast Slugger', ],
+        'smallball': ['Weak Baserunner', 'Fast Contact', 'Fast Contact', ],
+        'manufacture': ['Pathetic Baserunner', 'Pure Runner', 'Pure Runner', ],
+        'utility_hitter': ['Weak Baserunner', 'Fast Utility', 'Fast Utility', ],
     },
     'utility_hitter': {
-        'slugging': ['Weak Utility', 'Utility Slugger', 'Utility Slugger',],
-        'smallball': ['Weak Utility', 'Utility Contact', 'Utility Contact',],
-        'manufacture': ['Weak Utility', 'Fast Utility', 'Fast Utility',],
-        'utility_hitter': ['Utility Only', 'Pure Utility', 'Pure Utility',],
+        'slugging': ['Weak Utility', 'Utility Slugger', 'Utility Slugger', ],
+        'smallball': ['Weak Utility', 'Utility Contact', 'Utility Contact', ],
+        'manufacture': ['Weak Utility', 'Fast Utility', 'Fast Utility', ],
+        'utility_hitter': ['Pathetic Utility', 'Pure Utility', 'Pure Utility', ],
     },
     'All': {
-        'slugging': ['Versatile Hitter', 'All-Rounder Slugger', 'Power All Star',],
-        'smallball': ['Versatile Contact', 'All-Rounder Contact', 'Contact All Star',],
-        'manufacture': ['Versatile Baserunner', 'Fast All-Rounder', 'Fast All Star',],
-        'utility_hitter': ['Versatile Utility', 'All-Rounder Utility', 'Utility All Star',],
-    },
-    'Not': {
-        'slugging': ['Weak Contact', 'Leadoff Batter', 'Ideal Leadoff',],
-        'smallball': ['Weak Slugger', 'Cleanup Hitter', 'Cleanup Hitter',],
-        'manufacture': ['Slow Hitter', 'Slow Hitter', 'Slow Hitter',],
-        'utility_hitter': ['Straightforward', 'Straightforward', 'Straightforward',],
+        'slugging': ['Versatile Hitter', 'All-Rounder Slugger', 'Power All Star', ],
+        'smallball': ['Versatile Contact', 'All-Rounder Contact', 'Contact All Star', ],
+        'manufacture': ['Versatile Baserunner', 'Fast All-Rounder', 'Fast All Star', ],
+        'utility_hitter': ['Versatile Utility', 'All-Rounder Utility', 'Utility All Star', ],
     },
 }
 
 FIELDING_DESCRIPTORS = {
-    'infield_potential': {
-        'infield_potential': ['infield_potential: infield_potential - 0.4', 'infield_potential: infield_potential - 0.8', 'infield_potential: infield_potential - 2',],
-        'outfield_potential': ['infield_potential: outfield_potential - 0.4', 'infield_potential: outfield_potential - 0.8', 'infield_potential: outfield_potential - 2',],
-        'catcher_potential': ['infield_potential: catcher_potential - 0.4', 'infield_potential: catcher_potential - 0.8', 'infield_potential: catcher_potential - 2',],
-        'pitcher_potential': ['infield_potential: pitcher_potential - 0.4', 'infield_potential: pitcher_potential - 0.8', 'infield_potential: pitcher_potential - 2',],
+    'infield': {
+        'infield': ['Garbage Infield', 'Right Infield', ],
+        'outfield': ['Weak Infield', 'Agile Infield', ],
+        'catcher': ['Weak Infield', 'Infield / Catcher', ],
+        'pitcher_generic': ['Garbage Infield', 'Infield / Backup Pitcher', ],
     },
-    'outfield_potential': {
-        'infield_potential': ['outfield_potential: infield_potential - 0.4', 'outfield_potential: infield_potential - 0.8', 'outfield_potential: infield_potential - 2',],
-        'outfield_potential': ['outfield_potential: outfield_potential - 0.4', 'outfield_potential: outfield_potential - 0.8', 'outfield_potential: outfield_potential - 2',],
-        'catcher_potential': ['outfield_potential: catcher_potential - 0.4', 'outfield_potential: catcher_potential - 0.8', 'outfield_potential: catcher_potential - 2',],
-        'pitcher_potential': ['outfield_potential: pitcher_potential - 0.4', 'outfield_potential: pitcher_potential - 0.8', 'outfield_potential: pitcher_potential - 2',],
+    'outfield': {
+        'infield': ['Weak Outfield', 'Outfield / Shortstop', ],
+        'outfield': ['Garbage Outfield', 'Reliable Outfield', ],
+        'catcher': ['Weak Outfield', 'Outfield / Catcher', ],
+        'pitcher_generic': ['Garbage Outfield', 'Outfield / Backup Pitcher', ],
     },
-    'catcher_potential': {
-        'infield_potential': ['catcher_potential: infield_potential - 0.4', 'catcher_potential: infield_potential - 0.8', 'catcher_potential: infield_potential - 2',],
-        'outfield_potential': ['catcher_potential: outfield_potential - 0.4', 'catcher_potential: outfield_potential - 0.8', 'catcher_potential: outfield_potential - 2',],
-        'catcher_potential': ['catcher_potential: catcher_potential - 0.4', 'catcher_potential: catcher_potential - 0.8', 'catcher_potential: catcher_potential - 2',],
-        'pitcher_potential': ['catcher_potential: pitcher_potential - 0.4', 'catcher_potential: pitcher_potential - 0.8', 'catcher_potential: pitcher_potential - 2',],
+    'catcher': {
+        'infield': ['Weak Catcher', 'Catcher / Infield', ],
+        'outfield': ['Weak Catcher', 'Catcher / Outfield', ],
+        'catcher': ['Garbage Catcher', 'Reliable Catcher', ],
+        'pitcher_generic': ['Garbage Catcher', 'Catcher / Backup Pitcher', ],
     },
-    'pitcher_potential': {
-        'infield_potential': ['pitcher_potential: infield_potential - 0.4', 'pitcher_potential: infield_potential - 0.8', 'pitcher_potential: infield_potential - 2',],
-        'outfield_potential': ['pitcher_potential: outfield_potential - 0.4', 'pitcher_potential: outfield_potential - 0.8', 'pitcher_potential: outfield_potential - 2',],
-        'catcher_potential': ['pitcher_potential: catcher_potential - 0.4', 'pitcher_potential: catcher_potential - 0.8', 'pitcher_potential: catcher_potential - 2',],
-        'pitcher_potential': ['pitcher_potential: pitcher_potential - 0.4', 'pitcher_potential: pitcher_potential - 0.8', 'pitcher_potential: pitcher_potential - 2',],
+    'pitcher_generic': {
+        'infield': ['Garbage Infield', 'Infield / Backup Pitcher', ],
+        'outfield': ['Garbage Outfield', 'Outfield / Backup Pitcher', ],
+        'catcher': ['Garbage Catcher', 'Catcher / Backup Pitcher', ],
+        'pitcher_generic': ['Garbage Pitcher', 'Defensive Pitcher', ],
     },
     'All': {
-        'infield_potential': ['All: infield_potential - 0.4', 'All: infield_potential - 0.8', 'All: infield_potential - 2',],
-        'outfield_potential': ['All: outfield_potential - 0.4', 'All: outfield_potential - 0.8', 'All: outfield_potential - 2',],
-        'catcher_potential': ['All: catcher_potential - 0.4', 'All: catcher_potential - 0.8', 'All: catcher_potential - 2',],
-        'pitcher_potential': ['All: pitcher_potential - 0.4', 'All: pitcher_potential - 0.8', 'All: pitcher_potential - 2',],
-    },
-    'Not': {
-        'infield_potential': ['Not: infield_potential - 0.4', 'Not: infield_potential - 0.8', 'Not: infield_potential - 2',],
-        'outfield_potential': ['Not: outfield_potential - 0.4', 'Not: outfield_potential - 0.8', 'Not: outfield_potential - 2',],
-        'catcher_potential': ['Not: catcher_potential - 0.4', 'Not: catcher_potential - 0.8', 'Not: catcher_potential - 2',],
-        'pitcher_potential': ['Not: pitcher_potential - 0.4', 'Not: pitcher_potential - 0.8', 'Not: pitcher_potential - 2',],
+        'infield': ['Defensive Filler', 'Agile Infield', ],
+        'outfield': ['Defensive Filler', 'Outfield / Shortstop', ],
+        'catcher': ['Defensive Filler', 'Catcher / Backup Defense', ],
+        'pitcher_generic': ['Defensive Filler', 'Defensive Pitcher', ],
     },
 }
 
 PITCHING_DESCRIPTORS = {
     'fastball': {
-        'fastball': ['fastball: fastball - 0.4', 'fastball: fastball - 0.8', 'fastball: fastball - 2', ],
-        'curveball': ['fastball: curveball - 0.4', 'fastball: curveball - 0.8', 'fastball: curveball - 2', ],
-        'utility_pitcher': ['fastball: utility_pitcher - 0.4', 'fastball: utility_pitcher - 0.8',
-                            'fastball: utility_pitcher - 2', ],
+        'fastball': ['Weak Fastball', 'Average Fastball', 'Strong Fastball', 'Outstanding Fastball', 'Stellar Fastball', ],
+        'curveball': ['Weak Changeup', 'Average Changeup', 'Strong Changeup', 'Outstanding Changeup', 'Stellar Changeup', ],
+        'utility_pitcher': ['Weak Fastball', 'Utility Fastball', 'Utility Fastball', 'Outstanding Fastball', 'Stellar Fastball', ],
     },
     'curveball': {
-        'fastball': ['curveball: fastball - 0.4', 'curveball: fastball - 0.8', 'curveball: fastball - 2', ],
-        'curveball': ['curveball: curveball - 0.4', 'curveball: curveball - 0.8', 'curveball: curveball - 2', ],
-        'utility_pitcher': ['curveball: utility_pitcher - 0.4', 'curveball: utility_pitcher - 0.8',
-                            'curveball: utility_pitcher - 2', ],
+        'fastball': ['Weak Slider', 'Average Slider', 'Strong Slider', 'Outstanding Slider', 'Stellar Slider', ],
+        'curveball': ['Weak Curveball', 'Average Curveball', 'Strong Curveball', 'Outstanding Curveball', 'Stellar Curveball', ],
+        'utility_pitcher': ['Weak Curveball', 'Utility Curveball', 'Utility Curveball', 'Outstanding Curveball', 'Stellar Curveball', ],
     },
     'utility_pitcher': {
-        'fastball': ['utility_pitcher: fastball - 0.4', 'utility_pitcher: fastball - 0.8',
-                     'utility_pitcher: fastball - 2', ],
-        'curveball': ['utility_pitcher: curveball - 0.4', 'utility_pitcher: curveball - 0.8',
-                      'utility_pitcher: curveball - 2', ],
-        'utility_pitcher': ['utility_pitcher: utility_pitcher - 0.4', 'utility_pitcher: utility_pitcher - 0.8',
-                            'utility_pitcher: utility_pitcher - 2', ],
+        'fastball': ['Weak Fastball', 'Utility Fastball', 'Utility Fastball', 'Shutdown Fastball', 'Shutdown Fastball', ],
+        'curveball': ['Weak Curveball', 'Utility Curveball', 'Utility Curveball', 'Shutdown Curveball', 'Shutdown Curveball', ],
+        'utility_pitcher': ['Weak Defense', 'Defensive Pitcher', 'Defensive Pitcher', 'Oustanding Defensive Pitcher', 'Stellar Defensive Pitcher', ],
     },
     'All': {
-        'fastball': ['All: fastball - 0.4', 'All: fastball - 0.8', 'All: fastball - 2', ],
-        'curveball': ['All: curveball - 0.4', 'All: curveball - 0.8', 'All: curveball - 2', ],
-        'utility_pitcher': ['All: utility_pitcher - 0.4', 'All: utility_pitcher - 0.8', 'All: utility_pitcher - 2', ],
-    },
-    'Not': {
-        'fastball': ['Not: fastball - 0.4', 'Not: fastball - 0.8', 'Not: fastball - 2', ],
-        'curveball': ['Not: curveball - 0.4', 'Not: curveball - 0.8', 'Not: curveball - 2', ],
-        'utility_pitcher': ['Not: utility_pitcher - 0.4', 'Not: utility_pitcher - 0.8', 'Not: utility_pitcher - 2', ],
+        'fastball': ['Weak Changeup', 'Average Changeup', 'Strong Changeup', 'Outstanding Changeup', 'Stellar Changeup', ],
+        'curveball': ['Weak Curveball', 'Average Curveball', 'Strong Curveball', 'Outstanding Curveball', 'Stellar Curveball', ],
+        'utility_pitcher': ['Weak Defense', 'Defensive Pitcher', 'Defensive Pitcher', 'Oustanding Defensive Pitcher', 'Stellar Defensive Pitcher', ],
     },
 }
 
@@ -379,29 +357,29 @@ PERSONALITY_DESCRIPTORS = {
 
 ELEMENT_DESCRIPTORS = {
     'determination': {
-        'determination': ['fire',],
-        'enthusiasm': ['purple',],
-        'stability': ['steam',],
-        'insight': ['lava',],
+        'determination': ['fire', ],
+        'enthusiasm': ['purple', ],
+        'stability': ['steam', ],
+        'insight': ['lava', ],
     },
     'enthusiasm': {
-        'determination': ['electric',],
-        'enthusiasm': ['wind',],
-        'stability': ['fog',],
-        'insight': ['bird',],
+        'determination': ['electric', ],
+        'enthusiasm': ['wind', ],
+        'stability': ['rain', ],
+        'insight': ['leaf', ],
     },
     'stability': {
-        'determination': ['ash',],
-        'enthusiasm': ['rain',],
-        'stability': ['water',],
-        'insight': ['gold',],
+        'determination': ['ash', ],
+        'enthusiasm': ['rune', ],
+        'stability': ['water', ],
+        'insight': ['gold', ],
     },
     'insight': {
-        'determination': ['robot',],
-        'enthusiasm': ['music',],
-        'stability': ['space',],
-        'insight': ['earth',],
-    }
+        'determination': ['robot', ],
+        'enthusiasm': ['music', ],
+        'stability': ['space', ],
+        'insight': ['earth', ],
+    },
 }
 
 DESCRIPTOR_DB = {

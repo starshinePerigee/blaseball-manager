@@ -93,7 +93,7 @@ WEIGHTS = {
         'extra_weight': 0.5
     },
     'descriptor_smallball': {
-        'contact': 1,
+        'contact': 2,
         'control': 0.5,
         'speed': 1,
     },
@@ -105,29 +105,37 @@ WEIGHTS = {
     },
     'descriptor_utility_hitter': {
         'control': 1,
+        'extra_weight': 0.5
     },
     'descriptor_fastball': {
         'force': 2,
+        'accuracy': 1
     },
     'descriptor_curveball': {
         'trickery': 2,
+        'accuracy': 1
     },
     'descriptor_utility_pitcher': {
         'awareness': 1,
         'reaction': 1,
-        'extra_weight': -0.5
+        'extra_weight': 0.5
     },
-    'descriptor_infield_potential': {
+    'descriptor_infield': {
         'reaction': 1,
     },
-    'descriptor_outfield_potential': {
-        'reach': 1,
+    'descriptor_outfield': {
+        'reach': 2,
+        'throwing': 1
     },
-    'descriptor_catcher_potential': {
-        'strategy': 1,
+    'descriptor_catcher': {
+        'calling': 3,
+        'throwing': 1
     },
-    'descriptor_pitcher_potential': {
-        'force': 1,
+    'descriptor_pitcher_generic': {
+        'force': 2,
+        'trickery': 1.5,
+        'accuracy': 1,
+        'awareness': 0.5
     },
     'descriptor_determination': {
         'determination': 1,
@@ -142,7 +150,7 @@ WEIGHTS = {
         'insight': 1,
     },
     'position_C': {
-        'strategy': 1,
+        'calling': 1,
         'reaction': 1,
         'throwing': 1
     }
