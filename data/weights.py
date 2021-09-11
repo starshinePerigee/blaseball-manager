@@ -8,7 +8,7 @@ WEIGHTS = {
     'batting': {
         'power': 2,
         'contact': 3,
-        'control': 2,
+        'control': 1.5,
         'discipline': 1
     },
     'baserunning': {
@@ -20,6 +20,7 @@ WEIGHTS = {
         'reach': 1,
         'reaction': 1,
         'throwing': 1,
+        'calling': 0.5
     },
     'pitching': {
         'force': 2,
@@ -29,42 +30,38 @@ WEIGHTS = {
     },
     'edge': {
         'strategy': 1,
-        'sparkle': 1,
-        'clutch': 1
+        'leadership': 1,
+        'heckling': 1,
+        'cheers': 1
     },
-    'durability': {
+    'vitality': {
         'endurance': 1,
         'positivity': 1,
-        'extroversion': 0.5,
-        'introversion': 0.5,
-        'recovery': 2
+        'energy': 1,
+        'recovery': 1
     },
     'social': {
-        'teaching': 2,
-        'patience': 2,
+        'teach': 1.5,
         'cool': 1,
-        'hang': 1,
+        'hangouts': 1,
         'support': 1
     },
     'total_offense': {
         'batting': 2,
         'baserunning': 1,
-        'edge': 0.5
     },
     'total_defense_pitching': {
         'pitching': 2,
         'defense': 0.5,
-        'edge': 1,
     },
     'total_defense_fielding': {
         'defense': 2,
         'pitching': 0.5,
-        'edge': 0.5
     },
     'total_off_field': {
-        'constitution': 2,
-        'social': 2,
-        'edge': 0.5
+        'vitality': 1.5,
+        'social': 1.5,
+        'edge': 1
     },
     'descriptor_o_slugging': {
         'power': 1,
@@ -85,10 +82,10 @@ WEIGHTS = {
         'trickery': 1,
     },
     'descriptor_o_utility': {
-        'sparkle': 1,
+        'control': 1,
     },
     'descriptor_o_coach': {
-        'patience': 1,
+        'leadership': 1,
     },
     'descriptor_slugging': {
         'power': 2,
@@ -97,7 +94,7 @@ WEIGHTS = {
     },
     'descriptor_smallball': {
         'contact': 1,
-        'control': 1,
+        'control': 0.5,
         'speed': 1,
     },
     'descriptor_manufacture': {
@@ -108,8 +105,6 @@ WEIGHTS = {
     },
     'descriptor_utility_hitter': {
         'control': 1,
-        'sparkle': 1,
-        'strategy': 1
     },
     'descriptor_fastball': {
         'force': 2,
@@ -118,8 +113,6 @@ WEIGHTS = {
         'trickery': 2,
     },
     'descriptor_utility_pitcher': {
-        'strategy': 1,
-        'sparkle': 1,
         'awareness': 1,
         'reaction': 1,
         'extra_weight': -0.5
@@ -147,9 +140,6 @@ WEIGHTS = {
     },
     'descriptor_insight': {
         'insight': 1,
-    },
-    'descriptor_mysticism': {
-        'mysticism': 1,
     },
     'position_C': {
         'strategy': 1,

@@ -102,11 +102,11 @@ ASPECTS = {
         [0.4, 0.8, 2]
     ),
     'personality': (
-        ['determination', 'enthusiasm', 'stability', 'insight', 'mysticism'],
+        ['determination', 'enthusiasm', 'stability', 'insight'],
         [1, 2]
     ),
     'element': (
-        ['determination', 'enthusiasm', 'stability', 'insight', 'mysticism'],
+        ['determination', 'enthusiasm', 'stability', 'insight'],
         [2]
     )
 }
@@ -380,39 +380,28 @@ PERSONALITY_DESCRIPTORS = {
 ELEMENT_DESCRIPTORS = {
     'determination': {
         'determination': ['fire',],
-        'enthusiasm': ['electric',],
+        'enthusiasm': ['purple',],
         'stability': ['steam',],
         'insight': ['lava',],
-        'mysticism': ['plasma',],
     },
     'enthusiasm': {
         'determination': ['electric',],
         'enthusiasm': ['wind',],
         'stability': ['fog',],
         'insight': ['bird',],
-        'mysticism': ['space',],
     },
     'stability': {
         'determination': ['ash',],
         'enthusiasm': ['rain',],
         'stability': ['water',],
-        'insight': ['ice',],
-        'mysticism': ['gold',],
+        'insight': ['gold',],
     },
     'insight': {
-        'determination': ['mechancal',],
+        'determination': ['robot',],
         'enthusiasm': ['music',],
-        'stability': ['leaf',],
+        'stability': ['space',],
         'insight': ['earth',],
-        'mysticism': ['peanut',],
-    },
-    'mysticism': {
-        'determination': ['force',],
-        'enthusiasm': ['whoa',],
-        'stability': ['purple',],
-        'insight': ['rune',],
-        'mysticism': ['spirit',],
-    },
+    }
 }
 
 DESCRIPTOR_DB = {
