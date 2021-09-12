@@ -1,0 +1,107 @@
+Here's some psudocode for a game:
+
+Game
+    Inning
+        Side
+            At-Bat
+                Pitch
+                    Actions
+
+Most of the "game" happens in a single pitch; everything else is bookkeeping. Let's walk through the process.
+
+
+A pitch has the following process:
+0. the batter decides hit goals (location, special hits)
+1. the catcher+pitcher decides the pitch location and type
+2. the pitcher throws the ball
+3. the batter decides swing / no swing
+4. if swing: decide if hit, and how good the contact is
+5. go into play (if hit)
+
+
+0. batter decides hit goals:
+
+Based on base position, the batter will decide the following:
+a: should I bunt (or other specialties)
+b: where do I want to hit
+c: how much do I want to swing
+
+higher control batters will accept wider angles, including down the middle, whereas low control will pull
+for slightly left
+
+1: catcher+pitcher decides pitch location and type:
+a: should I use special abilities (TBR)
+b: set location based on count, game state, batter moxie, and pitcher accuracy
+
+
+2. pitcher throws the ball
+
+A pitch has three aspects:
+- difficulty
+- reduction
+- location
+
+location is based on the set location (from step 1), plus the pitcher's [accuracy] roll
+
+difficulty is created from multiple factors, but the primary two are:
+the pitcher's [force] roll
+the location (further out is harder)
+
+reduction is based on the pitcher's [trickery] roll
+
+3. Batter decides to swing / no swing
+
+the pitch's location is fuzzed by a pitcher's [trickery] roll and the inverse of the player's [discipline]
+roll. It is then compared to the batter's set threshold determined in step 0, and the batter decides to swing
+or no swing.
+
+4. Decide if hit, and how good the contact is
+
+To decide a hit: the batter's [contact] vs. pitch difficulty
+The better these compare, the better the hit quality is.
+
+the batter's [power] adds to hit distance, and the batter's [control] adds effects - such as ground bias,
+pop bias, left/right bias. any special effects (from hit goals) also apply here.
+
+This gives us:
+- distance
+- xangle
+- yangle
+
+which can translate into:
+- xangle
+- flight time
+- velocity
+
+which can then translate into fielding (check for HRs first tho)
+
+
+HOW DOES FIELDING WORK:
+
+/* disregard all this
+1. calculate timing of hit/throw
+2. for each runner, decide go/nogo
+3. execute throw and decide if caught, and move runners out (if needed)
+4. calculate reaction time
+5. for each runner, decide go/nogo
+6. if all runners are settled, end, else goto 1
+
+the ground counts as a fielder - it passes the ball to the target fielder
+*/
+
+
+alt plan:
+0. draw the baseball line
+1. identify the fielder(s) fielding the hit - only one for fly outs, but can go past two or even three
+for ground or low hits past the pitcher.
+2. roll to intercept for each fielder based on distance, reaction, and range. if none make it, it rolls all
+the way to the backstop and has to get retrieved
+get a time and position
+3. once the ball is in possession, calculate runner positions based on speed, timing, bravery. build the
+'runner timeline'
+4. identify the defensive play order (eg, 1-2-3 or 2-3-1) based on game state
+and fielder location
+5. build the fielding timeline (what basepaths are 'hot' when)
+6. for each runner, compare runner timeline vs defense timeline + fuzz and roll on timing to
+decide go/nogo
+7. 

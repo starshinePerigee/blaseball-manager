@@ -33,9 +33,9 @@ def get_descriptor(player, stat, extras=True) -> str:
     elif total_above_threshold == len(aspect_weights) and extras:
         primary = 'All'
         secondary = aspects_sorted[0][1]
-    elif total_above_threshold == len(aspect_weights) - 1 and extras:
-        primary = 'Not'
-        secondary = aspects_sorted[-1][1]
+    # elif total_above_threshold == len(aspect_weights) - 1 and extras:
+    #     primary = 'Not'
+    #     secondary = aspects_sorted[-1][1]
     else:
         primary = aspects_sorted[0][1]
         secondary = aspects_sorted[1][1]
@@ -53,14 +53,21 @@ if __name__ == "__main__":
     pb = players.PlayerBase(3)
     for i in range(1001, 1004):
         text = pb[i].text_breakdown().split("\r\n")
-        lines = [4, 5, 10, 11, 12, 13, 14, 15, 16] + list(range(55, 94))
-        # lines = range(0, len(text))
+        PRINT_ALL = False
+
+        if PRINT_ALL:
+            lines = range(0, len(text))
+        else:
+            lines = [4, 5, 10, 11, 12, 13, 14, 15, 16] + list(range(27, 40)) + list(range(51, 94))
+
         for j in lines:
-            # print(f"{j}: {text[j]}")
-            try:
-                print(text[j])
-            except IndexError:
-                print(f"INDEXERROR: Line {j}, text len {len(text)}")
+            if PRINT_ALL:
+                print(f"{j}: {text[j]}")
+            else:
+                try:
+                    print(text[j])
+                except IndexError:
+                    print(f"INDEXERROR: Line {j}, text len {len(text)}")
 
         for stat in ['overall', 'batting', 'fielding', 'pitching']:
             p_weights = {aspect: calculate_weighted(pb[i], ("descriptor_" + aspect))

@@ -25,28 +25,25 @@ CORE_ATTRIBUTES = {
     "team": "N/A TEAM",
     "number": -1
 }
-PERSONALITY_FIVE = [
+PERSONALITY_FOUR = [
     "determination",
     "enthusiasm",
     "stability",
     "insight",
-    "mysticism"
 ]
 
-DETERMINATION_RATINGS = ["power", "force", "bravery", "endurance", "cool"]
-ENTHUSIASM_RATINGS = ["contact", "speed", "trickery", "extroversion", "hang"]
-STABILITY_RATINGS = ["control", "accuracy", "positivity", "support"]
-INSIGHT_RATINGS = ["discipline", "awareness", "strategy", "introversion", "patience"]
-MYSTICISM_RATINGS = ["recovery", "sparkle", "teaching"]
+DETERMINATION_RATINGS = ["power", "bravery", "force",  "leadership", "endurance", "cool"]
+ENTHUSIASM_RATINGS = ["contact", "speed", "reach", "heckling", "energy", "hangouts"]
+STABILITY_RATINGS = ["discipline", "throwing", "reaction", "accuracy", "cheers", "positivity", "support"]
+INSIGHT_RATINGS = ["control", "timing", "calling", "trickery", "awareness", "strategy", "recovery", "teach"]
 
 BATTING_RATINGS = ["power", "contact", "control", "discipline"]
 BASERUNNING_RATINGS = ["speed", "bravery", "timing"]
-DEFENSE_RATINGS = ["reach", "reaction", "throwing"]
-PITCHING_RATINGS = ["force", "accuracy", "trickery", "awareness"]
-EDGE_RATINGS = ["strategy", "sparkle", "clutch"]
-CONSTITUTION_RATINGS = ["endurance", "positivity", "extroversion", "introversion", "recovery"]
-SOCIAL_RATINGS = ["teaching", "patience", "cool", "hang", "support"]
-
+DEFENSE_RATINGS = ["reach", "reaction", "throwing", "calling"]
+PITCHING_RATINGS = ["force", "trickery", "accuracy", "awareness"]
+EDGE_RATINGS = ["leadership", "strategy", "heckling", "cheers"]
+VITALITY_RATINGS = ["endurance", "energy", "positivity", "recovery"]
+SOCIAL_RATINGS = ["cool", "hangouts", "support", "teach"]
 DEEP_RATINGS = [
     "power",
     "contact",
@@ -55,30 +52,30 @@ DEEP_RATINGS = [
     "speed",
     "bravery",
     "force",
-    "accuracy",
     "trickery",
+    "accuracy",
     "awareness",
+    "leadership",
     "strategy",
-    "sparkle",
+    "heckling",
+    "cheers",
     "endurance",
+    "energy",
     "positivity",
-    "extroversion",
-    "introversion",
     "recovery",
-    "teaching",
-    "patience",
     "cool",
-    "hang",
+    "hangouts",
     "support",
+    "teach",
 ]
+
 RATING_PERSONALITY_LOOKUP = {}
 for rating_list, personality in zip([
     DETERMINATION_RATINGS,
     ENTHUSIASM_RATINGS,
     STABILITY_RATINGS,
     INSIGHT_RATINGS,
-    MYSTICISM_RATINGS,
-],["determination", "enthusiasm", "stability", "insight", "mysticism"]):
+], ["determination", "enthusiasm", "stability", "insight"]):
     for rating in rating_list:
         RATING_PERSONALITY_LOOKUP[rating] = personality
 DERIVED_DEEP = [
@@ -86,11 +83,11 @@ DERIVED_DEEP = [
     "reaction",  # discipline
     "timing",  # awareness
     "throwing",  # accuracy
-    "clutch",  # bravery
+    "calling",  # strategy
 ]
 DERIVED_DEEP_LOOKUP = {
     rating[0]: rating[1] for rating in
-    zip(DERIVED_DEEP, ["speed", "discipline", "awareness", "accuracy", "bravery"])
+    zip(DERIVED_DEEP, ["speed", "discipline", "awareness", "accuracy", "strategy"])
 }
 DERIVED_RATINGS = [
     "total_offense",
@@ -101,7 +98,7 @@ DERIVED_RATINGS = [
     "defense",
     "pitching",
     "edge",
-    "constitution",
+    "vitality",
     "social"
 ]
 RATING_DESCRIPTORS = {
@@ -115,20 +112,21 @@ POSITION_INFO = {
     "defense_position": "Bullpen"
 }
 CONDITION_STATUS = {
-    "stamina": 1.0,
     "vibes": 1.0,
-    "corporeality": 1.0,
-    "condition": 1.0
+    "stamina": 1.0,
+    "mood": 1.0,
+    "soul": 1.0
 }
 BONUS_STATS = {
     "fingers": 9,
     "is_pitcher": False,
     "element": "Basic",
+    "clutch": 1.0
 }
 
 COMBINED_STATS = [
     CORE_ATTRIBUTES,
-    PERSONALITY_FIVE,
+    PERSONALITY_FOUR,
     DEEP_RATINGS,
     DERIVED_DEEP,
     DERIVED_RATINGS,
@@ -211,8 +209,10 @@ class Player(Mapping):
         self["name"] = Player.generate_name()
         self["number"] = self.generate_player_number()
 
-        for stat in PERSONALITY_FIVE:
+        for stat in PERSONALITY_FOUR:
             self[stat] = random.random()
+
+        self['clutch'] = random.random()
 
         self["element"] = get_descriptor(self, 'element', extras=False)
 
@@ -231,7 +231,6 @@ class Player(Mapping):
 
         self.derive()
 
-
     def write_descriptors(self) -> None:
         """Updates the descriptor fields for this player"""
 
@@ -245,7 +244,7 @@ class Player(Mapping):
 
     def derive(self) -> None:
         for stat in ["batting", "baserunning", "defense", "pitching", "edge",
-                     "durability", "social", "total_offense", "total_off_field"]:
+                     "vitality", "social", "total_offense", "total_off_field"]:
             self[stat] = calculate_weighted(self, stat)
 
         self["is_pitcher"] = self["pitching"] > self["defense"] * 1.1
@@ -363,23 +362,21 @@ class Player(Mapping):
             f"Off-Field: {self._to_stars(self['total_off_field'])}\r\n"
             f"Element: {self['element'].title()}\r\n"
             f"\r\n"
-            f"Condition: {self['condition']}\r\n"
+            f"Vibes: {self['vibes']}\r\n"
             f"\r\n~ ~ ~ ~ ~\r\n\r\n"
         )
         text += "Key Ratings\r\n\r\n"
         text += "\r\n".join(
-            [f"{r.title()}: {self[r] * 100:.0f}%" for r in ["stamina", "vibes", "corporeality"]])
+            [f"{r.title()}: {self[r] * 100:.0f}%" for r in ["stamina", "mood", "soul"]])
         text += "\r\n\r\n"
         text += "\r\n".join(
             [f"{r.title()}: {self._to_stars(self[r])}" for r in [
-                "batting", "baserunning", "defense", "pitching", "edge", "constitution", "social"
+                "batting", "baserunning", "defense", "pitching", "edge", "vitality", "social"
             ]]
         )
         text += "\r\n\r\n"
         text += "\r\n".join(
-            [f"{r.title()}: {self._to_stars(self[r])}" for r in [
-                "determination", "enthusiasm", "stability", "insight", "mysticism"
-            ]]
+            [f"{r.title()}: {self._to_stars(self[r])}" for r in PERSONALITY_FOUR]
         )
         text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
         text += "Traits and Conditions\r\n\r\n"
@@ -390,7 +387,7 @@ class Player(Mapping):
         text += "Deep Ratings\r\n"
         for top, group in zip(DERIVED_RATINGS[3:], [
             BATTING_RATINGS, BASERUNNING_RATINGS, DEFENSE_RATINGS, PITCHING_RATINGS,
-            EDGE_RATINGS, CONSTITUTION_RATINGS, SOCIAL_RATINGS
+            EDGE_RATINGS, VITALITY_RATINGS, SOCIAL_RATINGS
         ]):
             text += f"\r\n{top.title()}:\r\n"
             for rating in group:
