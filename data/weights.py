@@ -20,13 +20,15 @@ WEIGHTS = {
         'reach': 1,
         'reaction': 1,
         'throwing': 1,
-        'calling': 0.5
+        'calling': 0.5,
+        'awareness': 0.25,
     },
     'pitching': {
         'force': 2,
         'accuracy': 1,
         'trickery': 1.5,
         'awareness': 0.5,
+        'calling': 0.25
     },
     'edge': {
         'strategy': 1,
@@ -117,8 +119,9 @@ WEIGHTS = {
     },
     'descriptor_utility_pitcher': {
         'awareness': 1,
+        'calling': 1,
         'reaction': 1,
-        'extra_weight': 0.5
+        'extra_weight': 0.25
     },
     'descriptor_infield': {
         'reaction': 1,
@@ -129,13 +132,15 @@ WEIGHTS = {
     },
     'descriptor_catcher': {
         'calling': 3,
-        'throwing': 1
+        'awareness': 2,
+        'throwing': 1,
     },
     'descriptor_pitcher_generic': {
         'force': 2,
         'trickery': 1.5,
         'accuracy': 1,
-        'awareness': 0.5
+        'awareness': 0.5,
+        'calling': 0.25
     },
     'descriptor_determination': {
         'determination': 1,

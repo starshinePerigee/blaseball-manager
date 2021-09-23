@@ -39,37 +39,37 @@ INSIGHT_RATINGS = ["control", "timing", "calling", "trickery", "awareness", "str
 
 BATTING_RATINGS = ["power", "contact", "control", "discipline"]
 BASERUNNING_RATINGS = ["speed", "bravery", "timing"]
-DEFENSE_RATINGS = ["reach", "reaction", "throwing", "calling"]
-PITCHING_RATINGS = ["force", "trickery", "accuracy", "awareness"]
+DEFENSE_RATINGS = ["reach", "reaction", "throwing", "calling", "awareness"]
+PITCHING_RATINGS = ["force", "trickery", "accuracy"]
 EDGE_RATINGS = ["leadership", "strategy", "heckling", "cheers"]
 VITALITY_RATINGS = ["endurance", "energy", "positivity", "recovery"]
 SOCIAL_RATINGS = ["cool", "hangouts", "support", "teach"]
-DEEP_RATINGS = [
-    "power",
-    "contact",
-    "control",
-    "discipline",
-    "speed",
-    "bravery",
-    "force",
-    "trickery",
-    "accuracy",
-    "awareness",
-    "leadership",
-    "strategy",
-    "heckling",
-    "cheers",
-    "endurance",
-    "energy",
-    "positivity",
-    "recovery",
-    "cool",
-    "hangouts",
-    "support",
-    "teach",
-]
 
-RATING_PERSONALITY_LOOKUP = {}
+all_expressed_ratings = (BATTING_RATINGS + BASERUNNING_RATINGS + DEFENSE_RATINGS + PITCHING_RATINGS
+                         + EDGE_RATINGS + VITALITY_RATINGS + SOCIAL_RATINGS)
+all_ratings_from_personality = (DETERMINATION_RATINGS + ENTHUSIASM_RATINGS
+                                + STABILITY_RATINGS + INSIGHT_RATINGS)
+
+for rating in all_expressed_ratings:
+    if rating not in all_ratings_from_personality:
+        raise KeyError(f"{rating} not listed in personality lists!")
+
+for rating in all_ratings_from_personality:
+    if rating not in all_expressed_ratings:
+        raise KeyError(f"{rating} not listed in expressed lists!")
+
+LINKED_RATINGS = {
+    # derived stat, base stat
+    "reaction": "discipline",
+    "reach": "speed",
+    "awareness": "timing",
+    "throwing": "accuracy",
+    "calling": "strategy",
+}
+
+deep_ratings = [rating for rating in all_expressed_ratings if rating not in LINKED_RATINGS]
+
+rating_personality_lookup = {}
 for rating_list, personality in zip([
     DETERMINATION_RATINGS,
     ENTHUSIASM_RATINGS,
@@ -77,18 +77,8 @@ for rating_list, personality in zip([
     INSIGHT_RATINGS,
 ], ["determination", "enthusiasm", "stability", "insight"]):
     for rating in rating_list:
-        RATING_PERSONALITY_LOOKUP[rating] = personality
-DERIVED_DEEP = [
-    "reach",  # speed
-    "reaction",  # discipline
-    "timing",  # awareness
-    "throwing",  # accuracy
-    "calling",  # strategy
-]
-DERIVED_DEEP_LOOKUP = {
-    rating[0]: rating[1] for rating in
-    zip(DERIVED_DEEP, ["speed", "discipline", "awareness", "accuracy", "strategy"])
-}
+        rating_personality_lookup[rating] = personality
+
 DERIVED_RATINGS = [
     "total_offense",
     "total_defense",
@@ -127,8 +117,7 @@ BONUS_STATS = {
 COMBINED_STATS = [
     CORE_ATTRIBUTES,
     PERSONALITY_FOUR,
-    DEEP_RATINGS,
-    DERIVED_DEEP,
+    all_expressed_ratings,
     DERIVED_RATINGS,
     CONDITION_STATUS,
     BONUS_STATS,
@@ -219,15 +208,15 @@ class Player(Mapping):
         for i in range(0, random.randrange(3, 6)):
             self.add_trait(traits.personality_traits.draw(), derive=False)
 
-        for stat in DEEP_RATINGS:
-            self[stat] = random.random() * max(self[RATING_PERSONALITY_LOOKUP[stat]], 0.5)
-            if self[RATING_PERSONALITY_LOOKUP[stat]] > 1:
+        for stat in deep_ratings:
+            self[stat] = random.random() * max(self[rating_personality_lookup[stat]], 0.5)
+            if self[rating_personality_lookup[stat]] > 1:
                 # this is a dumb hack - contrary to the plan, this can result in deep stats higher than
                 # the respective personalities. In my defense, it'll be rare and cool when it happens.
-                self[stat] += self[RATING_PERSONALITY_LOOKUP[stat]] - 1
+                self[stat] += self[rating_personality_lookup[stat]] - 1
 
-        for stat in DERIVED_DEEP_LOOKUP:
-            self[stat] = self[DERIVED_DEEP_LOOKUP[stat]]
+        for stat in LINKED_RATINGS:
+            self[stat] = self[LINKED_RATINGS[stat]]
 
         self.derive()
 

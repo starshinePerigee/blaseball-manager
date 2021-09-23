@@ -76,6 +76,8 @@ which can translate into:
 which can then translate into fielding (check for HRs first tho)
 
 
+
+
 HOW DOES FIELDING WORK:
 
 /* disregard all this
@@ -104,4 +106,49 @@ and fielder location
 5. build the fielding timeline (what basepaths are 'hot' when)
 6. for each runner, compare runner timeline vs defense timeline + fuzz and roll on timing to
 decide go/nogo
-7. 
+7. advance through the timeline, rolling for each fielder in turn based on throwing and reaction
+8. score / mark out runners as needed
+9. if there is an error, go to position 2
+
+Failure mode:
+
+runners on 1, 2.
+Hit to deep LF. LF misses the catch, but get it 4 seconds in.
+based on position, runner on 2 is past third, but runner on 1st is approaching 2nd.
+
+if fielder: throws home, 3rd runner can double back
+if fielder: throws 2nd, 3rd runner can make it home
+
+
+simplest plan:
+0. draw the baseball line
+1. id fielders
+2. roll to intercept, get time and position
+3. for each runner, calculate position based on speed, timing, bravery, decide go/nogo
+4. fielder decides target, makes throw
+5. roll to catch, mark runner out if needed
+6. if error: go to 0, if success, go to 3
+
+this is basically your first plan lmao
+
+
+oe: offensive edge, b: batter, r: runners (inc. batters)
+de: defensive edge, p: pitcher, c: catcher, f: fielder
+
+So in order:
+
+STEALING
+    r[bravery] to determine if steal desired
+        r[timing] to
+
+THROWING OUT
+
+
+PITCHING
+oe[strat] + b[control] to determine hit objective and special hit type (if any)
+
+max(c[calling], p[calling]) to determine pitch target
+
+
+
+

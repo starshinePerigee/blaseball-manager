@@ -11,77 +11,7 @@ everything but a stat
 everything balanced
 
 and then at each level there are descriptors for total stars of the weighting factors
-
-
-Here are the stats that make up a player's offense:
-
-Batting:
-Power x
-Contact xx
-Control xx
-Discipline x
-
-Baserunning:
-Speed xx
-Bravery x
-Timing x
-
-Edge:
-Strategy x 
-Sparkle x
-Clutch
-
-A player brings one of the four following things:
-slugging (power, contact)
-smallball (contact, control, speed)
-manufacture (discipline, speed, bravery, timing)
-utility (control, sparkle, strategy)
-
-
-Here are the stats that make up a player's defense:
-Defense:
-Reach 
-Reaction 
-Throwing 
-
-Pitching:
-Force 
-Accuracy 
-Trickery 
-Awareness 
-
-Edge:
-Strategy 
-Sparkle 
-Clutch
-
-if you're fielding (C, 1B, 2B, 3B, SS, RF, CF, LF), you have a balance of the following stats:
-- reach
-- reaction
-- throwing
-- strategy (for catchers)
-
-Here are the stats that make up a player's off-field performance:
-Constitution
-Endurance 
-Positivity 
-Extroversion 
-Introversion 
-Recovery 
-
-Social
-Teaching 
-Patience 
-Cool 
-Hang 
-Support 
-
-These are the stats that make up a player's personality and element:
-Determination 
-Enthusiasm 
-Stability 
-Insight 
-Mysticism 
+ 
 """
 
 ASPECTS = {

@@ -142,7 +142,7 @@ Four of the derived blaseball ratings should be familiar to anyone who plays bla
 - Edge
 
 "Edge" represents additional bonuses a player can contribute while not on the field: heckling. cheering,
-and strategy. Clutch is there too.
+and strategy.
 
 Deep blaseball ratings are used by the baseball engine to actually roll for player performance,
 and can be viewed through a deeper screen, possibly after being unlocked by the manager.
@@ -165,16 +165,16 @@ Baserunning:
 
 Defense:
 - Reach: The amount of ground a player can cover, and how good they are at catching fly outs.
-- Reaction: A player's reaction times. Helps with ground outs and creating double plays.
+- Reaction: A player's reaction times. Helps with ground outs, double plays, and preventing steals.
 - Throwing: A player's ability to throw the ball accurately and without error
 Fielding errors are decided by the respective reach, reaction, and throwing of the players involved.
-- Calling: The player's ability to signal and assist the pitcher as catcher
+- Calling: The player's ability to call for pitches, pickoffs, and set pitch targets as catcher (or pitcher)
 
 Pitching:
 - Force: A pitcher's speed, represents how difficult the pitch is to read and hit.
 - Accuracy: A pitcher's ability to throw the pitch at their target, dictating the ball and strike rate.
 - Trickery: How much a pitch moves, which makes it harder to read and reduces power if the pitch is hit.
-- Awareness: A pitcher's awareness of the field while they're not pitching. Prevents steals.
+- Awareness: A pitcher's awareness of the field while, allowing for increased pickoff chance.
 
 Edge:
 - Heckling: How good a player is at getting under another player's skin; this can work from the dugout, but
@@ -243,7 +243,7 @@ than other weighted ratings, but are trained together with a second rating from 
 These are the pairs:
 Speed (Baserunning) -> Reach (Defense)
 Discipline (Batting) -> Reaction (Fielding)
-Awareness (Pitching) -> Timing (Baserunning)
+Awareness (Defense) -> Timing (Baserunning)
 Accuracy (Pitching) -> Throwing (Defense)
 Strategy (Edge) -> Calling (Defense)
 
