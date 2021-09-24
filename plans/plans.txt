@@ -139,16 +139,30 @@ GAME TIME:
         with management focus, that's about an hour per season.
             if you want inter-season politics to be a main focus of the game,
             you need games to fit in the 10-20 second time
-        this means a season is about a game session, with
+        this means a season is about a game session,
     at 30 seconds per game:
         50 minutes of game per season.
         with management focus, that's about 2 hours per season. that means
         a season is a long session, or several smaller sessions.
+    at 2 minutes per game:
+        3.3 hours of game per season
+        a season is about 5-6 hours; so a full session is 4-5 seasons
+        this is really the upper bound
+    a blaseball game is 20 minutes:
+        33 hours of game per season
 
     you can bring time down with the following features:
         "automation": planned substitutions, manager rules, etc.
             can even tie into games: manager positions with specific calls you
             can assign them
+        game summaries: generate highlight tracks (ties in with possible memory system)
+    you can "buy time" with the following stuff:
+        inter-season events
+        stronger focus on working with your current team (think moto sim)
+        reducing / limiting decision windows so there's less options between
+        regular games
+
+
 
 
 WHAT IS THE BARE MINIMUM PRE-ALPHA GAME NEED?

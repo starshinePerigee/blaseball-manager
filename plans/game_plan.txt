@@ -10,7 +10,14 @@ Game
 Most of the "game" happens in a single pitch; everything else is bookkeeping. Let's walk through the process.
 
 
+
 A pitch has the following process:
+- runners on base set leadoff distances
+- pitcher+catcher decide if pickoff attempt
+- runners decide if they want to go for a blatant steal
+- opening for heckles and cheers
+- commit to pitch
+
 0. the batter decides hit goals (location, special hits)
 1. the catcher+pitcher decides the pitch location and type
 2. the pitcher throws the ball
@@ -19,7 +26,63 @@ A pitch has the following process:
 5. go into play (if hit)
 
 
-0. batter decides hit goals:
+Position on base is 0-1
+time is measured in seconds, as float
+
+oe: offensive edge, b: batter, r: runners (inc. batters)
+de: defensive edge, p: pitcher, c: catcher, f: fielder
+
+
+*** runners on base set leadoff distances
+
+bravery sets desired leadoff, but
+strat gives runners additional leadoff based on the battery's awareness.
+
+MLB leadoffs are about 10 feet on a 90 foot basepath, so for us it's like,
+0.05 - 0.15
+
+contributing stats:
+r[bravery], oe[strategy], p[awe]
+range:
+0.05 - 0.20 bounded
+
+base leadoff is bravery * 0.1 + 0.05
+
+awe is based on catcher and pitcher awe; but mostly catcher.
+so 2*catcher+pitcher for a number in range 0-6, with average 1.5 and good 3.
+subtract 1.5 to get "normalized awareness", from -1.5 - 4.5 with average 0 and good 1.5
+
+you only know this via strategy, so scale again by multiplying by strategy to get -3 - 9,
+with average 0 and good 1.5 (0v1: -3, 1v0: 0)
+
+scale this number by 0.1 and subtract it from 1 (1.3 - 0.1, av 0, good 0.85)
+this is your leadoff modifier
+
+so in total, leadoff is:
+leadoff_modifier = ((2*c[awe] + 1*p[awe]) - 1.5)*strategy*0.1
+(r[bravery] + 0.5) * (1 - leadoff_modifier)
+
+fuzz it by 0.95 + rand()*0.1  (0.95 - 1.05)
+
+*** pitcher+catcher decide if pickoff attempt
+
+
+
+decide based on leadoffs, battery awareness
+MLB success rates are in the 3-5%, possibly not even worth it
+
+
+
+*** runners decide if they want to go for a blatant steal
+*super rare* but funny
+probably need to be bravery > 1 to even think about it?
+
+*** opening for heckles and cheers
+minor modifications, but come up a fair few times
+
+*** commit to pitch
+
+*** 0. batter decides hit goals:
 
 Based on base position, the batter will decide the following:
 a: should I bunt (or other specialties)
@@ -34,7 +97,7 @@ a: should I use special abilities (TBR)
 b: set location based on count, game state, batter moxie, and pitcher accuracy
 
 
-2. pitcher throws the ball
+*** 2. pitcher throws the ball
 
 A pitch has three aspects:
 - difficulty
@@ -49,13 +112,13 @@ the location (further out is harder)
 
 reduction is based on the pitcher's [trickery] roll
 
-3. Batter decides to swing / no swing
+*** 3. Batter decides to swing / no swing
 
 the pitch's location is fuzzed by a pitcher's [trickery] roll and the inverse of the player's [discipline]
 roll. It is then compared to the batter's set threshold determined in step 0, and the batter decides to swing
 or no swing.
 
-4. Decide if hit, and how good the contact is
+*** 4. Decide if hit, and how good the contact is
 
 To decide a hit: the batter's [contact] vs. pitch difficulty
 The better these compare, the better the hit quality is.
@@ -121,34 +184,60 @@ if fielder: throws 2nd, 3rd runner can make it home
 
 
 simplest plan:
-0. draw the baseball line
-1. id fielders
-2. roll to intercept, get time and position
-3. for each runner, calculate position based on speed, timing, bravery, decide go/nogo
-4. fielder decides target, makes throw
-5. roll to catch, mark runner out if needed
-6. if error: go to 0, if success, go to 3
+- draw the baseball line
+- id fielders
+- roll to intercept, get time and position
+- calculate throw to each base timing
+- for each runner, calculate position based on speed, timing, bravery, decide go/nogo
+- fielder decides target, makes throw
+- roll to catch, mark runner out if needed, advance all runners
+- if error: go to 0, if success, go to 3
 
 this is basically your first plan lmao
 
 
-oe: offensive edge, b: batter, r: runners (inc. batters)
-de: defensive edge, p: pitcher, c: catcher, f: fielder
 
-So in order:
+OK fielding breakdown, the simplest case: a pickoff.
 
-STEALING
-    r[bravery] to determine if steal desired
-        r[timing] to
+in MLB:
+pickoff time is 1.3 - 1.5 seconds.
+average reaction is 0.9
+average speed is 0.038 s/ft
+average pickoff response is 1.27 seconds
+so mean is 1.2, +2 stdv (95%) is 1.4; stdv is 0.1 :chefkiss:
 
-THROWING OUT
+throw speed is 80 mph - 100 mph, so 0.0085 - 0.0068 seconds per feet
 
-
-PITCHING
-oe[strat] + b[control] to determine hit objective and special hit type (if any)
-
-max(c[calling], p[calling]) to determine pitch target
+distance from mound to a base is about 60 ft, or 0.4 - 0.51 seconds fly time
+meaning pickoff time is 0.9 - 1.0 ish
 
 
+start from "calculate throw to each base timing"
+
+it's a pickoff, so instead of p[react] we use p[awe]
+
+pickoff timing is p[awe] + p[throw] * distance % scaling factors:
+1.1 - 0.1*p[awe] + (0.01 - 0.0025 * p[force]) * 60 (ft)
+this is (1.7 / 1.575 / 1.45 / 1.2)
+
+
+for each runner, calculate position based on speed, timing, bravery, decide go/nogo
+
+we have 1 runner on first:
+reaction time is 1 - 0.1 * r[timing] (1 / 0.9 / 0.8)
+speed is 0.05 - r[speed]*0.015 (0.050 / 0.0425 / 0.035 / 0.020)
+
+assume a 10 foot leadoff:
+runner looks forward: 80 * 0.035 + 0.9 = 3.7  FALSE
+runner looks backwards: 10 * 0.035 + 0.9 = 1.25  TRUE
+decides nogo, with margin of 1.575 - 1.25 = 0.35
+(you need to fuzz this some!)
+(note that vs a 10* battery, the 5* runner gets thrown out more than half the time!
+but the 5* runner won't take a long lead unless strategy is really bad)
+
+
+fielder decides target:
+runner on first is NOGO with margin of 0.35
+this is the lowest margin, so they take it anyway - target is FIRST BASE
 
 

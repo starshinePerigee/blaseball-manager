@@ -169,12 +169,13 @@ Defense:
 - Throwing: A player's ability to throw the ball accurately and without error
 Fielding errors are decided by the respective reach, reaction, and throwing of the players involved.
 - Calling: The player's ability to call for pitches, pickoffs, and set pitch targets as catcher (or pitcher)
+- Awareness: A pitcher and catcher's awareness of the field, allowing for increased pickoff chance.
+
 
 Pitching:
 - Force: A pitcher's speed, represents how difficult the pitch is to read and hit.
 - Accuracy: A pitcher's ability to throw the pitch at their target, dictating the ball and strike rate.
 - Trickery: How much a pitch moves, which makes it harder to read and reduces power if the pitch is hit.
-- Awareness: A pitcher's awareness of the field while, allowing for increased pickoff chance.
 
 Edge:
 - Heckling: How good a player is at getting under another player's skin; this can work from the dugout, but
