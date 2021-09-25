@@ -165,7 +165,7 @@ Baserunning:
 
 Defense:
 - Reach: The amount of ground a player can cover, and how good they are at catching fly outs.
-- Reaction: A player's reaction times. Helps with ground outs, double plays, and preventing steals.
+- Grabbiness: A player's reaction times. Helps with ground outs, double plays, and preventing steals.
 - Throwing: A player's ability to throw the ball accurately and without error
 Fielding errors are decided by the respective reach, reaction, and throwing of the players involved.
 - Calling: The player's ability to call for pitches, pickoffs, and set pitch targets as catcher (or pitcher)
@@ -243,7 +243,7 @@ than other weighted ratings, but are trained together with a second rating from 
 
 These are the pairs:
 Speed (Baserunning) -> Reach (Defense)
-Discipline (Batting) -> Reaction (Fielding)
+Discipline (Batting) -> Grabbiness (Fielding)
 Awareness (Defense) -> Timing (Baserunning)
 Accuracy (Pitching) -> Throwing (Defense)
 Strategy (Edge) -> Calling (Defense)
@@ -351,7 +351,7 @@ Timing ***** **-
 
 Defense:
 Reach ***** ****-
-Reaction ***** *****
+Grabbiness ***** *****
 Throwing ****
 Calling *-
 

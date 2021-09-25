@@ -18,7 +18,7 @@ WEIGHTS = {
     },
     'defense': {
         'reach': 1,
-        'reaction': 1,
+        'grabbiness': 1,
         'throwing': 1,
         'calling': 0.5,
         'awareness': 0.25,
@@ -75,7 +75,7 @@ WEIGHTS = {
         'speed': 1,
     },
     'descriptor_o_fielding': {
-        'reaction': 1,
+        'grabbiness': 1,
     },
     'descriptor_o_fastball': {
         'force': 1,
@@ -120,11 +120,11 @@ WEIGHTS = {
     'descriptor_utility_pitcher': {
         'awareness': 1,
         'calling': 1,
-        'reaction': 1,
+        'grabbiness': 1,
         'extra_weight': 0.25
     },
     'descriptor_infield': {
-        'reaction': 1,
+        'grabbiness': 1,
     },
     'descriptor_outfield': {
         'reach': 2,
@@ -156,7 +156,7 @@ WEIGHTS = {
     },
     'position_C': {
         'calling': 1,
-        'reaction': 1,
+        'grabbiness': 1,
         'throwing': 1
     }
 }

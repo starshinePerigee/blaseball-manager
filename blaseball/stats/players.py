@@ -34,12 +34,12 @@ PERSONALITY_FOUR = [
 
 DETERMINATION_RATINGS = ["power", "bravery", "force",  "leadership", "endurance", "cool"]
 ENTHUSIASM_RATINGS = ["contact", "speed", "reach", "heckling", "energy", "hangouts"]
-STABILITY_RATINGS = ["discipline", "throwing", "reaction", "accuracy", "cheers", "positivity", "support"]
+STABILITY_RATINGS = ["discipline", "throwing", "grabbiness", "accuracy", "cheers", "positivity", "support"]
 INSIGHT_RATINGS = ["control", "timing", "calling", "trickery", "awareness", "strategy", "recovery", "teach"]
 
 BATTING_RATINGS = ["power", "contact", "control", "discipline"]
 BASERUNNING_RATINGS = ["speed", "bravery", "timing"]
-DEFENSE_RATINGS = ["reach", "reaction", "throwing", "calling", "awareness"]
+DEFENSE_RATINGS = ["reach", "grabbiness", "throwing", "calling", "awareness"]
 PITCHING_RATINGS = ["force", "trickery", "accuracy"]
 EDGE_RATINGS = ["leadership", "strategy", "heckling", "cheers"]
 VITALITY_RATINGS = ["endurance", "energy", "positivity", "recovery"]
@@ -60,7 +60,7 @@ for rating in all_ratings_from_personality:
 
 LINKED_RATINGS = {
     # derived stat, base stat
-    "reaction": "discipline",
+    "grabbiness": "discipline",
     "reach": "speed",
     "awareness": "timing",
     "throwing": "accuracy",

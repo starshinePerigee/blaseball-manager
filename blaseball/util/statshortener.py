@@ -33,7 +33,7 @@ PAIRS = [
     ("timing", "TMG"),
     ("calling", "CAL"),
     ("reach", "RCH"),
-    ("reaction", "RCT"),
+    ("grabbiness", "GRA"),
     ("throwing", "TRW"),
     ("force", "FOR"),
     ("accuracy", "ACC"),
