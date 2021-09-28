@@ -165,11 +165,12 @@ Baserunning:
 
 Defense:
 - Reach: The amount of ground a player can cover, and how good they are at catching fly outs.
-- Grabbiness: A player's reaction times. Helps with ground outs, double plays, and preventing steals.
+- Grabbiness: A player's catching ability, helping with ground outs, double plays, and avoiding errors.
 - Throwing: A player's ability to throw the ball accurately and without error
 Fielding errors are decided by the respective reach, reaction, and throwing of the players involved.
 - Calling: The player's ability to call for pitches, pickoffs, and set pitch targets as catcher (or pitcher)
 - Awareness: A pitcher and catcher's awareness of the field, allowing for increased pickoff chance.
+  also helps with rundowns
 
 
 Pitching:
@@ -181,11 +182,11 @@ Edge:
 - Heckling: How good a player is at getting under another player's skin; this can work from the dugout, but
 this is most effective when there is a relationship between a player and victim, and there are
 bonuses to proximity when players are at bat or on base.
-- Cheers: How good a player is at supporting their teammates in the moment-to-moment of a game; this can
-work from the dugout to help a hitter or from the infield to help a pitcher if their relationship is strong.
-- Strategy: A player's understanding of the game, which is required to operate office equipment.
-- Leadership: how much of a boost a player can provide in close, critical situations.
-
+- Strategy: a player's understanding of the game and knowledge of the other team, which is passed to players
+on their team but especially when they're mentors or coaches
+- Leadership: how much of a boost a player can provide to another player from the dugout by providing words
+of advice or inspiration; works best in close, critical situations.
+- I.T.: a player's ability to operate office equipment.
 
 6. Rating Descriptors
 
@@ -241,35 +242,11 @@ on both how to develop a player and what their capabilities are.
 Note that this focus goes even further: A number of the deep ratings are "linked" - they are less important
 than other weighted ratings, but are trained together with a second rating from a different derived rating.
 
-These are the pairs:
-Speed (Baserunning) -> Reach (Defense)
-Discipline (Batting) -> Grabbiness (Fielding)
-Awareness (Defense) -> Timing (Baserunning)
-Accuracy (Pitching) -> Throwing (Defense)
-Strategy (Edge) -> Calling (Defense)
-
-    bat run def pit edg
-bat     --- dis --- ---
-run ---     spd tmg ---
-def rct rng     trw cll
-pit --- awr acc     ---
-edg --- --- sat ---
-
-The remaining ratings to be trained are:
-Power
-Contact
-Control
-Bravery
-Force
-Trickery
-
-(Leadership, Heckling and Cheers can not be directly trained, but are trained by creating friendship and rivalry links.)
-
 Effectively, "weaker" and "less necessary" top level ratings (baserunning especially) are trained naturally,
 and come with side rewards for focusing on them. Developing a three true outcome hitter or ace fastball pitcher
 means neglecting other stats, while building an all-rounder has an advantage to make up for the lack of focus.
 
-[Ratings per personality and vice versa exist in stats arranger.xlsx]
+[Ratings per personality and vice versa, as well as links, exist in stats wiggler.xlsx]
 
 9. Example player breakdown
 
@@ -495,6 +472,21 @@ each type of pitch has a combination of the above
 
 plus
 steal awareness, and fielding
+
+
+off field has the following functions:
+- office equipment
+- enemy team intel
+- heckling
+- cheering
+- leadership
+- strategy / decision making (running, hitting, fielding)
+
+breakdown into:
+office equipment (stability)
+team intel + strategy + decision making (insight)
+heckling + cheering (enthusiasm)
+leadership + compliments (determination)
 
 
 11. How are ratings actually generated?

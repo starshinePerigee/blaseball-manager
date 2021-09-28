@@ -31,10 +31,10 @@ WEIGHTS = {
         'calling': 0.25
     },
     'edge': {
-        'strategy': 1,
+        'strategy': 1.5,
         'leadership': 1,
         'heckling': 1,
-        'cheers': 1
+        'i.t.': 1
     },
     'vitality': {
         'endurance': 1,

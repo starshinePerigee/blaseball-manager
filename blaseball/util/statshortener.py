@@ -42,7 +42,7 @@ PAIRS = [
     ("strategy", "STG"),
     ("leadership", "LED"),
     ("heckling", "HCK"),
-    ("cheers", "CHE"),
+    ("i.t.", "I.T"),
     ("endurance", "EDR"),
     ("positivity", "POS"),
     ("energy", "ENG"),

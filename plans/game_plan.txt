@@ -18,12 +18,13 @@ A pitch has the following process:
 - opening for heckles and cheers
 - commit to pitch
 
-0. the batter decides hit goals (location, special hits)
+0. the batter decides if any special hits
 1. the catcher+pitcher decides the pitch location and type
 2. the pitcher throws the ball
 3. the batter decides swing / no swing
 4. if swing: decide if hit, and how good the contact is
-5. go into play (if hit)
+5. if hit: convert contact into power and control, then decide launch angle and power
+6. go into play (if hit)
 
 
 Position on base is 0-1
@@ -82,7 +83,7 @@ minor modifications, but come up a fair few times
 
 *** commit to pitch
 
-*** 0. batter decides hit goals:
+*** 0. batter decides if any special hits:
 
 Based on base position, the batter will decide the following:
 a: should I bunt (or other specialties)
@@ -142,48 +143,6 @@ which can then translate into fielding (check for HRs first tho)
 
 
 HOW DOES FIELDING WORK:
-
-/* disregard all this
-1. calculate timing of hit/throw
-2. for each runner, decide go/nogo
-3. execute throw and decide if caught, and move runners out (if needed)
-4. calculate reaction time
-5. for each runner, decide go/nogo
-6. if all runners are settled, end, else goto 1
-
-the ground counts as a fielder - it passes the ball to the target fielder
-*/
-
-
-alt plan:
-0. draw the baseball line
-1. identify the fielder(s) fielding the hit - only one for fly outs, but can go past two or even three
-for ground or low hits past the pitcher.
-2. roll to intercept for each fielder based on distance, reaction, and range. if none make it, it rolls all
-the way to the backstop and has to get retrieved
-get a time and position
-3. once the ball is in possession, calculate runner positions based on speed, timing, bravery. build the
-'runner timeline'
-4. identify the defensive play order (eg, 1-2-3 or 2-3-1) based on game state
-and fielder location
-5. build the fielding timeline (what basepaths are 'hot' when)
-6. for each runner, compare runner timeline vs defense timeline + fuzz and roll on timing to
-decide go/nogo
-7. advance through the timeline, rolling for each fielder in turn based on throwing and reaction
-8. score / mark out runners as needed
-9. if there is an error, go to position 2
-
-Failure mode:
-
-runners on 1, 2.
-Hit to deep LF. LF misses the catch, but get it 4 seconds in.
-based on position, runner on 2 is past third, but runner on 1st is approaching 2nd.
-
-if fielder: throws home, 3rd runner can double back
-if fielder: throws 2nd, 3rd runner can make it home
-
-
-simplest plan:
 - draw the baseball line
 - id fielders
 - roll to intercept, get time and position
@@ -238,6 +197,89 @@ but the 5* runner won't take a long lead unless strategy is really bad)
 
 fielder decides target:
 runner on first is NOGO with margin of 0.35
+XYZZY: go/nogo decisions should get fuzzed by strategy, bravery
+
 this is the lowest margin, so they take it anyway - target is FIRST BASE
+
+
+make throw:
+
+throwing probability uses the THROW FUZZER:
+a normal distribution with mean -3 and stdev 1.7, roll UNDER (d[throwing] + d[grab]) / 2
+this makes an error % of (3.41 / 1.98 / 0.93 / 0.16)
+
+XYZZY: THROW FUZZER NEEDS A TERM FOR DISTANCE
+
+pickoff uses the PICKOFF FUZZER: + norm(0, 0.2)
+
+four things can happen:
+1. the runner is slightly faster than the pickoff, but the pickoff is good:
+- safe
+2. the runner is slightly slower than the pickoff, and the pickoff is good:
+- out
+3. the runner is slightly slower than the pickoff, but the fielder makes an error:
+- safe, with the possibility of a steal
+4. the runner is a lot slower than the pickoff or decides to go for it
+- rundown!
+
+
+
+# this is all just for leadoffs and pickoffs ;~;
+
+
+BLATANT STEALS
+
+these should be rare and highly coupled to bravery
+using our model:
+
+- calculate throw to each base timing
+because this is a blatant steal, we need to use p[awe] + p[reaction]
+
+- for each runner, calculate position based on speed, timing, bravery, and decide go/nogo
+so we can just use this logic here to allow for blatant steals: players all get a chance
+to go, and the pitcher already has the logic set up
+
+a player with a wildly high bravery can actually just blatantly steal and win
+the rundown repeatedly, and I think that's perfect.
+
+
+
+RUNDOWNS:
+
+rundowns are a special case when:
+a. a player is caught on the basepaths
+b. both go and nogo are valid options
+c. no other runners are higher priority
+
+a rundown is a sacred duel between the runner and the basepeep.
+the runner is alone, save for their BRAVERY.
+the basepeep is backed up - by the shortstop, other basepeep, and pitcher.
+in the back field, other runners can attempt to steal - depending on their
+runner's abilities.
+
+it's a little inset RPG where the runner and the basepeep duel
+as the basepeep succeeds, their runners can advance and they can defeeat the supporting
+characters and possibly even the basepeep themselves (resulting in a safe)
+
+
+COMMIT TO PITCH
+
+whoaaaa deep breath
+
+BATTER DECIDES IF ANY SPECIAL EFFECTS
+1st, batter decides if special technique. Right now, that's just bunting:
+
+bunting is better when:
+- player has high control
+- player is fast
+- 3rd basepeep is bad and your strat rating is high
+- player has bad contact and power
+
+
+
+IDEA: play doesn't end at 3rd out, but instead you have to chase all the fielders down
+XB is much, much more biased towards small ball and running
+
+
 
 
