@@ -251,15 +251,15 @@ a. a player is caught on the basepaths
 b. both go and nogo are valid options
 c. no other runners are higher priority
 
-a rundown is a sacred duel between the runner and the basepeep.
+a rundown is a sacred duel between the runner and the basist.
 the runner is alone, save for their BRAVERY.
-the basepeep is backed up - by the shortstop, other basepeep, and pitcher.
+the basist is backed up - by the shortstop, other basist, and pitcher.
 in the back field, other runners can attempt to steal - depending on their
 runner's abilities.
 
-it's a little inset RPG where the runner and the basepeep duel
-as the basepeep succeeds, their runners can advance and they can defeeat the supporting
-characters and possibly even the basepeep themselves (resulting in a safe)
+it's a little inset RPG where the runner and the basist duel
+as the basist succeeds, their runners can advance and they can defeeat the supporting
+characters and possibly even the basist themselves (resulting in a safe)
 
 
 COMMIT TO PITCH
@@ -272,9 +272,12 @@ BATTER DECIDES IF ANY SPECIAL EFFECTS
 bunting is better when:
 - player has high control
 - player is fast
-- 3rd basepeep is bad and your strat rating is high
-- player has bad contact and power
+- 3rd basist is bad and your strat rating is high
 
+- player has bad contact and power
+- pitcher has high force or trickery
+
+bunt trades a TON of power for a massive control multiplier and a bunch of contact
 
 
 IDEA: play doesn't end at 3rd out, but instead you have to chase all the fielders down
@@ -282,4 +285,56 @@ XB is much, much more biased towards small ball and running
 
 
 
+THE HIT ROLL
+
+Working backwards:
+
+If the hitter hits the ball, we determine distance, launch angle, and field angle.
+
+launch angle and field angle are based on control, and are two separate rolls
+distance is based on power and is a third roll
+
+the mean of these rolls is set by the hit quality rating - a single number that
+determines how good a hit is.
+
+hit quality is a number based on contact, pitch difficulty, and pitch negation:
+
+roll contact vs pitch difficulty, apply negation modifier (as a second roll?)
+- remember: normal distributions can only be slid and expanded
+
+pitch negation is based on trickery
+
+pitch difficulty is based on force and location
+
+location is based on the designated target and an accuracy roll
+
+force is hard to get up. any pitcher can go for location, but it results in more balls
+
+it's a strategy call how bad balls are vs. hits;
+
+trickery also makes it harder to read
+
+
+working forwards:
+
+CATCHER+PITCHER DECIDE PITCH LOCATION AND TYPE
+
+the stronger a batter, the further outside you want to aim.
+
+the further ahead you are, the further outside you want to aim.
+
+knowing accuracy is a normal distribution, you can figure the ideal pitch location
+based on probability and cost of walk vs cost of hit
+
+but strategy and calling make that
+
+
+PITCH TYPES:
+
+pitch types trade force, trickiness, and accuracy.
+
+a hitter with :
+poor discipline should get tricky pitches, alternating outside and inside the zone
+poor contact should get fast pitches right down the center
+poor power should get tricky pitches to bring the power down further
 
