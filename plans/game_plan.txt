@@ -338,3 +338,57 @@ poor discipline should get tricky pitches, alternating outside and inside the zo
 poor contact should get fast pitches right down the center
 poor power should get tricky pitches to bring the power down further
 
+
+
+
+
+OK PITCH POSITION SUCKS
+why?
+1. it's MASSIELY complicated. YOU can't even follow it
+2. it's going to be IMPOSSIBLE to balance
+3. even if it's effective, some of the attributes (such as walking stars in high-pressure
+situations) *sucks*
+
+so:
+- make it obvious
+- make it clear
+
+calling avoids throwing strikes with 0-2, whereas low calling makes it random
+high calling also provides a numeric pitch bonus
+
+
+per discussion:
+
+make trickiness be anti-moxie?
+(fourth pitching stat or remove blunting effect or make trickiness dual purpose?)
+
+hitter discipline -> less balls
+hitter hitting -> more balls
+
+
+pitch based on count (primary factor)
+
+
+20: current count
+5: moxie vs thwack
+2: how loaded bases are, how many outs
+1: how scary current hitter is vs how scary the next one is
+
+
+current count > outs > bases > score > past performance vs pitcher
+
+
+make specific matchup modifiers (based on elements and the type match grid?)
+
+
+pitcher FEAR and hitter FEAR (replace leadership?)
+
+defs need fear as a stat
+
+
+
+2022 note: aaaaaahhhghgh
+
+pitches are either a strike or a ball, with a difficulty and a hard to read?
+
+rework stats from flowchart. :v

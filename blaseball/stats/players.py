@@ -547,3 +547,6 @@ if __name__ == "__main__":
     pb = PlayerBase(10)
     print(pb)
     print(pb[1001].text_breakdown())
+
+    for p in pb:
+        print(p)
