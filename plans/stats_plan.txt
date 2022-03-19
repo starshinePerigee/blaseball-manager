@@ -68,8 +68,8 @@ make solid friends in tough times.
 
 - Insight is the key to special techniques of blaseball, from regular tricky pitches and bunts,
 to control of the ball after it's hit, all the way up to special abilities unique to that player.
-Insight lets players understand when to steal, and how to stop it, as well as all other forms
-of blaseball strategy. This helps them become catchers and coaches.
+Insight lets players understand when to steal, and how to stop it. It also lets players become
+catchers and coaches.
 
 
 3. Vibes
@@ -141,8 +141,7 @@ Four of the derived blaseball ratings should be familiar to anyone who plays bla
 - Pitching
 - Edge
 
-"Edge" represents additional bonuses a player can contribute while not on the field: heckling. cheering,
-and strategy.
+"Edge" represents additional bonuses a player can contribute while not on the field: heckling and cheeriing
 
 Deep blaseball ratings are used by the baseball engine to actually roll for player performance,
 and can be viewed through a deeper screen, possibly after being unlocked by the manager.
@@ -184,8 +183,7 @@ Edge:
 - Heckling: How good a player is at getting under another player's skin; this can work from the dugout, but
 this is most effective when there is a relationship between a player and victim, and there are
 bonuses to proximity when players are at bat or on base.
-- Strategy: a player's understanding of the game and knowledge of the other team, which is passed to players
-on their team but especially when they're mentors or coaches
+- Sparkle: a player's ability to unlock and use powerful special abilities.
 - Leadership: how much of a boost a player can provide to another player from the dugout by providing words
 of advice or inspiration; works best in close, critical situations.
 - I.T.: a player's ability to operate office equipment.
@@ -241,14 +239,11 @@ but also who their coaches, friends, and memories guide them as. This lets speci
 However, training against personality can be more difficult; so personality will always be an effective guide
 on both how to develop a player and what their capabilities are.
 
-Note that this focus goes even further: A number of the deep ratings are "linked" - they are less important
-than other weighted ratings, but are trained together with a second rating from a different derived rating.
-
 Effectively, "weaker" and "less necessary" top level ratings (baserunning especially) are trained naturally,
 and come with side rewards for focusing on them. Developing a three true outcome hitter or ace fastball pitcher
 means neglecting other stats, while building an all-rounder has an advantage to make up for the lack of focus.
 
-[Ratings per personality and vice versa, as well as links, exist in stats wiggler.xlsx]
+[Ratings per personality and vice versa exist in stats wiggler.xlsx]
 
 9. Example player breakdown
 
@@ -341,7 +336,7 @@ Trickery ****-
 Awareness ***** **-
 
 Edge:
-Strategy: ***** -
+Sparkle: ***** -
 Heckling: ***** ***-
 Cheers: *****
 Clutch: 0
@@ -419,7 +414,7 @@ running has the following stats:
 - jukes (rundown ability)
 - steal success
 - steal willingness
-- strategy / errors
+- errors
 
 (OOTP has running speed, stealing bases, baserunning instincts (taking advantage of misplays, etc.))
 (Blaseball has steal chance (basethirst), overall speed (lazer), advancement on hits (continuation),

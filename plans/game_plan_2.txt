@@ -1,0 +1,121 @@
+OK starting with stats was the wrong approach. let's try this again!
+
+Game
+    Inning
+        Side
+            At-Bat
+                Pitch
+                    Actions
+                    Throw
+                    Live-ball
+
+shed all the cruft around a pitch, dial in on a "Throw"
+
+    Pitch: a single blaseball event, with no space between. includes the between pitch timing window, the player
+    stepping up, the pitcher committing to pitch
+    Actions: everything that happens in a game has a timing window - if the window is "whenever" it's a pitch action
+    Throw: the  actual pitch from the moment the pitcher commits to the batter swinging
+    Live-ball: everything that happens while the ball is live.
+
+Anatomy of a pitch:
+    - strike / ball
+    - difficulty (how hard is this to hit?)
+    - obscurity (how hard is this to read?)
+    - reduction (if you hit it, how much is it reduced?)
+    - effects
+
+Anatomy of a hit:
+    - speed
+    - field angle (angle left/right)
+    - launch angle (angle fly/ground)
+    - effects
+
+Generating a pitch:
+    pitchers have two sliders:
+        pitch type (trade power, trickiness, accuracy, and reduction)
+        target (trade risk of ball for difficulty)
+    trickiness turns into reduction and obscurity
+    the further out a pitch is, the more difficulty, but past a ball it's a ball
+
+to get a pitch, we generate a pitch intent.
+    pitch *intent* + rolls = thrown pitch
+    components:
+        pitch type
+        target location
+
+before the player swings, the player generates a hit intent:
+    - desperation (how biased they are for swinging)
+    - target
+    - effects
+
+hit math:
+    determine if the player is going to swing
+    determine if the player hits, and if so, how good is the contact
+    if hit:
+        apply effects and reduction
+    if miss / no swing:
+        update count
+
+
+so the anatomy of a throw looks like this:
+    1. generate hit intent
+    2. generate pitch intent
+    3. roll pitch intent into a pitch
+    4. from pitch + hit intent, decide if swing
+    5. if swing, roll for hit
+    6. if hit, roll for live ball
+
+as a reminder, here's the stats at play:
+    hitting:
+        power
+        contact
+        control
+        discipline
+    pitching:
+        force
+        accuracy
+        trickery
+    defense:
+        calling
+    transient:
+        edge
+        fear
+        strategy (based on player, leadership?)
+
+    (transient stats get rolled in separately - certain stat calls have different calls between
+    "live" and "unmodified"?)
+
+1. GENERATE HIT INTENT
+    requires the following:
+        desperation
+        target
+        effects
+    1. decide if effects
+        each effect has its own criteria, which is managed by that effect
+        for bunting, we decide based on:
+            - pitcher fear +-0.4 total
+            - player control + speed - player hitting +-0.5 total
+            - runner on first/second? +0.3 for each
+            - runner on third? -1
+        these roll up into a "desire factor"
+            all abilities have "desire" + "cooldown" + "base"
+                base: if the desire is 1, how likely to use this ability
+                cooldown: abilities can't be used within their cooldown period, plus each
+                    n cooldown periods since this ability activated increases the desire
+                    (logarithmically to 10x?)
+                desire: built into the specific instance. in a "good opportunity", should result in approx. 1
+        iterate through a player's abilities, rolling for each
+            only two abilities at game start: bunt and iwalks
+        also include stats in the ability class for introspection (how often? highest cooldown? average wait since cd?)
+    2. decide desperation
+        based on count
+        modified by strategy
+        average of 1
+    3. decide target
+        based on player
+
+
+strategy sucks?
+yeah it sucks. it's only valuable in pitching, but pitching is already taken - by calling
+break that nonsense up!
+
