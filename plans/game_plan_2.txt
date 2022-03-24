@@ -88,7 +88,6 @@ as a reminder, here's the stats at play:
 1. GENERATE HIT INTENT
     requires the following:
         desperation
-        target
         effects
     1. decide if effects
         each effect has its own criteria, which is managed by that effect
@@ -105,22 +104,23 @@ as a reminder, here's the stats at play:
                     (logarithmically to 10x?)
                 desire: built into the specific instance. in a "good opportunity", should result in approx. 1
         iterate through a player's abilities, rolling for each
-            only three abilities at game start: bunt, iwalks, called shot (trade foul chance for hit location)
+            only two abilities at game start: bunt, called shot (trade foul chance for hit location)
         also include stats in the ability class for introspection (how often? highest cooldown? average wait since cd?)
     2. decide desperation
         based on count
         average of 1
-    3. decide target
-        based on player accuracy, bases
-
-
-hit control *ALSO* sucks, so i'm pulling it.
-discipline is now a stability stat.
-hit control can be a special ability called "called shot"
-
-fuck it - let's axe all the stats.
-Throwing is out (overlaps with grabiness).
-Awareness is out (rolled into Calling).
 
 
 2. GENERATE PITCH INTENT
+    requires the following:
+        pitch type
+        target location
+    1. decide if effects
+        each effect has its own criteria, managed by that effect
+            see above for general effect management
+        three effects at this time:
+            iwalk
+            knuckleball
+            takedown (0.1 run for a strike, 0.1 for the other team for an on-base)
+    2. decide location:
+        oh god
