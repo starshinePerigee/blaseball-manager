@@ -67,9 +67,9 @@ fill most roles in defense. Stable players support themselves and their teammate
 make solid friends in tough times.
 
 - Insight is the key to special techniques of blaseball, from regular tricky pitches and bunts,
-to control of the ball after it's hit, all the way up to special abilities unique to that player.
-Insight lets players understand when to steal, and how to stop it. It also lets players become
-catchers and coaches.
+all the way up to special abilities unique to that player. Insight lets players understand when to
+steal, and how to stop it. Perhaps most importantly, insight is required for a player to effectively
+coach another player and let them reach their full potential.
 
 
 3. Vibes
@@ -149,8 +149,6 @@ and can be viewed through a deeper screen, possibly after being unlocked by the 
 Batting:
 - Power: How likely a good hit is to travel far, how good a player is at hitting HRs
 - Contact: How good a player is at hitting difficult pitches
-- Control: A player's ability to direct the ball in an ideal direction: ground, fly, and avoiding fielders.
-           Control also dictates a player's ability to bunt
 - Discipline: A player's ability to read pitches - to let balls be balls and swing at strikes,
               as well as their ability to decide if special hits are required.
 
@@ -164,15 +162,12 @@ Baserunning:
 
 Defense:
 - Reach: The amount of ground a player can cover, and how good they are at catching fly outs.
+         Required for outfielders
 - Grabbiness: A player's catching ability, helping with ground outs, double plays, and avoiding errors.
-- Throwing: A player's ability to throw the ball accurately and without error
-Fielding errors are decided by the respective reach, reaction, and throwing of the players involved.
+              Required for infielders
 - Calling: The player's ability to call for pitches, pickoffs, and set pitch targets as catcher (or pitcher).
-a low calling will cause pitchers to give up more walks and first-pitch hits, while a high
-calling will even improve the difficulty of a pitcher's pitches.
-- Awareness: A pitcher and catcher's awareness of the field, allowing for increased pickoff chance.
-  also helps with rundowns
-
+a low calling will cause pitchers to give up more walks and first-pitch hits, while a high calling will even
+improve the difficulty of a pitcher's pitches.
 
 Pitching:
 - Force: A pitcher's speed, represents how difficult the pitch is to hit.
@@ -315,7 +310,6 @@ Deep Ratings
 Batting:
 Power ****-
 Contact ***** **-
-Control **
 Discipline ***** *****
 
 Baserunning:
@@ -326,14 +320,12 @@ Timing ***** **-
 Defense:
 Reach ***** ****-
 Grabbiness ***** *****
-Throwing ****
 Calling *-
 
 Pitching:
 Force **
 Accuracy *-
 Trickery ****-
-Awareness ***** **-
 
 Edge:
 Sparkle: ***** -
