@@ -122,5 +122,19 @@ as a reminder, here's the stats at play:
             iwalk
             knuckleball
             takedown (0.1 run for a strike, 0.1 for the other team for an on-base)
-    2. decide location:
-        oh god
+    2. decide target location:
+        check stats worksheet for math
+
+3. ROLL PITCH INTENT INTO A PITCH
+    requires the following:
+        location (0+)
+        difficulty (0-2)
+        obscurity (0-2)
+        reduction (0-2) # slightly affected by pitch power
+    1. use calling to assess game situation and determine target location
+    2. roll for actual pitch location
+    3. from pitch location and stats, create difficulty, obscurity, reduction, and strike?
+
+4. Decide if swing
+
+
