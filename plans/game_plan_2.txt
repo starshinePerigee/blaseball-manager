@@ -62,8 +62,9 @@ so the anatomy of a throw looks like this:
     2. generate pitch intent
     3. roll pitch intent into a pitch
     4. from pitch + hit intent, decide if swing
-    5. if swing, roll for hit
-    6. if hit, roll for live ball
+    5. if swing, roll for hit and get hit quality
+    6. if hit, translate hit quality into distance and angles
+    7. check if foul, else live ball
 
 as a reminder, here's the stats at play:
     hitting:
@@ -109,6 +110,7 @@ as a reminder, here's the stats at play:
     2. decide desperation
         based on count
         average of 1
+    https://sabr.org/journal/article/study-of-the-count-yields-fascinating-data/
 
 
 2. GENERATE PITCH INTENT
@@ -136,5 +138,21 @@ as a reminder, here's the stats at play:
     3. from pitch location and stats, create difficulty, obscurity, reduction, and strike?
 
 4. Decide if swing
+    requires the following:
+        swing?
+    https://blogs.fangraphs.com/lets-take-a-closer-look-at-hitter-swing-decisions/
+    https://www.beyondtheboxscore.com/2014/6/4/5776990/swing-rate-ball-strike-counts-swinging-strikes
 
+5. Roll for hit
+    requires:
+        hit quality
 
+6. generate distance and angle
+    requires:
+        launch angle
+        field angle
+        speed
+    https://tht.fangraphs.com/toward-a-probability-distribution-over-batted-ball-trajectories/
+    https://baseballsavant.mlb.com/league
+    https://fantasy.fangraphs.com/lets-talk-about-launch-angle-tightness/
+    https://baseballcloud.blog/2021/02/08/what-goes-into-a-mlb-draft-model-batted-ball-profiles/

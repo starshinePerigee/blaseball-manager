@@ -159,6 +159,7 @@ Baserunning:
            If a player has bad enough timing, bravery is a downside.
 - Timing: A player's decision-making while on the bases. Prevents being thrown out and lets read
           plays like fly outs better, allowing them to take extra bases.
+- Pull: a player's average launch angle when hitting; set at random but averages middle-left field
 
 Defense:
 - Reach: The amount of ground a player can cover, and how good they are at catching fly outs.
