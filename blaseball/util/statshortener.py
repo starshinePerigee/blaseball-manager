@@ -5,50 +5,14 @@ also does lookups for first three characters, case sensitivity, underscores, etc
 """
 
 PAIRS = [
-    ("name", "NAME"),
-    ("total offense", "TOF"),
-    ("total defense", "TDF"),
-    ("vibes", "VIB"),
-    ("stamina", "STA"),
-    ("mood", "MOD"),
-    ("soul", "SOL"),
-    ("batting", "BAT"),
-    ("running", "RUN"),
-    ("defense", "DEF"),
-    ("pitching", "PCH"),
-    ("edge", "EDG"),
-    ("vitality", "VIT"),
-    ("social", "SOC"),
-    ("determination", "DTR"),
-    ("enthusiasm", "ENT"),
-    ("stability", "STB"),
-    ("insight", "INS"),
+
+
+
+
+
     ("element", "ELE"),
-    ("power", "POW"),
-    ("contact", "CON"),
-    ("discipline", "DSC"),
-    ("speed", "SPD"),
-    ("bravery", "BRV"),
-    ("timing", "TMG"),
-    ("calling", "CAL"),
-    ("reach", "RCH"),
-    ("grabbiness", "GRA"),
-    ("force", "FOR"),
-    ("accuracy", "ACC"),
-    ("trickery", "TRK"),
-    ("sparkle", "SPK"),
-    ("leadership", "LED"),
-    ("heckling", "HCK"),
-    ("i.t.", "I.T"),
-    ("endurance", "EDR"),
-    ("positivity", "POS"),
-    ("energy", "ENG"),
-    ("recovery", "RCV"),
-    ("teaching", "TCH"),
-    ("cool", "COO"),
-    ("hangouts", "HNG"),
-    ("support", "SUP"),
-    ("clutch", "CLT"),
+
+
     # ("", ""),
 ]
 
