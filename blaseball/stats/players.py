@@ -32,18 +32,16 @@ PERSONALITY_FOUR = [
     "insight",
 ]
 
-DETERMINATION_RATINGS = ["power", "bravery", "force",  "leadership", "endurance", "cool"]
+DETERMINATION_RATINGS = ["power", "bravery", "force", "leadership", "endurance", "cool"]
 ENTHUSIASM_RATINGS = ["contact", "speed", "reach", "heckling", "energy", "hangouts"]
-STABILITY_RATINGS = ["control", "throwing", "grabbiness", "accuracy", "i.t.",
-                     "positivity", "support"]
-INSIGHT_RATINGS = ["discipline", "timing", "calling", "trickery", "awareness",
-                   "strategy", "recovery", "teach"]
+STABILITY_RATINGS = ["discipline", "grabbiness", "accuracy", "i.t.", "positivity", "support"]
+INSIGHT_RATINGS = ["timing", "calling", "trickery", "sparkle", "recovery", "teach"]
 
-BATTING_RATINGS = ["power", "contact", "control", "discipline"]
+BATTING_RATINGS = ["power", "contact", "discipline"]
 BASERUNNING_RATINGS = ["speed", "bravery", "timing"]
-DEFENSE_RATINGS = ["reach", "grabbiness", "throwing", "calling", "awareness"]
+DEFENSE_RATINGS = ["reach", "grabbiness", "calling"]
 PITCHING_RATINGS = ["force", "trickery", "accuracy"]
-EDGE_RATINGS = ["leadership", "strategy", "heckling", "i.t."]
+EDGE_RATINGS = ["leadership", "sparkle", "heckling", "i.t."]
 VITALITY_RATINGS = ["endurance", "energy", "positivity", "recovery"]
 SOCIAL_RATINGS = ["cool", "hangouts", "support", "teach"]
 
@@ -62,9 +60,9 @@ for rating in all_ratings_from_personality:
 
 LINKED_RATINGS = {
     # derived stat, base stat
-    "awareness": "timing",
-    "throwing": "accuracy",
-    "calling": "strategy",
+    # "awareness": "timing",
+    # "throwing": "accuracy",
+    # "calling": "strategy",
 }
 
 deep_ratings = [rating for rating in all_expressed_ratings if rating not in LINKED_RATINGS]
@@ -224,7 +222,7 @@ class Player(Mapping):
         """Updates the descriptor fields for this player"""
 
         self["overall_descriptor"] = get_descriptor(self, 'overall')
-        self["offense_descriptor"] = get_descriptor(self, 'batting')
+        self["offense_descriptor"] = get_descriptor(self, 'offense')
         if self["is_pitcher"]:
             self["defense_descriptor"] = get_descriptor(self, 'pitching')
         else:

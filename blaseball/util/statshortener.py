@@ -26,7 +26,6 @@ PAIRS = [
     ("element", "ELE"),
     ("power", "POW"),
     ("contact", "CON"),
-    ("control", "CTR"),
     ("discipline", "DSC"),
     ("speed", "SPD"),
     ("bravery", "BRV"),
@@ -34,12 +33,10 @@ PAIRS = [
     ("calling", "CAL"),
     ("reach", "RCH"),
     ("grabbiness", "GRA"),
-    ("throwing", "TRW"),
     ("force", "FOR"),
     ("accuracy", "ACC"),
     ("trickery", "TRK"),
-    ("awareness", "AWR"),
-    ("strategy", "STG"),
+    ("sparkle", "SPK"),
     ("leadership", "LED"),
     ("heckling", "HCK"),
     ("i.t.", "I.T"),
@@ -88,7 +85,6 @@ class Shortener:
                 first_three_cache += [abbr]
                 self.first_three[abbr] = item
 
-
     def __getitem__(self, item: str) -> str:
         try:
             return self.lookup[item]
@@ -124,6 +120,6 @@ class Lengthener:
             return self.lookup[short.first_three[item.lower()]]
         raise KeyError(f"Could not locate string '{item}' in lengthener!")
 
-long = Lengthener()
 
+long = Lengthener()
 
