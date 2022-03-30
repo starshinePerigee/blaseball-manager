@@ -105,7 +105,7 @@ class Player(Mapping):
     def write_descriptors(self) -> None:
         """Updates the descriptor fields for this player"""
 
-        self["overall descriptor"] = get_descriptor(self, 'overall')
+        self["overall descriptor"] = get_descriptor(self, 'overall', False)
         self["offense descriptor"] = get_descriptor(self, 'offense')
         if self["is pitcher"]:
             self["defense descriptor"] = get_descriptor(self, 'pitching')

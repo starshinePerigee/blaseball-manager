@@ -1,54 +1,29 @@
 """
 This takes two teams with lineups and makes them play ball against each other!
 
-what happens in a ball game?
-
-inner loop:
-pitcher throws a pitch with speed, accuracy, and difficulty
-batter decides to swing or not
-if swing:
-    either they hit or they miss
-    if they hit:
-        if it's a foul, play resets - nothing happens
-        otherwise, it's a live ball
-if not:
-    if in strike zone, it's a strike looking
-    if outside strike zone, it's a ball
-
-if it's a live ball:
-    baserunners advance
-    fielders attempt to throw them out
-
-    how does this work?
-        1. determine power and angle of hit
-        2. determine if fielder catches it (fly out)
-        if fly out:
-            runner is out
-            basepeeps tag home
-            chance for stealing (advance / score on the sacrifice)
-        if ground:
-            determine catch time
-            set baserunner positions
-            fielder decides throw location
-            makes throw:
-                calc time (with error)
-                advance runners, see if safe
-                if runners reach base, they can decide if they want to continue
-
-during idle play:
-    stealing attempts
-    pitch
 
 """
 
 from collections.abc import MutableSequence
-from typing import Hashable, Union, List
+from typing import Union, List
 
 from random import random
 from decimal import Decimal
 
-from blaseball.stats import lineup
+from blaseball.stats.lineup import Lineup
 from blaseball.settings import Settings
+
+
+class Ball:
+    def __init__(self):
+        self.ball = False
+        self.strike = False
+        self.out = False
+        self.groundish = False
+        self.launch_angle = 0
+        self.field_angle = 0
+        self.location = (0, 0)
+        self.speed = 0
 
 
 class BallGame:
@@ -57,7 +32,7 @@ class BallGame:
 
     The goal is to generate a BallGameSummary
     """
-    def __init__(self, home: lineup.Lineup, away: lineup.Lineup, print_events: bool=False) -> None:
+    def __init__(self, home: Lineup, away: Lineup, print_events: bool=False) -> None:
         self.home_team = home
         self.away_team = away
 
@@ -82,8 +57,14 @@ class BallGame:
     def offense_i(self) -> int:
         return self.inning_half
 
+    def offense(self) -> Lineup:
+        return self.teams[self.offense_i()]
+
     def defense_i(self) -> int:
         return (self.inning_half + 1) % 2
+
+    def defense(self) -> Lineup:
+        return self.teams[self.defense_i()]
 
     def increment_batting_order(self):
         self.at_bat_count += 1
@@ -158,7 +139,7 @@ class BallGameSummary(MutableSequence):
         self.s = []
         self.print_events = print_events
 
-    def __iadd__(self, other:str) -> 'BallGameSummary':
+    def __iadd__(self, other: str) -> 'BallGameSummary':
         if self.print_events:
             print(other)
         self.s.append(other)
@@ -187,7 +168,7 @@ class BallGameSummary(MutableSequence):
 if __name__ == "__main__":
     from random import shuffle
     from time import sleep
-    from blaseball.stats import players, teams, lineup
+    from blaseball.stats import players, teams
     from data import teamdata
     pb = players.PlayerBase()
     team_names = teamdata.TEAMS_99
@@ -195,10 +176,10 @@ if __name__ == "__main__":
 
     league = teams.League(pb, team_names[0:2])
 
-    l1 = lineup.Lineup("Home Lineup")
+    l1 = Lineup("Home Lineup")
     l1.generate(league[0])
 
-    l2 = lineup.Lineup("Away Lineup")
+    l2 = Lineup("Away Lineup")
     l2.generate(league[1])
 
     print(league[0])
