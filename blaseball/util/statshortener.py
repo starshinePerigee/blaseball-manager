@@ -4,28 +4,10 @@ A quick utility to convert stat/rating names into 3 letter strings and back
 also does lookups for first three characters, case sensitivity, underscores, etc.
 """
 
-PAIRS = [
+from blaseball.stats.stats import all_stats
 
-
-
-
-
-    ("element", "ELE"),
-
-
-    # ("", ""),
-]
-
-long_to_short = {pair[0]: pair[1] for pair in PAIRS}
-short_to_long = {pair[1]: pair[0] for pair in PAIRS}
-
-# throw error if duplicates exist
-if len(long_to_short) != len(PAIRS):
-    raise KeyError("Duplicate long name present!")
-
-if len(short_to_long) != len(PAIRS):
-    raise KeyError("Duplicate short name present!")
-
+long_to_short = {stat.name: stat.abbreviation for stat in all_stats if stat.abbreviation is not None}
+short_to_long = {stat.abbreviation: stat.name for stat in all_stats if stat.abbreviation is not None}
 
 class Shortener:
     def __init__(self):
@@ -58,7 +40,7 @@ class Shortener:
         if item in self.lookup:
             return self.lookup[item]
         if item[0:3] in self.first_three:
-            return self.first_three[item[0:3]]
+            return self.lookup[self.first_three[item[0:3]]]
         if item[0:3] in self.first_three_exclusion:
             raise KeyError(f"First three characters {item[0:3]} ambiguous to "
                            f"{self.first_three_exclusion[item[0:3]]}")
@@ -81,9 +63,24 @@ class Lengthener:
         if item in self.lookup:
             return self.lookup[item]
         if item.lower() in short.first_three:
-            return self.lookup[short.first_three[item.lower()]]
+            return short.first_three[item.lower()]
         raise KeyError(f"Could not locate string '{item}' in lengthener!")
 
 
 long = Lengthener()
 
+
+if __name__ == "__main__":
+    print(short["batting"])
+    print(short["battin"])
+    print(short["trick"])
+    try:
+        print(short["stam"])
+    except KeyError:
+        print("shortener raises an error if a shortened form is not a 3 letter abbreviation and is also ambiguous")
+
+    print(long["ELE"])
+    print(long["TOF"])
+    print(long["tri"])
+    print(long["sta"])
+    print(long["stam"])

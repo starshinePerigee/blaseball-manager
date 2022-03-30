@@ -13,18 +13,21 @@ How does this work?
 2. run them through the name grid
 """
 
+from blaseball.stats.stats import all_stats
 from data.playerdescriptors import ASPECTS, DESCRIPTOR_DB
-from blaseball.util.weighter import calculate_weighted
 
+weights = all_stats.weights
 
 ASPECT_THRESHOLD = 0.8
 
 
 def get_descriptor(player, stat, extras=True) -> str:
-    aspect_weights = {aspect: calculate_weighted(player, ("descriptor_" + aspect))
+    # build a sorted list of aspect: weight pairs where aspect is a weight beginning with "descriptor_"
+    aspect_weights = {aspect: weights['descriptor_' + aspect].calculate_weighted(player)
                       for aspect in ASPECTS[stat][0]}
-    aspects_sorted = sorted((v, k) for k, v in aspect_weights.items())
-    aspects_sorted.reverse()
+    aspects_sorted = sorted(((v, k) for k, v in aspect_weights.items()), reverse=True)
+
+    # determine the aspects which are above our threshold:
     high_threshold = aspects_sorted[0][0] * ASPECT_THRESHOLD
     total_above_threshold = sum([(1 if x[0] > high_threshold else 0) for x in aspects_sorted])
     if total_above_threshold == 1:
@@ -70,7 +73,7 @@ if __name__ == "__main__":
                     print(f"INDEXERROR: Line {j}, text len {len(text)}")
 
         for stat in ['overall', 'batting', 'fielding', 'pitching']:
-            p_weights = {aspect: calculate_weighted(pb[i], ("descriptor_" + aspect))
+            p_weights = {aspect: weights["descriptor_" + aspect].calculate_weighted(pb[i])
                          for aspect in ASPECTS[stat][0]}
             p_sorted = sorted((v, k) for k, v in p_weights.items())
             p_sorted.reverse()

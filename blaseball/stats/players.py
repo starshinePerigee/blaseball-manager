@@ -15,17 +15,9 @@ import pandas as pd
 from numpy import integer
 
 from data import playerdata
+from blaseball.stats.stats import all_stats
 from blaseball.stats import traits
-from blaseball.util.weighter import calculate_weighted
 from blaseball.util.descriptors import get_descriptor
-
-
-CORE_ATTRIBUTES = {
-    "name": "UNDEFINED PLAYER",
-    "team": "N/A TEAM",
-    "number": -1
-}
-
 
 class Player(Mapping):
     """
@@ -63,13 +55,8 @@ class Player(Mapping):
         """Create / reset all stats to default values.
         Counts as a new player"""
         self.pb = playerbase
-        for statset in COMBINED_STATS:
-            if isinstance(statset, list):
-                for stat in statset:
-                    self[stat] = 0.0
-            else:
-                for stat in list(statset.keys()):
-                    self[stat] = statset[stat]
+        for stat in all_stats:
+            self[stat.name] = stat.default
 
     def generate_player_number(self) -> int:
         """dumb fun function to create a player number based partially on CID"""
@@ -93,8 +80,8 @@ class Player(Mapping):
         self["name"] = Player.generate_name()
         self["number"] = self.generate_player_number()
 
-        for stat in PERSONALITY_FOUR:
-            self[stat] = random.random()
+        for stat in all_stats['personality']:
+            self[stat.name] = random.random()
 
         self['clutch'] = random.random()
 
@@ -103,40 +90,42 @@ class Player(Mapping):
         for i in range(0, random.randrange(3, 6)):
             self.add_trait(traits.personality_traits.draw(), derive=False)
 
-        for stat in deep_ratings:
-            self[stat] = random.random() * max(self[rating_personality_lookup[stat]], 0.5)
-            if self[rating_personality_lookup[stat]] > 1:
+        for stat in all_stats['rating']:
+            self[stat.name] = random.random() * max(self[stat.personality], 0.5)
+            if self[stat.personality] > 1:
                 # this is a dumb hack - contrary to the plan, this can result in deep stats higher than
                 # the respective personalities. In my defense, it'll be rare and cool when it happens.
-                self[stat] += self[rating_personality_lookup[stat]] - 1
-
-        for stat in LINKED_RATINGS:
-            self[stat] = self[LINKED_RATINGS[stat]]
+                self[stat.name] += self[stat.personality] - 1
 
         self.derive()
+
+    def get_weight(self, weight: str) -> float:
+        return all_stats.weights[weight].calculate_weighted(self)
 
     def write_descriptors(self) -> None:
         """Updates the descriptor fields for this player"""
 
-        self["overall_descriptor"] = get_descriptor(self, 'overall')
-        self["offense_descriptor"] = get_descriptor(self, 'offense')
-        if self["is_pitcher"]:
-            self["defense_descriptor"] = get_descriptor(self, 'pitching')
+        self["overall descriptor"] = get_descriptor(self, 'overall')
+        self["offense descriptor"] = get_descriptor(self, 'offense')
+        if self["is pitcher"]:
+            self["defense descriptor"] = get_descriptor(self, 'pitching')
         else:
-            self["defense_descriptor"] = get_descriptor(self, 'fielding')
-        self['personality_descriptor'] = get_descriptor(self, 'personality')
+            self["defense descriptor"] = get_descriptor(self, 'fielding')
+        self['personality descriptor'] = get_descriptor(self, 'personality')
 
     def derive(self) -> None:
         for stat in ["batting", "baserunning", "defense", "pitching", "edge",
                      "vitality", "social", "total_offense", "total_off_field"]:
-            self[stat] = calculate_weighted(self, stat)
+            self[stat] = all_stats.weights[stat].calculate_weighted(self)
 
-        self["is_pitcher"] = self["pitching"] > self["defense"] * 1.1
+        self["is pitcher"] = self["pitching"] > self["defense"] * 1.1
 
-        if self["is_pitcher"]:
-            self['total_defense'] = calculate_weighted(self, 'total_defense_pitching')
+        if self["is pitcher"]:
+            self['total defense'] = all_stats.weights['total_defense_pitching'].calculate_weighted(self)
         else:
-            self['total_defense'] = calculate_weighted(self, 'total_defense_fielding')
+            self['total defense'] = all_stats.weights['total_defense_fielding'].calculate_weighted(self)
+
+        self['total offense'] = all_stats.weights['total_offense'].calculate_weighted(self)
 
         self.write_descriptors()
 
@@ -230,20 +219,20 @@ class Player(Mapping):
 
     def total_stars(self) -> str:
         # """Return a string depiction of this player's stars"""
-        return self._to_stars((self["total_offense"] + self["total_defense"]) / 2)
+        return self._to_stars((self["total offense"] + self["total defense"]) / 2)
 
     def text_breakdown(self) -> str:
         text = (
             f"{self['name']} {self.total_stars()}\r\n"
             f"\r\n~ ~ ~ ~ ~ \r\n\r\n"
             f"{self['number']}: {self['name']}\r\n"
-            f"{self.total_stars()} {self['overall_descriptor']}\r\n"
-            f"{self['offense_position']}\r\n{self['defense_position']}\r\n"
+            f"{self.total_stars()} {self['overall descriptor']}\r\n"
+            f"{self['offense position']}\r\n{self['defense position']}\r\n"
             f"RBI: ?? OPS: ???\r\nERA: --- WHIP: ---\r\n\r\n"
-            f"Personality: {self['personality_descriptor']}\r\n"
-            f"Offense: {self._to_stars(self['total_offense'])} {self['offense_descriptor']}\r\n"
-            f"Defense: {self._to_stars(self['total_defense'])} {self['defense_descriptor']}\r\n"
-            f"Off-Field: {self._to_stars(self['total_off_field'])}\r\n"
+            f"Personality: {self['personality descriptor']}\r\n"
+            f"Offense: {self._to_stars(self['total offense'])} {self['offense descriptor']}\r\n"
+            f"Defense: {self._to_stars(self['total defense'])} {self['defense descriptor']}\r\n"
+            f"Off-Field: {self._to_stars(self['total off-field'])}\r\n"
             f"Element: {self['element'].title()}\r\n"
             f"\r\n"
             f"Vibes: {self['vibes']}\r\n"
@@ -260,7 +249,7 @@ class Player(Mapping):
         )
         text += "\r\n\r\n"
         text += "\r\n".join(
-            [f"{r.title()}: {self._to_stars(self[r])}" for r in PERSONALITY_FOUR]
+            [f"{r}: {self._to_stars(self[r.name])}" for r in all_stats['personality']]
         )
         text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
         text += "Traits and Conditions\r\n\r\n"
@@ -269,13 +258,14 @@ class Player(Mapping):
         ])
         text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
         text += "Deep Ratings\r\n"
-        for top, group in zip(DERIVED_RATINGS[3:], [
-            BATTING_RATINGS, BASERUNNING_RATINGS, DEFENSE_RATINGS, PITCHING_RATINGS,
-            EDGE_RATINGS, VITALITY_RATINGS, SOCIAL_RATINGS
-        ]):
-            text += f"\r\n{top.title()}:\r\n"
-            for rating in group:
-                text += f"{rating.title()} {self._to_stars(self[rating])}\r\n"
+
+        for category in all_stats['category']:
+            if 'total' in category.name:
+                continue
+            text += f"\r\n{category}:\r\n"
+            for rating in all_stats['rating']:
+                if rating.category == category.name:
+                    text += f"{rating} {self._to_stars(self[rating.name])}\r\n"
 
         return text
 
@@ -301,7 +291,7 @@ class PlayerBase(MutableMapping):
     and players, a dict indext by CID which contains pointers to the Players objects.
     """
     def __init__(self, num_players: int = 0) -> None:
-        self.df = pd.DataFrame(columns=ALL_KEYS)
+        self.df = pd.DataFrame(columns=[s.name for s in all_stats])
         self.players = {}
 
         if num_players > 0:
