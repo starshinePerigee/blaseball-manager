@@ -10,11 +10,15 @@ from typing import Union, List
 from random import random
 from decimal import Decimal
 
+from blaseball.stats.players import Player
 from blaseball.stats.lineup import Lineup
 from blaseball.settings import Settings
 
 
 class Ball:
+    """
+    The movement of a ball across the field, except during pitches.
+    """
     def __init__(self):
         self.ball = False
         self.strike = False
@@ -59,6 +63,12 @@ class BallGame:
 
     def offense(self) -> Lineup:
         return self.teams[self.offense_i()]
+
+    def batter(self, next_in_order=0) -> Player:
+        at_bat_number = self.at_bat_numbers[self.offense_i()]
+        at_bat_number += next_in_order
+        at_bat_number = at_bat_number % len(self.offense().batting_order)
+        return self.offense()['batting_order'][at_bat_number]
 
     def defense_i(self) -> int:
         return (self.inning_half + 1) % 2

@@ -13,6 +13,7 @@ from typing import Union, List
 
 import pandas as pd
 from numpy import integer
+from numpy.random import normal
 
 from data import playerdata
 from blaseball.stats.stats import all_stats
@@ -84,6 +85,9 @@ class Player(Mapping):
             self[stat.name] = random.random()
 
         self['clutch'] = random.random()
+        handedness = random.choice([55, 55, 55, 45])
+        while 0 < self['pull'] < 90:
+            self['pull'] = normal(handedness, 10)
 
         self["element"] = get_descriptor(self, 'element', extras=False)
 

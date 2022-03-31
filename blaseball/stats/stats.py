@@ -463,6 +463,9 @@ clutch = Stat('clutch', 'character')
 clutch.default = 0.2
 clutch.abbreviate("CLT")
 
+pull = Stat('pull', 'character')
+pull.default = -1
+
 element = Stat('element', 'character')
 element.default = "Basic"
 element.abbreviate("ELE")
