@@ -15,14 +15,19 @@ from blaseball.stats.lineup import Lineup
 from blaseball.settings import Settings
 
 
-class Ball:
-    """
-    The movement of a ball across the field, except during pitches.
-    """
+class Action:
     def __init__(self):
         self.ball = False
         self.strike = False
         self.out = False
+
+
+class Ball(Action):
+    """
+    A ball moving uncontrollably across a field..
+    """
+    def __init__(self):
+        super().__init__()
         self.groundish = False
         self.launch_angle = 0
         self.field_angle = 0

@@ -73,7 +73,7 @@ class PitchIntent:
     def decide_effect(self):
         pass
 
-    STRIKE_PERCENT_BASE = 0.6  # what percentage of throws would be strikes if calling was 0
+    STRIKE_PERCENT_BASE = 0.6  # what percentage of pitches would be strikes if calling was 0
     STRIKE_PERCENT_VERTICAL_SCALE = 0.4  # how much calling can move the strike percentage
     STRIKE_PERCENT_WIDTH = 20  # higher values make a steeper slope of the tanh function for strike percent
 
@@ -171,7 +171,7 @@ class PitchIntent:
                f"strike {self.ideal_strike_percent*100:.0f}%"
 
 
-class Throw:
+class Pitch:
     """
     Represents an actual pitch. has four key stats:
     location: where the pitch is, from 0 +, where 0 is right over the plate
@@ -190,7 +190,7 @@ class Throw:
         self.reduction = 0
         self.strike = False
 
-    def throw(self):
+    def pitch(self):
         self.location = self.roll_location()
         self.strike = self.check_strike()
         self.obscurity = self.get_obscurity()
@@ -206,7 +206,7 @@ class Throw:
     FRAMING_FACTOR = 0.1  # how much exceptionally good catchers can bias the upires
 
     def check_strike(self):
-        catcher_mod = max(0.0, self.catcher['calling'] - 1) * Throw.FRAMING_FACTOR
+        catcher_mod = max(0.0, self.catcher['calling'] - 1) * Pitch.FRAMING_FACTOR
         return abs(self.location) <= 1 + catcher_mod
 
     MAX_BASE_OBSCURITY = 10  # maximum amount of obscurity you can get via location (at 1.0)
@@ -215,10 +215,10 @@ class Throw:
     TRICKINESS_FACTOR = 0.5  # amount of obscurity added to every pitch for 1 trickiness
 
     def get_obscurity(self) -> float:
-        closeness_scale = 1 / Throw.OBSCURITY_DISTANCE_SCALE
+        closeness_scale = 1 / Pitch.OBSCURITY_DISTANCE_SCALE
         far_out = abs(self.location - 1)
-        location_obscurity = closeness_scale / (far_out + (1 / Throw.MAX_BASE_OBSCURITY))
-        trick_obscurity = self.pitcher['trickery'] * Throw.TRICKINESS_FACTOR
+        location_obscurity = closeness_scale / (far_out + (1 / Pitch.MAX_BASE_OBSCURITY))
+        trick_obscurity = self.pitcher['trickery'] * Pitch.TRICKINESS_FACTOR
         return location_obscurity + trick_obscurity
 
     DIFFICULTY_DISTANCE_FACTOR = 1.5  # EXPONENT for how being far out affects difficulty
@@ -226,15 +226,15 @@ class Throw:
     FORCE_FACTOR = 1  # how much a pitcher's force affects difficulty
 
     def get_difficulty(self) -> float:
-        force_difficulty = Throw.FORCE_FACTOR * self.pitcher['force']
-        location_base = max(0.0, self.location - Throw.STRIKE_ZONE_DIFFICULTY_CENTER)
-        location_difficulty = location_base ** Throw.DIFFICULTY_DISTANCE_FACTOR
+        force_difficulty = Pitch.FORCE_FACTOR * self.pitcher['force']
+        location_base = max(0.0, self.location - Pitch.STRIKE_ZONE_DIFFICULTY_CENTER)
+        location_difficulty = location_base ** Pitch.DIFFICULTY_DISTANCE_FACTOR
         return force_difficulty + location_difficulty
 
     REDUCTION_FACTOR = 0.1  # how much low force affects reduction
 
     def get_reduction(self) -> float:
-        reduction_base = Throw.REDUCTION_FACTOR * (1 - self.pitcher['force'])
+        reduction_base = Pitch.REDUCTION_FACTOR * (1 - self.pitcher['force'])
         return max(0.0, reduction_base)
 
     def __str__(self):
@@ -247,14 +247,14 @@ class SwingDecision:
     """
     Determines if a batter wants to swing for a pitch.
     """
-    def __init__(self, throw: Throw, hit_intent: HitIntent, batter: Player):
-        self.throw = throw
+    def __init__(self, pitch: Pitch, hit_intent: HitIntent, batter: Player):
+        self.pitch = pitch
         self.intent = hit_intent
         self.batter = batter
         self.read_chance = self.calculate_read_chance()
         self.swing_chance = self.calculate_swing_chance()
         self.swing_roll = -1
-        self.swing = self.decide_swing()
+        self.swinging = self.decide_swing()
 
     DISCIPLINE_REDUCTION_AT_ONE = 0.5  # how much obscurity is reduced when you have a 1 in discipline
     discipline_reduction_factor = -DISCIPLINE_REDUCTION_AT_ONE/(DISCIPLINE_REDUCTION_AT_ONE-1)
@@ -264,11 +264,11 @@ class SwingDecision:
         # this is equal to 1 when DR is 0.5. it's algebra, trust me:
         drf = SwingDecision.discipline_reduction_factor
         discipline_modifier = drf / (drf + self.batter['discipline'])
-        effective_obscurity = self.throw.obscurity * discipline_modifier
+        effective_obscurity = self.pitch.obscurity * discipline_modifier
         return 1 / (1 + effective_obscurity)
 
     def calculate_swing_chance(self) -> float:
-        strike_chance = self.read_chance if self.throw.strike else (1 - self.read_chance)
+        strike_chance = self.read_chance if self.pitch.strike else (1 - self.read_chance)
         return strike_chance * self.intent.desperation
 
     def decide_swing(self) -> bool:
@@ -276,12 +276,23 @@ class SwingDecision:
         return self.swing_roll < self.swing_chance
 
     def __str__(self):
-        swing_text = "Swing" if self.swing else "Look"
+        swing_text = "Swing" if self.swinging else "Look"
         return f"{swing_text}: read {self.read_chance*100:.0f}% swing {self.swing_chance*100:.0f}% " \
                f"roll {self.swing_roll:.2f}"
 
 
-class Pitch:
+class Swing:
+    """
+    A players swing, from decision, through hit quality.
+    """
+    def __init__(self):
+        pass
+
+    def swing(self) -> Ball:
+        return Ball()
+
+
+class PitchHit:
     """
     A single pitch, from after the action timing window, to the result of the pitch.
     This is carried back to the game as a Ball.
@@ -293,13 +304,18 @@ class Pitch:
 
         self.hit_intent = HitIntent(self.game)
         self.pitch_intent = PitchIntent(self.game)
-        self.throw = Throw(
+        self.pitch = Pitch(
             self.pitch_intent,
             self.game.defense()['pitcher'],
             self.game.defense()['catcher']
         )
-        self.throw.throw()
-        self.swing_decision = SwingDecision(self.throw, self.hit_intent, self.game.batter())
+        self.pitch.pitch()
+        self.swing_decision = SwingDecision(self.pitch, self.hit_intent, self.game.batter())
+        if self.swing_decision.swinging:
+            self.swing = Swing()
+            self.result = self.swing.swing()
+        else:
+            self.result = Ball()
 
 
 if __name__ == "__main__":
@@ -317,6 +333,7 @@ if __name__ == "__main__":
     l2.generate(league[1])
 
     g = BallGame(l1, l2, False)
+    g.balls = 1
 
     test_pitcher = g.defense()['pitcher']
     print(f"Pitcher: {test_pitcher}")
@@ -344,19 +361,19 @@ if __name__ == "__main__":
             print("Ball!")
 
     print("\r\n* * * * * \r\n\r\n")
-    p = Pitch(g)
+    p = PitchHit(g)
     print(p.hit_intent)
     print(p.pitch_intent)
-    print(p.throw)
+    print(p.pitch)
     print(p.swing_decision)
-    print_result(p.throw.strike, p.swing_decision.swing)
+    print_result(p.pitch.strike, p.swing_decision.swinging)
     print("")
 
     for _ in range(0, 9):
-        p = Pitch(g)
-        print(p.throw)
+        p = PitchHit(g)
+        print(p.pitch)
         print(p.swing_decision)
-        print_result(p.throw.strike, p.swing_decision.swing)
+        print_result(p.pitch.strike, p.swing_decision.swinging)
         print("")
 
     # def run_test(pitches):
@@ -369,10 +386,10 @@ if __name__ == "__main__":
     #     difficulty = 0
     #     for _ in range(0, pitches):
     #         p = Pitch(g)
-    #         strikes += int(p.throw.strike)
-    #         location += p.throw.location
-    #         obscurity += p.throw.obscurity
-    #         difficulty += p.throw.difficulty
+    #         strikes += int(p.pitch.strike)
+    #         location += p.pitch.location
+    #         obscurity += p.pitch.obscurity
+    #         difficulty += p.pitch.difficulty
     #     strike_rate = strikes / pitches * 100
     #     location /= pitches
     #     obscurity /= pitches
@@ -402,14 +419,14 @@ if __name__ == "__main__":
     #
     # pi = PitchIntent(g)
     # pi.target_location = 0
-    # t = Throw(pi, test_pitcher, test_catcher)
+    # t = pitch(pi, test_pitcher, test_catcher)
     #
     # strikes = 0
     # location = 0
     # obscurity = 0
     # difficulty = 0
     # for _ in range(0, 1000):
-    #     t.throw()
+    #     t.pitch()
     #     strikes += int(t.strike)
     #     location += t.location
     #     obscurity += t.obscurity
