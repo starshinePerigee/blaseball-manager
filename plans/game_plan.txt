@@ -98,6 +98,48 @@ HOW DOES FIELDING WORK:
 - if error: go to 0, if success, go to 3
 
 
+update (effectively the above):
+
+here's new fielding:
+
+- we know how far the ball flies and past who
+- identify a "safe" time
+- advance runners
+- for each runner, decide if they risk for +1 base
+- if any risk, decide how vulnerable they are
+- controller throws at
+- if error, go back
+
+breaking it out:
+
+0. We have a ball direction, angle, time, etc.
+1. identify possible fielders, build catch chances, and roll to catch for each. (include final double error fielder)
+2. roll for fielding in order, eventually establishing a fielder and catch time
+3. from the catch time, determine safety time (include time to return to base)
+4. advance all runners up to safety time
+5. for all runners, decide if they're going to push or not based on risk, status
+6. based on runners, current ball handler chooses an advancing runner to target
+7. determine if this is a regular throw out or a rundown
+8. handle throw out or rundown
+9. on errors, return to 5
+
+
+user story:
+
+- there are players on 1b and 3b, each with a leadoff
+- the ball is pitched
+- players start running
+- it's a hit to left field
+- LF gets the ball and throws to H
+- 3b runner dives
+- 1b makes it to 2b, decides to go for it
+- ball reaches 2b, throws to 3b
+- it's a rundown
+- 2b makes an error, ball goes wide
+- runner decides to run for home
+- thrown out lol
+
+
 
 OK fielding breakdown, the simplest case: a pickoff.
 

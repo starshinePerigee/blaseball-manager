@@ -4,14 +4,19 @@ This is a single pitch in a game, from the "commit to pitch" (no actions) to the
 The result can be a live ball, or an updated game state.
 """
 
-from blaseball.playball.ballgame import BallGame, Ball
+from blaseball.playball.ballgame import BallGame
+from blaseball.playball.event import Event
+from blaseball.playball.fielding import LiveBall
 from blaseball.stats.players import Player
 from data import gameconstants
 
+from typing import List
 from scipy.stats import norm
 from numpy.random import normal, rand
 from math import tanh
 
+
+#pitch constants:
 ONE_STDV_AT_ONE_ACCURACY = 0.7  # how wide one standard deviation is at one accuracy
 ONE_STDV_AT_ZERO_ACCURACY = 1  # how wide one standard deviation is at zero accuracy
 
@@ -285,14 +290,83 @@ class Swing:
     """
     A players swing, from decision, through hit quality.
     """
-    def __init__(self):
-        pass
+    CLEAN_THRESHOLD = 1
+    FOUL_THRESHOLD = -2
+    HIT_STDEV = 3
 
-    def swing(self) -> Ball:
-        return Ball()
+    BASE_LAUNCH_ANGLE = 10  # median launch angle for a 0* batter
+    LAUNCH_ANGLE_POWER_FACTOR = 5  # bonus launch angle for a 5* batter
+    LAUNCH_ANGLE_BASE_STDEV = 40
+    LA_HIT_QUALITY_FACTOR = 0.5  # magic factor for launch angle hit quality,
+    # higher LA_HIT_QUALITY_FACTOR means hit quality matters less for scaling launch angles with good hits,
+    # LAHQF of 1 means a remainder of 1 cuts launch angle stdev in half.
+    PULL_STDEV = 90
+
+    MIN_EXIT_VELOCITY_AVERAGE = 70
+    MAX_EXIT_VELOCITY_AVERAGE = 110
+    exit_velocity_factor = (MAX_EXIT_VELOCITY_AVERAGE - MIN_EXIT_VELOCITY_AVERAGE) / 2
+    EXIT_VELOCITY_STDEV = 10  # additional fuzz on top of hit quality, should be low
+
+    def __init__(self, pitch: Pitch, batter: Player):
+        self.pitch = pitch
+        self.batter = batter
+
+        self.net_contact = self.batter['contact']
+        self.hit_quality = 0  # hit quality from 0 - 1 average, where <0 is a strike, swinging, and >1 is a clean hit
+
+        self.strike = False
+        self.foul = False
+        self.hit = None
+
+    def swing(self):
+        """
+        Roll for contact
+        """
+        self.hit_quality = self.roll_hit_quality()
+        if self.hit_quality < 0:
+            self.strike = True
+        elif 0 < self.hit_quality < 1:
+            self.foul = True
+        else:
+            self.hit = self.roll_hit()
+
+    def roll_hit_quality(self) -> float:
+        base_hit_quality = normal(loc=self.net_contact + Swing.FOUL_THRESHOLD, scale=Swing.HIT_STDEV)
+        return base_hit_quality / Swing.HIT_STDEV
+
+    def roll_hit(self) -> LiveBall:
+        quality_remainder = 1 - self.hit_quality
+        median_launch_angle = Swing.BASE_LAUNCH_ANGLE + self.batter['power'] * Swing.BASE_LAUNCH_ANGLE
+        angle_modifier = Swing.LA_HIT_QUALITY_FACTOR / (Swing.LAUNCH_ANGLE_BASE_STDEV + quality_remainder)
+        launch_angle_stdev = Swing.LAUNCH_ANGLE_BASE_STDEV * angle_modifier
+        launch_angle = normal(loc=median_launch_angle, scale=launch_angle_stdev)
+
+        while True:
+            field_angle = normal(loc=self.batter['pull'], scale=Swing.PULL_STDEV)
+            if 0 < field_angle < 90:
+                break
+
+        exit_velocity_mean = Swing.MIN_EXIT_VELOCITY_AVERAGE + self.batter['power'] * Swing.exit_velocity_factor
+        exit_velocity = normal(loc=exit_velocity_mean, scale=Swing.EXIT_VELOCITY_STDEV)
+
+        return LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
+
+    def __str__(self):
+        if self.hit:
+            return f"Hit ball with quality {self.hit_quality}, result {self.hit}"
+        else:
+            text = ""
+            if self.strike:
+                text += "strike"
+            if self.foul:
+                text += "foul"
+            return f"Swung {text} with quality {self.hit_quality}"
+
+    def __bool__(self):
+        return bool(self.hit)
 
 
-class PitchHit:
+class PitchHit(Event):
     """
     A single pitch, from after the action timing window, to the result of the pitch.
     This is carried back to the game as a Ball.
@@ -302,20 +376,74 @@ class PitchHit:
     def __init__(self, game: BallGame):
         self.game = game
 
+        super().__init__(f"{self.game.defense()['pitcher']} pitch to {self.game.batter()}")
+
+        self.ball = False
+        self.strike = False
+        self.foul = False
+        self.live = False
+
+        # TODO: This is going to need a lot of work to make nice and pretty, describe the pitch, etc.
+        # this is a very quick pass to make things work.
+        self.text = []
+
+        # generate intents
         self.hit_intent = HitIntent(self.game)
         self.pitch_intent = PitchIntent(self.game)
+
+        # pitch the ball
         self.pitch = Pitch(
             self.pitch_intent,
             self.game.defense()['pitcher'],
             self.game.defense()['catcher']
         )
         self.pitch.pitch()
+        # maybe describe the pitch some?
+
+        # batter decides swing
         self.swing_decision = SwingDecision(self.pitch, self.hit_intent, self.game.batter())
         if self.swing_decision.swinging:
-            self.swing = Swing()
-            self.result = self.swing.swing()
+            self.swing = Swing(self.pitch, self.game.batter())
+            self.swing.swing()
+            if self.swing.strike:
+                self.strike = True
+                self.text += ["Strike, swinging."]
+            elif self.swing.foul:
+                self.foul = True
+                self.text += ["Foul ball."]
+            else:
+                self.live = self.swing.hit
+                self.text += ["It's a hit!"]  # maybe expand this some?
+                self.text += [str(self.swing.hit)]
         else:
-            self.result = Ball()
+            # batter does not swing
+            self.swing = None
+            if self.pitch.strike:
+                self.strike = True
+                self.text += ["Strike, looking."]
+            else:
+                self.ball = True
+                self.text += ["Ball."]
+
+    def update_game(self, game: BallGame) -> None:
+        if self.strike:
+            self.text += [game.add_strike()]
+        if self.ball:
+            self.text += [game.add_ball()]
+        if self.foul:
+            self.text += [game.add_foul()]
+
+    def feed_text(self, debug=False) -> List[str]:
+        if debug:
+            string = [f"HI: {self.hit_intent}"]
+            string += [f"PI: {self.pitch_intent}"]
+            string += [f"Pitch: {self.pitch}"]
+            string += [f"SD: {self.swing_decision}"]
+            if self.swing is not None:
+                string += [f"Swing: {self.swing}"]
+            return string
+        else:
+            return self.text
 
 
 if __name__ == "__main__":
@@ -350,92 +478,41 @@ if __name__ == "__main__":
         if s.category == 'batting':
             print(f"{s}: {test_batter._to_stars(test_batter[s.name])}")
 
-    def print_result(strike, swing):
-        if strike and swing:
-            print("Good swing!")
-        elif strike:
-            print("Strike!")
-        elif swing:
-            print("Reached on a ball!")
-        else:
-            print("Ball!")
-
     print("\r\n* * * * * \r\n\r\n")
     p = PitchHit(g)
-    print(p.hit_intent)
-    print(p.pitch_intent)
-    print(p.pitch)
-    print(p.swing_decision)
-    print_result(p.pitch.strike, p.swing_decision.swinging)
+    print("\r\n".join(p.feed_text(True)))
     print("")
 
     for _ in range(0, 9):
         p = PitchHit(g)
-        print(p.pitch)
-        print(p.swing_decision)
-        print_result(p.pitch.strike, p.swing_decision.swinging)
+        print("\r\n".join(p.feed_text()))
         print("")
 
-    # def run_test(pitches):
-    #     p = Pitch(g)
-    #     print(p.pitch_intent)
-    #
-    #     strikes = 0
-    #     location = 0
-    #     obscurity = 0
-    #     difficulty = 0
-    #     for _ in range(0, pitches):
-    #         p = Pitch(g)
-    #         strikes += int(p.pitch.strike)
-    #         location += p.pitch.location
-    #         obscurity += p.pitch.obscurity
-    #         difficulty += p.pitch.difficulty
-    #     strike_rate = strikes / pitches * 100
-    #     location /= pitches
-    #     obscurity /= pitches
-    #     difficulty /= pitches
-    #     print(f"Strike rate: {strike_rate:.0f}%, ave location: {location:.2f}, "
-    #           f"ave obscurity: {obscurity:.2f}, ave difficulty {difficulty:.2f}.")
-    #
-    # PITCHES = 1000
-    #
-    # g.balls = 3
-    #
-    # test_pitcher['accuracy'] = 0.1
-    # test_catcher['calling'] = 0.1
-    # print("min accuracy, min calling")
-    # run_test(PITCHES)
-    #
-    # print("max accuracy, max calling")
-    # test_pitcher['accuracy'] = 1
-    # test_catcher['calling'] = 1
-    # run_test(PITCHES)
-    #
-    # print('min accuracy, max calling')
-    # test_pitcher['accuracy'] = 0.1
-    # run_test(PITCHES)
-    #
-    # test_pitcher['accuracy'] = 1
-    #
-    # pi = PitchIntent(g)
-    # pi.target_location = 0
-    # t = pitch(pi, test_pitcher, test_catcher)
-    #
-    # strikes = 0
-    # location = 0
-    # obscurity = 0
-    # difficulty = 0
-    # for _ in range(0, 1000):
-    #     t.pitch()
-    #     strikes += int(t.strike)
-    #     location += t.location
-    #     obscurity += t.obscurity
-    #     difficulty += t.difficulty
-    # strike_rate = strikes / 1000 * 100
-    # location /= 1000
-    # obscurity /= 1000
-    # difficulty /= 1000
-    # print(f"Strike rate: {strike_rate:.0f}%, ave location: {location:.2f}, "
-    #       f"ave obscurity: {obscurity:.2f}, ave difficulty {difficulty:.2f}.")
+    def run_test(pitches):
+        p = PitchHit(g)
+        print(p.pitch_intent)
+
+        strikes = 0
+        hits = 0
+        location = 0
+        obscurity = 0
+        difficulty = 0
+        for _ in range(0, pitches):
+            p = PitchHit(g)
+            strikes += int(p.strike)
+            hits += int(bool(p.live))
+            location += p.pitch.location
+            obscurity += p.pitch.obscurity
+            difficulty += p.pitch.difficulty
+        strike_rate = strikes / pitches * 100
+        hit_rate = hits / pitches * 100
+        location /= pitches
+        obscurity /= pitches
+        difficulty /= pitches
+        print(f"Strike rate: {strike_rate:.0f}%, hit rate: {hit_rate:.1f} "
+              f"ave location: {location:.2f}, ave obscurity: {obscurity:.2f}, ave difficulty {difficulty:.2f}.")
+
+    PITCHES = 1000
+    run_test(PITCHES)
 
     print("x")

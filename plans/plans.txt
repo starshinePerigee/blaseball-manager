@@ -217,3 +217,11 @@ politics:
 - offered trades (random) with "star bank"
 games:
 - scrollable game schedule
+
+
+
+different out of game positions unlock which add workload but do things.
+ideas:
+normal: coach, analysist, scout
+weird: nutritionist, massage therapist, mascot
+weirder: weatherman, mage

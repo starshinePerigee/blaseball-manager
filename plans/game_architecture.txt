@@ -3,8 +3,7 @@ Game
         Side
             At-Bat
                 Events
-                    Throw
-                    Live-ball
+
 
 What actions are there?
 - pitch
@@ -20,44 +19,30 @@ an event is:
 - becuase of a player, other event, or external factor
 - that affects the game state
 - and updates the display
-- and may have test
+- have text
 - during a game
 
-between each event we have an open step?
 
-at bat
-    actions
-        event
-            upkeep
-        event
-            upkeep
-            event
-            event
+ok you need to avoid events chains AT ALL COSTS this is WAY TOO COMPLICATED
 
-so this is looking like we need an events chain?
+go see game_plan.txt for new fielding.
 
-between each event is an upkeep?
+Anyway, this doesn't change a lot about how events work.
 
-user story:
+Event:
+- designed to be inherited from
+- base methods:
+-- update_game(game)
+-- feed_text() -> str
 
-- there are players on 1b and 3b, each with a leadoff
-- the ball is pitched
-- players start running
-- it's a hit to left field
-- LF gets the ball and throws to H
-- 3b runner dives
-- 1b makes it to 2b, decides to go for it
-- ball reaches 2b, throws to 3b
-- it's a rundown
-- 2b makes an error, ball goes wide
-- runner decides to run for home
-- thrown out lol
+Hit + fielding are two separate events? so we need a structure that passes between them.
+This is a LiveBall.
+- this also lets us generate fielding events at any position, including from other fielding events.
 
-is there any way to avoid an effects chain system with time steps and tracking? because that would be overkill.
-1: assume the only thing that could make players make a decision is the motion of the ball
-- position of other players? ie: go / nogo for running
-- can you look backwards? ie: "would this player have gone or non-gone" and then just do:
-- - event (ball motion)
-- - upkeep (all players have a chance to do a thing)
-- - event
-- - upkeep
+So the call chain is:
+
+1. BallGame handles actions until it's pitch time
+2. BallGame creates a PitchHit(Event)
+3. Pitchhit steps through the hitting process, generates a LiveBall if needed
+4. Game calls updategame, if there is a LiveBall returned, it creates a fielding event
+5. Fielding event is also passed into the events cruncher

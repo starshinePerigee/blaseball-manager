@@ -15,26 +15,6 @@ from blaseball.stats.lineup import Lineup
 from blaseball.settings import Settings
 
 
-class Action:
-    def __init__(self):
-        self.ball = False
-        self.strike = False
-        self.out = False
-
-
-class Ball(Action):
-    """
-    A ball moving uncontrollably across a field..
-    """
-    def __init__(self):
-        super().__init__()
-        self.groundish = False
-        self.launch_angle = 0
-        self.field_angle = 0
-        self.location = (0, 0)
-        self.speed = 0
-
-
 class BallGame:
     """
     This is a single game of blaseball.
@@ -120,6 +100,15 @@ class BallGame:
         self.increment_batting_order()
         if self.outs > 2:
             self.next_inning()
+
+    def add_strike(self) -> str:
+        return "0-1"
+
+    def add_ball(self) -> str:
+        return "1-0"
+
+    def add_foul(self) -> str:
+        return "0-1"
 
     def next(self) -> None:
         if self.complete:
