@@ -236,11 +236,10 @@ class Pitch:
         location_difficulty = location_base ** Pitch.DIFFICULTY_DISTANCE_FACTOR
         return force_difficulty + location_difficulty
 
-    REDUCTION_FACTOR = 0.1  # how much low force affects reduction
+    REDUCTION_FROM_TRICKERY = 0.2  # the percentage removed from exit velocity for a pitcher with 1 trickery
 
     def get_reduction(self) -> float:
-        reduction_base = Pitch.REDUCTION_FACTOR * (1 - self.pitcher['force'])
-        return max(0.0, reduction_base)
+        return Pitch.REDUCTION_FROM_TRICKERY * self.pitcher['trickery']
 
     def __str__(self):
         strike_text = "Strike" if self.strike else "Ball"
@@ -290,33 +289,17 @@ class Swing:
     """
     A players swing, from decision, through hit quality.
     """
-    CLEAN_THRESHOLD = 1
-    FOUL_THRESHOLD = -2
-    HIT_STDEV = 3
-
-    BASE_LAUNCH_ANGLE = 10  # median launch angle for a 0* batter
-    LAUNCH_ANGLE_POWER_FACTOR = 5  # bonus launch angle for a 5* batter
-    LAUNCH_ANGLE_BASE_STDEV = 40
-    LA_HIT_QUALITY_FACTOR = 0.5  # magic factor for launch angle hit quality,
-    # higher LA_HIT_QUALITY_FACTOR means hit quality matters less for scaling launch angles with good hits,
-    # LAHQF of 1 means a remainder of 1 cuts launch angle stdev in half.
-    PULL_STDEV = 90
-
-    MIN_EXIT_VELOCITY_AVERAGE = 70
-    MAX_EXIT_VELOCITY_AVERAGE = 110
-    exit_velocity_factor = (MAX_EXIT_VELOCITY_AVERAGE - MIN_EXIT_VELOCITY_AVERAGE) / 2
-    EXIT_VELOCITY_STDEV = 10  # additional fuzz on top of hit quality, should be low
 
     def __init__(self, pitch: Pitch, batter: Player):
         self.pitch = pitch
         self.batter = batter
 
-        self.net_contact = self.batter['contact'] - self.pitch.difficulty
+        self.net_contact = self.batter['contact'] - self.pitch.difficulty  # usually negative
         self.hit_quality = 0  # hit quality from 0 - 1 average, where <0 is a strike, swinging, and >1 is a clean hit
 
         self.strike = False
         self.foul = False
-        self.hit = None
+        self.live = None
 
     def swing(self):
         """
@@ -328,32 +311,70 @@ class Swing:
         elif 0 < self.hit_quality < 1:
             self.foul = True
         else:
-            self.hit = self.roll_hit()
+            self.live = self.roll_hit()
+
+    FOUL_BIAS = 0.6  # the higher this is, the more frequently fouls and hits occur vs strike swinging
+    NET_CONTACT_FACTOR = 0.4  # how much net contact affects the ability to hit.
 
     def roll_hit_quality(self) -> float:
-        base_hit_quality = normal(loc=self.net_contact - Swing.FOUL_THRESHOLD, scale=Swing.HIT_STDEV)
-        return base_hit_quality / Swing.HIT_STDEV
+        """Roll for hit quality. 1 is a good hit, 0-1 is a foul"""
+        return normal(loc=(self.net_contact + Swing.FOUL_BIAS) * Swing.NET_CONTACT_FACTOR, scale=1)
 
-    def roll_hit(self) -> LiveBall:
-        quality_remainder = 1 - self.hit_quality
+    BASE_LAUNCH_ANGLE = 10  # median launch angle for a 0* batter
+    LAUNCH_ANGLE_POWER_FACTOR = 5  # bonus launch angle for a 5* batter
+    LAUNCH_ANGLE_BASE_STDEV = 40
+    LA_HIT_QUALITY_FACTOR = 0.5  # magic factor for launch angle hit quality,
+    # higher LA_HIT_QUALITY_FACTOR means hit quality matters less for scaling launch angles with good hits,
+    # LAHQF of 1 means a remainder of 1 cuts launch angle stdev in half.
+
+    def roll_launch_angle(self, quality_remainder) -> float:
         median_launch_angle = Swing.BASE_LAUNCH_ANGLE + self.batter['power'] * Swing.BASE_LAUNCH_ANGLE
-        angle_modifier = Swing.LA_HIT_QUALITY_FACTOR / (Swing.LAUNCH_ANGLE_BASE_STDEV + quality_remainder)
+        angle_modifier = Swing.LA_HIT_QUALITY_FACTOR / (Swing.LA_HIT_QUALITY_FACTOR + quality_remainder)
         launch_angle_stdev = Swing.LAUNCH_ANGLE_BASE_STDEV * angle_modifier
         launch_angle = normal(loc=median_launch_angle, scale=launch_angle_stdev)
+        return launch_angle
 
+    PULL_STDEV = 90
+
+    def roll_field_angle(self) -> float:
         while True:
             field_angle = normal(loc=self.batter['pull'], scale=Swing.PULL_STDEV)
             if 0 < field_angle < 90:
-                break
+                return field_angle
 
-        exit_velocity_mean = Swing.MIN_EXIT_VELOCITY_AVERAGE + self.batter['power'] * Swing.exit_velocity_factor
-        exit_velocity = normal(loc=exit_velocity_mean, scale=Swing.EXIT_VELOCITY_STDEV)
+    MIN_EXIT_VELOCITY_AVERAGE = 80  # average EV for a player at 0 stars
+    MAX_EXIT_VELOCITY_AVERAGE = 120  # max for a juiced player at 10 stars
+    exit_velocity_range = MAX_EXIT_VELOCITY_AVERAGE - MIN_EXIT_VELOCITY_AVERAGE
+    EXIT_VELOCITY_STDEV = 10  # additional fuzz on top of hit quality, should be low
+    EXIT_VELOCITY_PITY_FACTOR = 0.2  # the higher this is, the less exit velo is reduced with low hit quality.
+    # This is very sensitive - 0 means exit velo is 0 at 1.0 quality, 0.1 means exit velo is 40% and 0.2 means 60%
+    EXIT_VELOCITY_QUALITY_EXPONENT = 1/4
+
+    def roll_reduction(self) -> float:
+        base_reduction = Swing.exit_velocity_range * self.pitch.reduction
+        scaled_reduction = base_reduction * 2 * rand()
+        return scaled_reduction
+
+    def roll_exit_velocity(self, quality_remainder, reduction):
+        exit_velocity_base = Swing.MIN_EXIT_VELOCITY_AVERAGE + self.batter['power'] * Swing.exit_velocity_range / 2
+        quality_modifier = (quality_remainder + Swing.EXIT_VELOCITY_PITY_FACTOR) ** Swing.EXIT_VELOCITY_QUALITY_EXPONENT
+        exit_velocity = normal(loc=exit_velocity_base * quality_modifier, scale=Swing.EXIT_VELOCITY_STDEV)
+        exit_velocity -= reduction
+        return exit_velocity
+
+    def roll_hit(self) -> LiveBall:
+        quality_remainder = self.hit_quality - 1
+
+        launch_angle = self.roll_launch_angle(quality_remainder)
+        field_angle = self.roll_field_angle()
+        reduction = self.roll_reduction()
+        exit_velocity = self.roll_exit_velocity(quality_remainder, reduction)
 
         return LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
 
     def __str__(self):
-        if self.hit:
-            return f"Hit ball with quality {self.hit_quality}, result {self.hit}"
+        if self.live:
+            return f"Hit ball with quality {self.hit_quality}, result {self.live}"
         else:
             text = ""
             if self.strike:
@@ -363,7 +384,7 @@ class Swing:
             return f"Swung {text} with quality {self.hit_quality}"
 
     def __bool__(self):
-        return bool(self.hit)
+        return bool(self.live)
 
 
 class PitchHit(Event):
@@ -412,9 +433,9 @@ class PitchHit(Event):
                 self.foul = True
                 self.text += ["Foul ball."]
             else:
-                self.live = self.swing.hit
+                self.live = self.swing.live
                 self.text += ["It's a hit!"]  # maybe expand this some?
-                self.text += [str(self.swing.hit)]
+                self.text += [str(self.swing.live)]
         else:
             # batter does not swing
             self.swing = None
@@ -497,10 +518,13 @@ if __name__ == "__main__":
         fouls = 0
         hit_count = 0
         quality = 0
+        distance = 0
         location = 0
         obscurity = 0
         difficulty = 0
         hits = []
+        furthest_hit = 0
+        furthest_swing = None
         for _ in range(0, pitches):
             p = PitchHit(g)
             strikes += int(p.strike)
@@ -513,11 +537,16 @@ if __name__ == "__main__":
             if p.live:
                 hits += [p.live]
                 quality += p.swing.hit_quality
+                distance += p.live.distance()
+                if p.live.distance() > furthest_hit:
+                    furthest_hit = p.live.distance()
+                    furthest_swing = p.swing
         strike_rate = strikes / pitches * 100
         ball_rate = balls / pitches * 100
         foul_rate = fouls / pitches * 100
         hit_rate = hit_count / pitches * 100
         quality /= len(hits)
+        distance /= len(hits)
         location /= pitches
         obscurity /= pitches
         difficulty /= pitches
@@ -525,10 +554,14 @@ if __name__ == "__main__":
         ave_fa = sum([x.field_angle for x in hits])/len(hits)
         ave_speed = sum([x.speed for x in hits])/len(hits)
         print(f"Strike rate: {strike_rate:.0f}%, ball rate: {ball_rate:.0f}%, foul rate: {foul_rate:.0f}% hit rate: {hit_rate:.0f}%")
-        print(f"{len(hits)} hits. Average: quality {quality:.2f}, launch angle {ave_la:.0f}, field angle {ave_fa:.0f}, speed {ave_speed:.0f}")
+        print(f"{len(hits)} hits. Average: quality {quality:.2f}, distance {distance:.0f}, "
+              f"launch angle {ave_la:.0f}, field angle {ave_fa:.0f}, speed {ave_speed:.0f}")
         print(f"Ave location: {location:.2f}, ave obscurity: {obscurity:.2f}, ave difficulty {difficulty:.2f}.")
+        print(f"Furthest hit is {furthest_hit:.0f} ft, "
+              f"with a quality of {furthest_swing.hit_quality:.2f}, exit velocity {furthest_swing.live.speed:.0f} mph, "
+              f"and launch angle {furthest_swing.live.launch_angle:.0f}")
 
     PITCHES = 1000
+    g.batter()['power'] = 1
     run_test(PITCHES)
-
     print("x")
