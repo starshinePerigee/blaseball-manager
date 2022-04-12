@@ -311,7 +311,7 @@ class Swing:
         self.pitch = pitch
         self.batter = batter
 
-        self.net_contact = self.batter['contact']
+        self.net_contact = self.batter['contact'] - self.pitch.difficulty
         self.hit_quality = 0  # hit quality from 0 - 1 average, where <0 is a strike, swinging, and >1 is a clean hit
 
         self.strike = False
@@ -331,7 +331,7 @@ class Swing:
             self.hit = self.roll_hit()
 
     def roll_hit_quality(self) -> float:
-        base_hit_quality = normal(loc=self.net_contact + Swing.FOUL_THRESHOLD, scale=Swing.HIT_STDEV)
+        base_hit_quality = normal(loc=self.net_contact - Swing.FOUL_THRESHOLD, scale=Swing.HIT_STDEV)
         return base_hit_quality / Swing.HIT_STDEV
 
     def roll_hit(self) -> LiveBall:
@@ -493,24 +493,40 @@ if __name__ == "__main__":
         print(p.pitch_intent)
 
         strikes = 0
-        hits = 0
+        balls = 0
+        fouls = 0
+        hit_count = 0
+        quality = 0
         location = 0
         obscurity = 0
         difficulty = 0
+        hits = []
         for _ in range(0, pitches):
             p = PitchHit(g)
             strikes += int(p.strike)
-            hits += int(bool(p.live))
+            balls += int(p.ball)
+            fouls += int(p.foul)
+            hit_count += int(bool(p.live))
             location += p.pitch.location
             obscurity += p.pitch.obscurity
             difficulty += p.pitch.difficulty
+            if p.live:
+                hits += [p.live]
+                quality += p.swing.hit_quality
         strike_rate = strikes / pitches * 100
-        hit_rate = hits / pitches * 100
+        ball_rate = balls / pitches * 100
+        foul_rate = fouls / pitches * 100
+        hit_rate = hit_count / pitches * 100
+        quality /= len(hits)
         location /= pitches
         obscurity /= pitches
         difficulty /= pitches
-        print(f"Strike rate: {strike_rate:.0f}%, hit rate: {hit_rate:.1f} "
-              f"ave location: {location:.2f}, ave obscurity: {obscurity:.2f}, ave difficulty {difficulty:.2f}.")
+        ave_la = sum([x.launch_angle for x in hits])/len(hits)
+        ave_fa = sum([x.field_angle for x in hits])/len(hits)
+        ave_speed = sum([x.speed for x in hits])/len(hits)
+        print(f"Strike rate: {strike_rate:.0f}%, ball rate: {ball_rate:.0f}%, foul rate: {foul_rate:.0f}% hit rate: {hit_rate:.0f}%")
+        print(f"{len(hits)} hits. Average: quality {quality:.2f}, launch angle {ave_la:.0f}, field angle {ave_fa:.0f}, speed {ave_speed:.0f}")
+        print(f"Ave location: {location:.2f}, ave obscurity: {obscurity:.2f}, ave difficulty {difficulty:.2f}.")
 
     PITCHES = 1000
     run_test(PITCHES)
