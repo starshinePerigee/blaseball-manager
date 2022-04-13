@@ -10,20 +10,29 @@ import re
 
 from blaseball.settings import Settings
 from blaseball.stats import players, teams
+from blaseball.util.geometry import Coords
 
 
 class Defense:
+    """
+    An arrangement of players for a team on defense, including the catcher but excluding the pitcher.
+
+    Defense is meant to help organize positions and fielding. At its core, it's lists of (player, coord) pairs
+    that describe where a player is on the field. Some positions have extra utility as well.
+    """
     def __init__(self):
-        self.catcher = None
-        self.shortstop = None
-        self.basepeeps = []
-        self.fielders = []
-        self.extras = []
+        self.catcher = None  # catcher communicates with the pitcher
+        self.shortstop = None  # shortstop is a fielder who hangs out in the infield
+        self.basepeeps = []  # each basepeep can man a base
+        self.fielders = []  # fielders can only catch the ball
+        self.extras = []  # extras do nothing
 
     def all_players(self) -> List[players.Player]:
+        """List all players as a list in sensible order."""
         return [self.catcher] + [self.shortstop] + self.basepeeps + self.fielders + self.extras
 
     def to_flat_dict(self, cids=True):
+        """Convert the defense (a collection of lists) into a single level dictionary."""
         if cids:
             reference = 'cid'
         else:
@@ -41,6 +50,7 @@ class Defense:
         return def_dict
 
     def find(self, key: Union[str, int, players.Player]) -> str:
+        """Get the player in a defense """
         if isinstance(key, players.Player):
             key = key.cid
         if isinstance(key, int):  # also catches players - do not convert to elif

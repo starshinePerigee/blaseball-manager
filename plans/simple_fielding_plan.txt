@@ -1,0 +1,16 @@
+This supercedes game_plan.txt.
+
+All players have a location. Bases and the ball also have locations.
+
+0. Locate ball position on ground.
+1. determine closest fielder.
+2. roll for catch
+2a. if catch, mark runner out, all others have to tag up
+2b. if no catch, add error time based on miss.
+3. you now have the "safe time" - for each runner, calculate their position on the basepaths
+4. each runner decides how much to go based on position, situation, speed, etc.
+5. fielder looks at positions and decides who to throw to
+6. make throw, roll for error
+7. on error, add error time and return to 4,
+
+4 can use the same logic as stealing?

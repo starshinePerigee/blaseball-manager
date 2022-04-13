@@ -381,7 +381,7 @@ class Swing:
                 text += "strike"
             if self.foul:
                 text += "foul"
-            return f"Swung {text} with quality {self.hit_quality}"
+            return f"Swung {text} with quality {self.hit_quality:.3f}"
 
     def __bool__(self):
         return bool(self.live)
@@ -508,6 +508,12 @@ if __name__ == "__main__":
         p = PitchHit(g)
         print("\r\n".join(p.feed_text()))
         print("")
+
+    for _ in range(0, 99):
+        p = PitchHit(g)
+        if p.live:
+            print(p.swing)
+            print(f"{p.live.distance():.0f} feet.")
 
     def run_test(pitches):
         p = PitchHit(g)
