@@ -8,7 +8,6 @@ from blaseball.playball.ballgame import BallGame
 from blaseball.playball.event import Event
 from blaseball.playball.fielding import LiveBall
 from blaseball.stats.players import Player
-from data import gameconstants
 
 from typing import List
 from scipy.stats import norm
@@ -45,8 +44,8 @@ class HitIntent:
 
     def get_desperation(self) -> float:
         total_balls = self.game.balls + HitIntent.BONUS_BALLS
-        ball_ratio = total_balls / (gameconstants.BALL_COUNT + HitIntent.BONUS_BALLS - 1)
-        strike_ratio = self.game.strikes / (gameconstants.STRIKE_COUNT - 1)
+        ball_ratio = total_balls / (BallGame.BALL_COUNT + HitIntent.BONUS_BALLS - 1)
+        strike_ratio = self.game.strikes / (BallGame.STRIKE_COUNT - 1)
         balls_over = ball_ratio - strike_ratio
         if balls_over < 0:
             balls_over = 0
@@ -121,13 +120,13 @@ class PitchIntent:
         calling_modifier = 0
 
         # evaluate current count:
-        ball_ratio = self.game.balls / (gameconstants.BALL_COUNT - 1)
-        strike_ratio = self.game.strikes / (gameconstants.STRIKE_COUNT - 1)
+        ball_ratio = self.game.balls / (BallGame.BALL_COUNT - 1)
+        strike_ratio = self.game.strikes / (BallGame.STRIKE_COUNT - 1)
         if ball_ratio == 0 and strike_ratio == 0:
             count_effect = PitchIntent.FIRST_PITCH_BIAS
         else:
             count_effect = strike_ratio - ball_ratio
-        if self.game.balls == gameconstants.BALL_COUNT - 1:
+        if self.game.balls == BallGame.BALL_COUNT - 1:
             count_effect += -0.2  # bonus hyper modifier
         count_effect *= PitchIntent.WEIGHTS['count']
         calling_modifier += count_effect
@@ -140,14 +139,14 @@ class PitchIntent:
 
         # calculate runners to walk vs. runners to bat in
         bases_occupied = [i is not None for i in self.game.bases]
-        runner_in_scoring_position = bases_occupied[gameconstants.NUMBER_OF_BASES-1]
+        runner_in_scoring_position = bases_occupied[BallGame.NUMBER_OF_BASES-1]
         runners_to_walk = 0
         for base in bases_occupied:
             if base:
                 runners_to_walk += 1
             else:
                 break
-        if runners_to_walk != gameconstants.NUMBER_OF_BASES and runner_in_scoring_position:
+        if runners_to_walk != BallGame.NUMBER_OF_BASES and runner_in_scoring_position:
             # there is a player in socring position who won't score on a walk:
             risp_effect = PitchIntent.RUNNER_IN_SCORING_POSITION_MODIFIER
         else:
@@ -159,7 +158,7 @@ class PitchIntent:
         calling_modifier += bases_loaded_effect
 
         # calculate effect from current number of outs
-        median_out = (gameconstants.OUTS_COUNT - 1) / 2  # 1 for three outs, 1.5 for four
+        median_out = (BallGame.OUTS_COUNT - 1) / 2  # 1 for three outs, 1.5 for four
         outs_effect = self.game.outs - median_out
         outs_effect *= PitchIntent.WEIGHTS['outs_number']
         calling_modifier += outs_effect

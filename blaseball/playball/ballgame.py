@@ -21,6 +21,14 @@ class BallGame:
 
     The goal is to generate a BallGameSummary
     """
+
+    BALL_COUNT = 4
+    STRIKE_COUNT = 3
+    OUTS_COUNT = 3
+    INNINGS = 9
+    NUMBER_OF_BASES = 3  # not counting home
+    BATTING_ORDER_LENGTH = 9
+
     def __init__(self, home: Lineup, away: Lineup, print_events: bool=False) -> None:
         self.home_team = home
         self.away_team = away
