@@ -6,6 +6,7 @@ The result can be a live ball, or an updated game state.
 
 from blaseball.playball.pitching import Pitch
 from blaseball.playball.hitting import Swing
+from blaseball.playball.liveball import roll_hit, LiveBall
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.event import Event
 
@@ -49,8 +50,8 @@ class PitchHit(Event):
                 self.text += [game.add_foul()]
             else:
                 self.text += ["It's a hit!"]  # maybe expand this some?
-                self.live = self.swing.live
-                self.text += [str(self.swing.live)]
+                self.live = roll_hit(self.swing, game.batter())
+                self.text += [str(self.live)]
         else:
             # batter does not swing
             if self.swing.strike:
@@ -65,8 +66,8 @@ class PitchHit(Event):
             string = []
             string += [f"Pitch: {self.pitch}"]
             string += [f"Swing: {self.swing}"]
-            if self.swing:
-                string += [f"Hit: {self.swing.live}"]
+            if self.live:
+                string += [f"Hit: {self.live}"]
             return string
         else:
             return self.text
@@ -131,8 +132,6 @@ if __name__ == "__main__":
         obscurity = 0
         difficulty = 0
         hits = []
-        furthest_hit = 0
-        furthest_swing = None
         for _ in range(0, pitches):
             p = PitchHit(g)
             strikes += int(p.swing.strike)
@@ -146,9 +145,6 @@ if __name__ == "__main__":
                 hits += [p.live]
                 quality += p.swing.hit_quality
                 distance += p.live.distance()
-                if p.live.distance() > furthest_hit:
-                    furthest_hit = p.live.distance()
-                    furthest_swing = p.swing
         strike_rate = strikes / pitches * 100
         ball_rate = balls / pitches * 100
         foul_rate = fouls / pitches * 100
@@ -165,9 +161,6 @@ if __name__ == "__main__":
         print(f"{len(hits)} hits. Average: quality {quality:.2f}, distance {distance:.0f}, "
               f"launch angle {ave_la:.0f}, field angle {ave_fa:.0f}, speed {ave_speed:.0f}")
         print(f"Ave location: {location:.2f}, ave obscurity: {obscurity:.2f}, ave difficulty {difficulty:.2f}.")
-        print(f"Furthest hit is {furthest_hit:.0f} ft, "
-              f"with a quality of {furthest_swing.hit_quality:.2f}, exit velocity {furthest_swing.live.speed:.0f} mph, "
-              f"and launch angle {furthest_swing.live.launch_angle:.0f}")
 
     PITCHES = 1000
     g.batter()['power'] = 1

@@ -4,7 +4,6 @@ Controls a player's pre-hit decisions as well as their actual swing attempt.
 
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.pitching import Pitch
-from blaseball.playball.fielding import LiveBall
 from blaseball.stats.players import Player
 
 from numpy.random import normal, rand
@@ -68,67 +67,9 @@ def roll_hit_quality(net_contact) -> float:
     return normal(loc=(net_contact + FOUL_BIAS) * NET_CONTACT_FACTOR, scale=1)
 
 
-# Hit parameters:
-
-
-BASE_LAUNCH_ANGLE = 10  # median launch angle for a 0* batter
-LAUNCH_ANGLE_POWER_FACTOR = 5  # bonus launch angle for a 5* batter
-LAUNCH_ANGLE_BASE_STDEV = 40
-LA_HIT_QUALITY_FACTOR = 0.5  # magic factor for launch angle hit quality,
-# higher LA_HIT_QUALITY_FACTOR means hit quality matters less for scaling launch angles with good hits,
-# LAHQF of 1 means a remainder of 1 cuts launch angle stdev in half.
-
-
-def roll_launch_angle(quality_remainder, batter_power) -> float:
-    median_launch_angle = BASE_LAUNCH_ANGLE + batter_power * BASE_LAUNCH_ANGLE
-    angle_modifier = LA_HIT_QUALITY_FACTOR / (LA_HIT_QUALITY_FACTOR + quality_remainder)
-    launch_angle_stdev = LAUNCH_ANGLE_BASE_STDEV * angle_modifier
-    launch_angle = normal(loc=median_launch_angle, scale=launch_angle_stdev)
-    return launch_angle
-
-
-PULL_STDEV = 90
-
-
-def roll_field_angle(batter_pull) -> float:
-    while True:
-        field_angle = normal(loc=batter_pull, scale=PULL_STDEV)
-        if 0 < field_angle < 90:
-            return field_angle
-
-
-MIN_EXIT_VELOCITY_AVERAGE = 80  # average EV for a player at 0 stars
-MAX_EXIT_VELOCITY_AVERAGE = 120  # max for a juiced player at 10 stars
-EXIT_VELOCITY_RANGE = MAX_EXIT_VELOCITY_AVERAGE - MIN_EXIT_VELOCITY_AVERAGE
-EXIT_VELOCITY_STDEV = 10  # additional fuzz on top of hit quality, should be low
-EXIT_VELOCITY_PITY_FACTOR = 0.2  # the higher this is, the less exit velo is reduced with low hit quality.
-# This is very sensitive - 0 means exit velo is 0 at 1.0 quality, 0.1 means exit velo is 40% and 0.2 means 60%
-EXIT_VELOCITY_QUALITY_EXPONENT = 1 / 4
-
-
 def roll_reduction(pitch_reduction: float) -> float:
-    base_reduction = EXIT_VELOCITY_RANGE * pitch_reduction
-    scaled_reduction = base_reduction * 2 * rand()
+    scaled_reduction = pitch_reduction * 2 * rand()
     return scaled_reduction
-
-
-def roll_exit_velocity(quality_remainder, reduction, batter_power) -> float:
-    exit_velocity_base = MIN_EXIT_VELOCITY_AVERAGE + batter_power * EXIT_VELOCITY_RANGE / 2
-    quality_modifier = (quality_remainder + EXIT_VELOCITY_PITY_FACTOR) ** EXIT_VELOCITY_QUALITY_EXPONENT
-    exit_velocity = normal(loc=exit_velocity_base * quality_modifier, scale=EXIT_VELOCITY_STDEV)
-    exit_velocity -= reduction
-    return exit_velocity
-
-
-def roll_hit(hit_quality: float, pitch_reduction: float, batter: Player) -> LiveBall:
-    quality_remainder = hit_quality - 1
-
-    launch_angle = roll_launch_angle(quality_remainder, batter['power'])
-    field_angle = roll_field_angle(batter['pull'])
-    reduction = roll_reduction(pitch_reduction)
-    exit_velocity = roll_exit_velocity(quality_remainder, reduction, batter['power'])
-
-    return LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
 
 
 class Swing:
@@ -142,7 +83,8 @@ class Swing:
         self.strike = False
         self.ball = False
         self.foul = False
-        self.live = None
+        self.hit = False
+        self.reduction = 0
 
         if self.did_swing:
             self.net_contact = batter['contact'] - pitch.difficulty
@@ -152,7 +94,8 @@ class Swing:
             elif 0 < self.hit_quality < 1:
                 self.foul = True
             else:
-                self.live = roll_hit(self.hit_quality, pitch.reduction, batter)
+                self.hit = True
+                self.reduction = roll_reduction(pitch.reduction)
         else:
             self.net_contact = 0
             self.hit_quality = 0
@@ -163,18 +106,21 @@ class Swing:
         return self.did_swing
 
     def __str__(self):
+        text = ""
         if not self.did_swing:
-            text = "Strike, looking" if self.strike else "Ball"
-            return f"{text} with swing odds {self.swing_chance*100:.01f}% from desperation {self.desperation:.02f}"
-        elif self.live:
-            return f"Hit ball with quality {self.hit_quality:.3f}, result {self.live}"
+            text += "Strike, looking" if self.strike else "Ball"
+            text += f" with swing odds {self.swing_chance*100:.01f}%"
         else:
-            text = ""
-            if self.strike:
-                text += "strike"
-            if self.foul:
-                text += "foul"
-            return f"Swung {text} with quality {self.hit_quality:.3f}"
+            if self.hit:
+                text += "Hit ball"
+                text += f" with reduction {self.reduction:.03f}"
+            elif self.foul:
+                text += "Foul ball"
+            else:
+                text += "Swung strike"
+            text += f" with quality {self.hit_quality:.3f}"
+        text += f" from desperation {self.desperation:.02f}"
+        return text
 
 
 if __name__ == "__main__":
