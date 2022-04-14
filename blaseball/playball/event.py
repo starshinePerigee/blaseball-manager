@@ -19,14 +19,6 @@ class Event:
     def __init__(self, name=None):
         self.name = name
 
-    def update_game(self, game: BallGame) -> None:
-        """
-        Update BallGame's internal data to reflect changes in game state.
-
-        Use BallGame's methods when possible.
-        """
-        pass
-
     def feed_text(self, debug=False) -> List[str]:
         return [f"Base class Event {self}"]
 

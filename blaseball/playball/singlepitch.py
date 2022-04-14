@@ -4,387 +4,16 @@ This is a single pitch in a game, from the "commit to pitch" (no actions) to the
 The result can be a live ball, or an updated game state.
 """
 
+from blaseball.playball.pitching import Pitch
+from blaseball.playball.hitting import Swing
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.event import Event
-from blaseball.playball.fielding import LiveBall
-from blaseball.stats.players import Player
 
 from typing import List
-from scipy.stats import norm
-from numpy.random import normal, rand
-from math import tanh
 
-
-#pitch constants:
-ONE_STDV_AT_ONE_ACCURACY = 0.7  # how wide one standard deviation is at one accuracy
-ONE_STDV_AT_ZERO_ACCURACY = 1  # how wide one standard deviation is at zero accuracy
-
-accuracy_stdv_slope = ONE_STDV_AT_ONE_ACCURACY - ONE_STDV_AT_ZERO_ACCURACY
-accuracy_stdv_intercept = ONE_STDV_AT_ZERO_ACCURACY
-
-
-class HitIntent:
-    """
-    A class that represents the desire of the batter before the pitch is thrown.
-
-    Currently has a placeholder for effects, and desperation.
-    """
-
-    def __init__(self, game: 'BallGame'):
-        self.game = game
-        self.decide_effect()
-        self.desperation = self.get_desperation()
-
-    def decide_effect(self):
-        pass
-
-    BONUS_BALLS = 0.5  # extra ball used when determining desperation
-    DESPERATION_MIDPOINT = 0.85  # balls under for 100% desperation
-    DESPERATION_FLOOR = 0.2  # lowest amount of desperation possible
-
-    def get_desperation(self) -> float:
-        total_balls = self.game.balls + HitIntent.BONUS_BALLS
-        ball_ratio = total_balls / (BallGame.BALL_COUNT + HitIntent.BONUS_BALLS - 1)
-        strike_ratio = self.game.strikes / (BallGame.STRIKE_COUNT - 1)
-        balls_over = ball_ratio - strike_ratio
-        if balls_over < 0:
-            balls_over = 0
-        desperation_base = (1 - balls_over) / HitIntent.DESPERATION_MIDPOINT
-        desperation_scaled = desperation_base * (1-HitIntent.DESPERATION_FLOOR) + HitIntent.DESPERATION_FLOOR
-        return desperation_scaled
-
-    def __str__(self):
-        return f"hit intent: desperation {self.desperation:.2f}"
-
-
-class PitchIntent:
-    """
-    Determines the pitcher's intent, before they throw the ball, based on pitcher, catcher, and game state.
-    """
-    def __init__(self, game: 'BallGame'):
-        self.game = game
-
-        self.pitcher = self.game.defense()['pitcher']
-        self.catcher = self.game.defense()['catcher']
-        self.batter = self.game.batter()
-        self.next_at_bat = self.game.batter(1)
-
-        self.decide_effect()
-        self.base_calling_modifier = 0
-        self.ideal_strike_percent = 0
-        self.target_location = self.decide_target_location()
-
-    def decide_effect(self):
-        pass
-
-    STRIKE_PERCENT_BASE = 0.6  # what percentage of pitches would be strikes if calling was 0
-    STRIKE_PERCENT_VERTICAL_SCALE = 0.4  # how much calling can move the strike percentage
-    STRIKE_PERCENT_WIDTH = 20  # higher values make a steeper slope of the tanh function for strike percent
-
-    def decide_target_location(self) -> float:
-        calling_modifier = self.calling_modifier()
-        self.base_calling_modifier = calling_modifier
-
-        calling = self.catcher['calling']
-        calling_modifier *= min(1, calling)
-
-        tan_mod = tanh(calling_modifier/PitchIntent.STRIKE_PERCENT_WIDTH)
-        scaled_mod = tan_mod * PitchIntent.STRIKE_PERCENT_VERTICAL_SCALE
-        strike_percent = PitchIntent.STRIKE_PERCENT_BASE - scaled_mod
-        self.ideal_strike_percent = strike_percent
-
-        pitcher_stdev = accuracy_stdv_slope * self.pitcher['accuracy'] + accuracy_stdv_intercept
-        strike_z = norm.ppf(strike_percent)
-        strike_position = strike_z * pitcher_stdev
-        called_location = max(0, 1-strike_position)
-        return called_location
-
-    WEIGHTS = {
-        'count': 20,
-        'discipline_bias': 5,
-        'bases_loaded': 3,
-        'outs_number': 3,
-        'current_v_next_hitter': 1
-    }
-    FIRST_PITCH_BIAS = -0.2  # extra bias
-    RUNNER_IN_SCORING_POSITION_MODIFIER = 0.5  # how much to weight a runner in scoring position
-    RUNNERS_TO_WALK_FACTOR = 1.5  # the exponential factor for how much to worry about walking players
-    RUNNERS_TO_WALK_MODIFIER = 0.5  # the linear counterfactor of the above number
-
-    def calling_modifier(self) -> float:
-        """
-        The ideal shift towards or away from the plate including catcher effects.
-        This is a unitless number and can be positive (away from the strike zone)
-        or negative (towards the strike zone)
-        """
-        calling_modifier = 0
-
-        # evaluate current count:
-        ball_ratio = self.game.balls / (BallGame.BALL_COUNT - 1)
-        strike_ratio = self.game.strikes / (BallGame.STRIKE_COUNT - 1)
-        if ball_ratio == 0 and strike_ratio == 0:
-            count_effect = PitchIntent.FIRST_PITCH_BIAS
-        else:
-            count_effect = strike_ratio - ball_ratio
-        if self.game.balls == BallGame.BALL_COUNT - 1:
-            count_effect += -0.2  # bonus hyper modifier
-        count_effect *= PitchIntent.WEIGHTS['count']
-        calling_modifier += count_effect
-
-        # evaluate hitter discipline bias
-        # the more disciplined a hitter is, the more strikes to throw and thus the more negative
-        # the more powerful a hitter is, the more balls to throw and thus more positive
-        discipline_bias_effect = self.batter['power'] - self.batter['discipline']
-        discipline_bias_effect *= PitchIntent.WEIGHTS['discipline_bias']
-
-        # calculate runners to walk vs. runners to bat in
-        bases_occupied = [i is not None for i in self.game.bases]
-        runner_in_scoring_position = bases_occupied[BallGame.NUMBER_OF_BASES-1]
-        runners_to_walk = 0
-        for base in bases_occupied:
-            if base:
-                runners_to_walk += 1
-            else:
-                break
-        if runners_to_walk != BallGame.NUMBER_OF_BASES and runner_in_scoring_position:
-            # there is a player in socring position who won't score on a walk:
-            risp_effect = PitchIntent.RUNNER_IN_SCORING_POSITION_MODIFIER
-        else:
-            risp_effect = 0
-        runners_to_walk_effect = runners_to_walk ** PitchIntent.RUNNERS_TO_WALK_FACTOR
-        runners_to_walk_effect /= PitchIntent.RUNNERS_TO_WALK_MODIFIER
-        bases_loaded_effect = runners_to_walk_effect + risp_effect
-        bases_loaded_effect *= PitchIntent.WEIGHTS['bases_loaded']
-        calling_modifier += bases_loaded_effect
-
-        # calculate effect from current number of outs
-        median_out = (BallGame.OUTS_COUNT - 1) / 2  # 1 for three outs, 1.5 for four
-        outs_effect = self.game.outs - median_out
-        outs_effect *= PitchIntent.WEIGHTS['outs_number']
-        calling_modifier += outs_effect
-
-        # calculate effect of current hitter vs next hitter difficulty
-        cvn_hitter = self.batter['total offense'] - self.next_at_bat['total offense']
-        cvn_hitter *= PitchIntent.WEIGHTS['current_v_next_hitter']
-        calling_modifier += cvn_hitter
-
-        return calling_modifier
-
-    def __str__(self):
-        return f"pitch intent: target {self.target_location:.2f} modifier {self.base_calling_modifier:.1f} " \
-               f"strike {self.ideal_strike_percent*100:.0f}%"
-
-
-class Pitch:
-    """
-    Represents an actual pitch. has four key stats:
-    location: where the pitch is, from 0 +, where 0 is right over the plate
-    obscurity: how hard the pitch is to read, from 0 to 2-ish
-    difficulty: how hard the pitch is to hit, from 0 +
-    reduction: how much successful hits are reduced
-    """
-    def __init__(self, pitch_intent: PitchIntent, pitcher: Player, catcher: Player):
-        self.intent = pitch_intent
-        self.pitcher = pitcher
-        self.catcher = catcher
-
-        self.location = 0
-        self.obscurity = 0
-        self.difficulty = 0
-        self.reduction = 0
-        self.strike = False
-
-    def pitch(self):
-        self.location = self.roll_location()
-        self.strike = self.check_strike()
-        self.obscurity = self.get_obscurity()
-        self.difficulty = self.get_difficulty()
-        self.reduction = self.get_reduction()
-
-    def roll_location(self) -> float:
-        pitcher_stdev = accuracy_stdv_slope * self.pitcher['accuracy'] + accuracy_stdv_intercept
-        target_location = self.intent.target_location
-
-        return normal(loc=target_location, scale=pitcher_stdev)
-
-    FRAMING_FACTOR = 0.1  # how much exceptionally good catchers can bias the upires
-
-    def check_strike(self):
-        catcher_mod = max(0.0, self.catcher['calling'] - 1) * Pitch.FRAMING_FACTOR
-        return abs(self.location) <= 1 + catcher_mod
-
-    MAX_BASE_OBSCURITY = 10  # maximum amount of obscurity you can get via location (at 1.0)
-    OBSCURITY_DISTANCE_SCALE = 5  # magic factor to determine how distance scales,
-    # lower is higher obscurity for the same distance.
-    TRICKINESS_FACTOR = 0.5  # amount of obscurity added to every pitch for 1 trickiness
-
-    def get_obscurity(self) -> float:
-        closeness_scale = 1 / Pitch.OBSCURITY_DISTANCE_SCALE
-        far_out = abs(self.location - 1)
-        location_obscurity = closeness_scale / (far_out + (1 / Pitch.MAX_BASE_OBSCURITY))
-        trick_obscurity = self.pitcher['trickery'] * Pitch.TRICKINESS_FACTOR
-        return location_obscurity + trick_obscurity
-
-    DIFFICULTY_DISTANCE_FACTOR = 1.5  # EXPONENT for how being far out affects difficulty
-    STRIKE_ZONE_DIFFICULTY_CENTER = 0.5  # the point at which you start gaining difficulty for being far out
-    FORCE_FACTOR = 1  # how much a pitcher's force affects difficulty
-
-    def get_difficulty(self) -> float:
-        force_difficulty = Pitch.FORCE_FACTOR * self.pitcher['force']
-        location_base = max(0.0, self.location - Pitch.STRIKE_ZONE_DIFFICULTY_CENTER)
-        location_difficulty = location_base ** Pitch.DIFFICULTY_DISTANCE_FACTOR
-        return force_difficulty + location_difficulty
-
-    REDUCTION_FROM_TRICKERY = 0.2  # the percentage removed from exit velocity for a pitcher with 1 trickery
-
-    def get_reduction(self) -> float:
-        return Pitch.REDUCTION_FROM_TRICKERY * self.pitcher['trickery']
-
-    def __str__(self):
-        strike_text = "Strike" if self.strike else "Ball"
-        return f"{strike_text}: loc {self.location:.2f} obs {self.obscurity:.2f} " \
-               f"dif {self.difficulty:.2f} red {self.reduction:.2f}"
-
-
-class SwingDecision:
-    """
-    Determines if a batter wants to swing for a pitch.
-    """
-    def __init__(self, pitch: Pitch, hit_intent: HitIntent, batter: Player):
-        self.pitch = pitch
-        self.intent = hit_intent
-        self.batter = batter
-        self.read_chance = self.calculate_read_chance()
-        self.swing_chance = self.calculate_swing_chance()
-        self.swing_roll = -1
-        self.swinging = self.decide_swing()
-
-    DISCIPLINE_REDUCTION_AT_ONE = 0.5  # how much obscurity is reduced when you have a 1 in discipline
-    discipline_reduction_factor = -DISCIPLINE_REDUCTION_AT_ONE/(DISCIPLINE_REDUCTION_AT_ONE-1)
-    # DRF is equal to 1 when DRA1 is 0.5, but we need this math to get a nice curve with 1 at 0
-
-    def calculate_read_chance(self) -> float:
-        # this is equal to 1 when DR is 0.5. it's algebra, trust me:
-        drf = SwingDecision.discipline_reduction_factor
-        discipline_modifier = drf / (drf + self.batter['discipline'])
-        effective_obscurity = self.pitch.obscurity * discipline_modifier
-        return 1 / (1 + effective_obscurity)
-
-    def calculate_swing_chance(self) -> float:
-        strike_chance = self.read_chance if self.pitch.strike else (1 - self.read_chance)
-        return strike_chance * self.intent.desperation
-
-    def decide_swing(self) -> bool:
-        self.swing_roll = rand()
-        return self.swing_roll < self.swing_chance
-
-    def __str__(self):
-        swing_text = "Swing" if self.swinging else "Look"
-        return f"{swing_text}: read {self.read_chance*100:.0f}% swing {self.swing_chance*100:.0f}% " \
-               f"roll {self.swing_roll:.2f}"
-
-
-class Swing:
-    """
-    A players swing, from decision, through hit quality.
-    """
-
-    def __init__(self, pitch: Pitch, batter: Player):
-        self.pitch = pitch
-        self.batter = batter
-
-        self.net_contact = self.batter['contact'] - self.pitch.difficulty  # usually negative
-        self.hit_quality = 0  # hit quality from 0 - 1 average, where <0 is a strike, swinging, and >1 is a clean hit
-
-        self.strike = False
-        self.foul = False
-        self.live = None
-
-    def swing(self):
-        """
-        Roll for contact
-        """
-        self.hit_quality = self.roll_hit_quality()
-        if self.hit_quality < 0:
-            self.strike = True
-        elif 0 < self.hit_quality < 1:
-            self.foul = True
-        else:
-            self.live = self.roll_hit()
-
-    FOUL_BIAS = 0.6  # the higher this is, the more frequently fouls and hits occur vs strike swinging
-    NET_CONTACT_FACTOR = 0.4  # how much net contact affects the ability to hit.
-
-    def roll_hit_quality(self) -> float:
-        """Roll for hit quality. 1 is a good hit, 0-1 is a foul"""
-        return normal(loc=(self.net_contact + Swing.FOUL_BIAS) * Swing.NET_CONTACT_FACTOR, scale=1)
-
-    BASE_LAUNCH_ANGLE = 10  # median launch angle for a 0* batter
-    LAUNCH_ANGLE_POWER_FACTOR = 5  # bonus launch angle for a 5* batter
-    LAUNCH_ANGLE_BASE_STDEV = 40
-    LA_HIT_QUALITY_FACTOR = 0.5  # magic factor for launch angle hit quality,
-    # higher LA_HIT_QUALITY_FACTOR means hit quality matters less for scaling launch angles with good hits,
-    # LAHQF of 1 means a remainder of 1 cuts launch angle stdev in half.
-
-    def roll_launch_angle(self, quality_remainder) -> float:
-        median_launch_angle = Swing.BASE_LAUNCH_ANGLE + self.batter['power'] * Swing.BASE_LAUNCH_ANGLE
-        angle_modifier = Swing.LA_HIT_QUALITY_FACTOR / (Swing.LA_HIT_QUALITY_FACTOR + quality_remainder)
-        launch_angle_stdev = Swing.LAUNCH_ANGLE_BASE_STDEV * angle_modifier
-        launch_angle = normal(loc=median_launch_angle, scale=launch_angle_stdev)
-        return launch_angle
-
-    PULL_STDEV = 90
-
-    def roll_field_angle(self) -> float:
-        while True:
-            field_angle = normal(loc=self.batter['pull'], scale=Swing.PULL_STDEV)
-            if 0 < field_angle < 90:
-                return field_angle
-
-    MIN_EXIT_VELOCITY_AVERAGE = 80  # average EV for a player at 0 stars
-    MAX_EXIT_VELOCITY_AVERAGE = 120  # max for a juiced player at 10 stars
-    exit_velocity_range = MAX_EXIT_VELOCITY_AVERAGE - MIN_EXIT_VELOCITY_AVERAGE
-    EXIT_VELOCITY_STDEV = 10  # additional fuzz on top of hit quality, should be low
-    EXIT_VELOCITY_PITY_FACTOR = 0.2  # the higher this is, the less exit velo is reduced with low hit quality.
-    # This is very sensitive - 0 means exit velo is 0 at 1.0 quality, 0.1 means exit velo is 40% and 0.2 means 60%
-    EXIT_VELOCITY_QUALITY_EXPONENT = 1/4
-
-    def roll_reduction(self) -> float:
-        base_reduction = Swing.exit_velocity_range * self.pitch.reduction
-        scaled_reduction = base_reduction * 2 * rand()
-        return scaled_reduction
-
-    def roll_exit_velocity(self, quality_remainder, reduction):
-        exit_velocity_base = Swing.MIN_EXIT_VELOCITY_AVERAGE + self.batter['power'] * Swing.exit_velocity_range / 2
-        quality_modifier = (quality_remainder + Swing.EXIT_VELOCITY_PITY_FACTOR) ** Swing.EXIT_VELOCITY_QUALITY_EXPONENT
-        exit_velocity = normal(loc=exit_velocity_base * quality_modifier, scale=Swing.EXIT_VELOCITY_STDEV)
-        exit_velocity -= reduction
-        return exit_velocity
-
-    def roll_hit(self) -> LiveBall:
-        quality_remainder = self.hit_quality - 1
-
-        launch_angle = self.roll_launch_angle(quality_remainder)
-        field_angle = self.roll_field_angle()
-        reduction = self.roll_reduction()
-        exit_velocity = self.roll_exit_velocity(quality_remainder, reduction)
-
-        return LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
-
-    def __str__(self):
-        if self.live:
-            return f"Hit ball with quality {self.hit_quality}, result {self.live}"
-        else:
-            text = ""
-            if self.strike:
-                text += "strike"
-            if self.foul:
-                text += "foul"
-            return f"Swung {text} with quality {self.hit_quality:.3f}"
-
-    def __bool__(self):
-        return bool(self.live)
-
+# TODO: either move liveball out somewhere else (like in here) or make hitting pass only a hit quality
+# TODO: maybe move liveball to hitting, and liveball init takes hit quality?
+# TODO: iunno
 
 class PitchHit(Event):
     """
@@ -394,73 +23,50 @@ class PitchHit(Event):
 
     """
     def __init__(self, game: BallGame):
-        self.game = game
-
-        super().__init__(f"{self.game.defense()['pitcher']} pitch to {self.game.batter()}")
-
-        self.ball = False
-        self.strike = False
-        self.foul = False
-        self.live = False
+        super().__init__(f"{game.defense()['pitcher']} pitch to {game.batter()}")
 
         # TODO: This is going to need a lot of work to make nice and pretty, describe the pitch, etc.
         # this is a very quick pass to make things work.
         self.text = []
 
-        # generate intents
-        self.hit_intent = HitIntent(self.game)
-        self.pitch_intent = PitchIntent(self.game)
-
         # pitch the ball
         self.pitch = Pitch(
-            self.pitch_intent,
-            self.game.defense()['pitcher'],
-            self.game.defense()['catcher']
+            game,
+            game.defense()['pitcher'],
+            game.defense()['catcher']
         )
-        self.pitch.pitch()
         # maybe describe the pitch some?
 
         # batter decides swing
-        self.swing_decision = SwingDecision(self.pitch, self.hit_intent, self.game.batter())
-        if self.swing_decision.swinging:
-            self.swing = Swing(self.pitch, self.game.batter())
-            self.swing.swing()
+        self.live = None
+        self.swing = Swing(game, self.pitch, game.batter())
+        if self.swing:
             if self.swing.strike:
-                self.strike = True
                 self.text += ["Strike, swinging."]
+                self.text += [game.add_strike()]
             elif self.swing.foul:
-                self.foul = True
                 self.text += ["Foul ball."]
+                self.text += [game.add_foul()]
             else:
-                self.live = self.swing.live
                 self.text += ["It's a hit!"]  # maybe expand this some?
+                self.live = self.swing.live
                 self.text += [str(self.swing.live)]
         else:
             # batter does not swing
-            self.swing = None
-            if self.pitch.strike:
-                self.strike = True
+            if self.swing.strike:
                 self.text += ["Strike, looking."]
+                self.text += [game.add_strike()]
             else:
-                self.ball = True
                 self.text += ["Ball."]
-
-    def update_game(self, game: BallGame) -> None:
-        if self.strike:
-            self.text += [game.add_strike()]
-        if self.ball:
-            self.text += [game.add_ball()]
-        if self.foul:
-            self.text += [game.add_foul()]
+                self.text += [game.add_ball()]
 
     def feed_text(self, debug=False) -> List[str]:
         if debug:
-            string = [f"HI: {self.hit_intent}"]
-            string += [f"PI: {self.pitch_intent}"]
+            string = []
             string += [f"Pitch: {self.pitch}"]
-            string += [f"SD: {self.swing_decision}"]
-            if self.swing is not None:
-                string += [f"Swing: {self.swing}"]
+            string += [f"Swing: {self.swing}"]
+            if self.swing:
+                string += [f"Hit: {self.swing.live}"]
             return string
         else:
             return self.text
@@ -510,14 +116,11 @@ if __name__ == "__main__":
 
     for _ in range(0, 99):
         p = PitchHit(g)
-        if p.live:
+        if p.swing.live:
             print(p.swing)
-            print(f"{p.live.distance():.0f} feet.")
+            print(f"{p.swing.live.distance():.0f} feet.")
 
     def run_test(pitches):
-        p = PitchHit(g)
-        print(p.pitch_intent)
-
         strikes = 0
         balls = 0
         fouls = 0
@@ -532,9 +135,9 @@ if __name__ == "__main__":
         furthest_swing = None
         for _ in range(0, pitches):
             p = PitchHit(g)
-            strikes += int(p.strike)
-            balls += int(p.ball)
-            fouls += int(p.foul)
+            strikes += int(p.swing.strike)
+            balls += int(p.swing.ball)
+            fouls += int(p.swing.foul)
             hit_count += int(bool(p.live))
             location += p.pitch.location
             obscurity += p.pitch.obscurity
