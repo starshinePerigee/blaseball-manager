@@ -7,7 +7,7 @@ from blaseball.stats.players import Player
 from blaseball.util.geometry import Coords
 
 import math
-from numpy.random import normal, rand
+from numpy.random import normal
 
 
 DEGSY = u'\N{DEGREE SIGN}'
@@ -39,7 +39,7 @@ class LiveBall:
         # 0 degs is right along first base
         pos_x = self.distance() * math.cos(math.radians(self.field_angle)) + self.origin.x
         pos_y = self.distance() * math.sin(math.radians(self.field_angle)) + self.origin.y
-        return Coords(pos_x, pos_y)
+        return Coords(pos_x, pos_y)  # yes we could initialize with polar coords but we need to handle the origin :c
 
     def __bool__(self):
         return self.speed > 0

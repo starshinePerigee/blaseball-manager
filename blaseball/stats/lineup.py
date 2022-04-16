@@ -3,14 +3,19 @@ This function manages a single lineup - ie, a team configuration that is going t
 a game of blaseball.
 """
 
-from collections.abc import Collection
-from typing import Union, List
-from random import shuffle
-import re
-
 from blaseball.settings import Settings
 from blaseball.stats import players, teams
 from blaseball.util.geometry import Coords
+
+from collections.abc import Collection
+from typing import Union, List
+from random import shuffle
+
+
+LOCATIONS = {
+    'catcher': Coords(0, 0)
+
+}
 
 
 class Defense:
@@ -20,6 +25,7 @@ class Defense:
     Defense is meant to help organize positions and fielding. At its core, it's lists of (player, coord) pairs
     that describe where a player is on the field. Some positions have extra utility as well.
     """
+
     def __init__(self):
         self.catcher = None  # catcher communicates with the pitcher
         self.shortstop = None  # shortstop is a fielder who hangs out in the infield

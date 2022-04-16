@@ -4,10 +4,9 @@ which captures everything that has happened.
 """
 
 
+from blaseball.playball.liveball import LiveBall
 from blaseball.playball.event import Event
 from blaseball.util.geometry import Coords
-
-
 
 
 class FieldBall(Event):
