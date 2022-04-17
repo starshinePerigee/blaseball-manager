@@ -6,7 +6,7 @@ which captures everything that has happened.
 
 from blaseball.playball.liveball import LiveBall
 from blaseball.playball.event import Event
-from blaseball.util.geometry import Coords
+from blaseball.util.geometry import Coord
 
 
 class FieldBall(Event):
@@ -30,7 +30,7 @@ class FieldBall(Event):
 if __name__ == "__main__":
     l1 = LiveBall(15, 30, 105)
     print(l1)
-    l2 = LiveBall(10, -20, 30, Coords(-0.312451, 1.1518293))
+    l2 = LiveBall(10, -20, 30, Coord(-0.312451, 1.1518293))
     print(l2)
 
     print(l1.ground_location())

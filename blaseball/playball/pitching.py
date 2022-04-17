@@ -5,6 +5,7 @@ to the pitch.
 
 from blaseball.playball.ballgame import BallGame
 from blaseball.stats.players import Player
+from blaseball.stats import stadium
 
 from scipy.stats import norm
 from numpy.random import normal
@@ -66,14 +67,14 @@ def calc_calling_modifier(game: BallGame) -> float:
 
     # calculate runners to walk vs. runners to bat in
     bases_occupied = [i is not None for i in game.bases]
-    runner_in_scoring_position = bases_occupied[BallGame.NUMBER_OF_BASES - 1]
+    runner_in_scoring_position = bases_occupied[stadium.NUMBER_OF_BASES - 1]
     runners_to_walk = 0
     for base in bases_occupied:
         if base:
             runners_to_walk += 1
         else:
             break
-    if runners_to_walk != BallGame.NUMBER_OF_BASES and runner_in_scoring_position:
+    if runners_to_walk != stadium.NUMBER_OF_BASES and runner_in_scoring_position:
         # there is a player in socring position who won't score on a walk:
         risp_effect = RUNNER_IN_SCORING_POSITION_MODIFIER
     else:

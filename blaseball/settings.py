@@ -13,7 +13,6 @@ class Settings:
     animate_window_transition = True
     players_per_team = 25
     min_lineup = 9
-    base_count = 3
 
 
 class SettingsWindow(EasyDialog):

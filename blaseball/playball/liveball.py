@@ -4,7 +4,7 @@ Governs the flight of a ball after it is hit, errored out, etc.
 
 from blaseball.playball.hitting import Swing
 from blaseball.stats.players import Player
-from blaseball.util.geometry import Coords
+from blaseball.util.geometry import Coord
 
 import math
 from numpy.random import normal
@@ -19,7 +19,7 @@ WIND_RESISTANCE = 16
 
 class LiveBall:
     """A ball live on the field that must be fielded."""
-    def __init__(self, launch_angle, field_angle, speed, origin=Coords(0, 0)):
+    def __init__(self, launch_angle, field_angle, speed, origin=Coord(0, 0)):
         self.launch_angle = launch_angle  # 0 is flat horizontal, 90 is straight up, can go negative
         self.field_angle = field_angle  # 0 is right to first base, 90 is to third base, can go 360
         self.speed = speed  # speed of the ball in miles per hour
@@ -35,11 +35,11 @@ class LiveBall:
     def distance(self):
         return self._theoretical_distance() - self.flight_time() ** 2 * WIND_RESISTANCE
 
-    def ground_location(self) -> Coords:
+    def ground_location(self) -> Coord:
         # 0 degs is right along first base
         pos_x = self.distance() * math.cos(math.radians(self.field_angle)) + self.origin.x
         pos_y = self.distance() * math.sin(math.radians(self.field_angle)) + self.origin.y
-        return Coords(pos_x, pos_y)  # yes we could initialize with polar coords but we need to handle the origin :c
+        return Coord(pos_x, pos_y)  # yes we could initialize with polar coords but we need to handle the origin :c
 
     def __bool__(self):
         return self.speed > 0

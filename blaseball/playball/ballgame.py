@@ -26,7 +26,6 @@ class BallGame:
     STRIKE_COUNT = 3
     OUTS_COUNT = 3
     INNINGS = 9
-    NUMBER_OF_BASES = 3  # not counting home
     BATTING_ORDER_LENGTH = 9
 
     def __init__(self, home: Lineup, away: Lineup, print_events: bool=False) -> None:

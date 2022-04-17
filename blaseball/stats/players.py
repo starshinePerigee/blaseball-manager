@@ -426,7 +426,7 @@ class PlayerBase(MutableMapping):
         return(f"<{self.__module__}.{self.__class__.__name__} "
                f"[{len(self)} rows x "
                f"{len(self.df.columns)} cols] "
-               f"at {hex(id(self))}")
+               f"at {hex(id(self))}>")
 
     def __iter__(self) -> iter:
         return iter(self.players.values())
