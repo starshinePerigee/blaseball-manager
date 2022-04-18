@@ -3,6 +3,7 @@ Game
         Side
             At-Bat
                 Events
+                    Updates
 
 
 What actions are there?
@@ -34,15 +35,20 @@ Event:
 - base methods:
 -- update_game(game)
 -- feed_text() -> str
+- contains a list of Updates
 
-Hit + fielding are two separate events? so we need a structure that passes between them.
-This is a LiveBall.
-- this also lets us generate fielding events at any position, including from other fielding events.
+an Update:
+- a single moment
+- with a corresponding graphic, game state update, or text line
+
 
 So the call chain is:
 
 1. BallGame handles actions until it's pitch time
 2. BallGame creates a PitchHit(Event)
-3. Pitchhit steps through the hitting process, generates a LiveBall if needed
+3. Pitchhit steps through the hitting process, building a chain of Updates
+3a. Pitchhit calls Fielding if necessary, gets more events through the fielding engine
+3b. Fielding updates game as it goes
+3c. Pitchhit returns the list of Updates to the game.
 4. Game calls updategame, if there is a LiveBall returned, it creates a fielding event
 5. Fielding event is also passed into the events cruncher

@@ -14,6 +14,7 @@ STAT_KINDS = [
     'condition',  # stats that govern a player's condition
     'character',  # a miscellaneous player attribute
     'performance',  # a tracked performance metric
+    'averaging',  # a performance stat that is a running average; requires a total performance stat.
 ]
 
 
@@ -39,9 +40,12 @@ class AllStats(Collection):
         self.weights[weight].add(stat, value)
 
     def __getitem__(self, item) -> Union['Stat', List]:
-        try:
-            return self.all_stats[item]
-        except (TypeError, KeyError):
+        found_stats = [found_stat for found_stat in self.all_stats if found_stat.name == item]
+        if len(found_stats) > 1:
+            return found_stats
+        elif len(found_stats) == 1:
+            return found_stats[0]
+        else:
             return [x for x in self.all_stats if x.kind == item]
 
     def __contains__(self, item):
@@ -105,6 +109,7 @@ class Stat:
         self.category = None
         self.abbreviation = None
         self.default = None
+        self.total_stat = None
 
         all_stats.append(self)
 
@@ -126,6 +131,9 @@ class Stat:
 
     def __str__(self):
         return self.name.capitalize()
+
+    def __repr__(self):
+        return f"Stat({self.name}, {self.kind})"
 
 
 determination = Stat('determination', 'personality')
@@ -488,7 +496,46 @@ element.default = "Basic"
 element.abbreviate("ELE")
 
 at_bats = Stat('at bats', 'performance')
-at_bats.default = 0
+
+pitches_called = Stat('total pitches called', 'performance')
+
+average_called_location = Stat('average called location', 'averaging')
+average_called_location.total_stat = 'total pitches called'
+
+pitches_thrown = Stat('total pitches thrown', 'performance')
+
+pitch_stats = [
+    'average pitch difficulty',
+    'average pitch obscurity',
+    'average pitch distance from edge',
+    'average pitch distance from call',
+    'thrown strike rate',
+    'average reduction'
+]
+
+for stat in pitch_stats:
+    new_stat = Stat(stat, 'averaging')
+    new_stat.total_stat = 'total pitches thrown'
+
+pitches_seen = Stat('pitches seen', 'performance')
+
+hit_stats = ['strike rate', 'ball rate', 'foul rate', 'hit rate', 'pitch read chance']
+for stat in hit_stats:
+    new_stat = Stat(stat, 'averaging')
+    new_stat.total_stat = 'pitches seen'
+
+total_hits = Stat('total hits', 'performance')
+
+average_hit_distance = Stat('average hit distance', 'averaging')
+average_hit_distance.total_stat = 'total hits'
+
+exit_velo = Stat('average exit velocity', 'averaging')
+exit_velo.total_stat = 'total hits'
+
+total_home_runs = Stat('total home runs', 'performance')
+
+for stat in all_stats['performance'] + all_stats['averaging']:
+    stat.default = 0
 
 
 if __name__ == "__main__":

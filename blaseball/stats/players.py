@@ -187,6 +187,21 @@ class Player(Mapping):
     def __setitem__(self, item: Hashable, value: object) -> None:
         self.pb.df.loc[self.cid][item] = value
 
+    def add_average(self, item: Union[List, str], value: Union[List, Union[int, float]]) -> None:
+        """Updates a stat which is a running average, such as batting average. Pass one or more stats and values in
+        and it'll update the linked counting stat and the averages."""
+        if isinstance(item, list):
+            count_stat = all_stats[item[0]].total_stat
+        else:
+            count_stat = all_stats[item].total_stat
+            item = [item]
+            value = [value]
+
+        self[count_stat] += 1
+
+        for i, v in zip(item, value):
+            self[i] += (v - self[i]) / self[count_stat]
+
     def __iter__(self) -> iter:
         return iter(self.stat_row())
 

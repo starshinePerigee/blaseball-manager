@@ -5,6 +5,7 @@ Controls a player's pre-hit decisions as well as their actual swing attempt.
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.pitching import Pitch
 from blaseball.stats.players import Player
+from blaseball.playball.event import Update
 
 from numpy.random import normal, rand
 
@@ -72,12 +73,14 @@ def roll_reduction(pitch_reduction: float) -> float:
     return scaled_reduction
 
 
-class Swing:
+class Swing(Update):
     """A player's swing, from decision up to hit quality"""
     def __init__(self, game: BallGame, pitch: Pitch, batter: Player):
+        super().__init__()
+
         self.desperation = calc_desperation(game)
-        read_chance = calc_read_chance(pitch.obscurity, batter['discipline'])
-        self.swing_chance = calc_swing_chance(read_chance, self.desperation, pitch.strike)
+        self.read_chance = calc_read_chance(pitch.obscurity, batter['discipline'])
+        self.swing_chance = calc_swing_chance(self.read_chance, self.desperation, pitch.strike)
         self.did_swing = roll_for_swing_decision(self.swing_chance)
 
         self.strike = False
@@ -91,16 +94,44 @@ class Swing:
             self.hit_quality = roll_hit_quality(self.net_contact)
             if self.hit_quality < 0:
                 self.strike = True
+                self.text = "Strike, swinging."
             elif 0 < self.hit_quality < 1:
                 self.foul = True
+                self.text = "Foul ball."
             else:
                 self.hit = True
                 self.reduction = roll_reduction(pitch.reduction)
+                self.text = "It's a hit!"
         else:
             self.net_contact = 0
             self.hit_quality = 0
             self.strike = pitch.strike
-            self.ball = not pitch.strike
+            if self.strike:
+                self.ball = False
+                self.text = "Strike, looking."
+            else:
+                self.ball = True
+                self.text = "Ball."
+
+        self.update_stats(batter)
+
+    def update_stats(self, batter: Player):
+        batter.add_average(
+            [
+                'strike rate',
+                'ball rate',
+                'foul rate',
+                'hit rate',
+                'pitch read chance'
+            ],
+            [
+                float(self.strike),
+                float(self.ball),
+                float(self.foul),
+                float(self.hit),
+                self.read_chance
+            ]
+        )
 
     def __bool__(self):
         return self.did_swing
@@ -127,6 +158,7 @@ if __name__ == "__main__":
     from blaseball.playball.pitching import Pitch
     from blaseball.stats import players, teams, stats
     from blaseball.stats.lineup import Lineup
+    from blaseball.stats.stadium import Stadium, ANGELS_STADIUM
     from data import teamdata
     pb = players.PlayerBase()
     team_names = teamdata.TEAMS_99
@@ -137,8 +169,9 @@ if __name__ == "__main__":
     l1.generate(league[0])
     l2 = Lineup("Away Lineup")
     l2.generate(league[1])
+    s = Stadium(ANGELS_STADIUM)
 
-    g = BallGame(l1, l2, False)
+    g = BallGame(l1, l2, s, False)
 
     test_pitcher = g.defense()['pitcher']
     test_catcher = g.defense()['catcher']
@@ -153,7 +186,9 @@ if __name__ == "__main__":
         p = Pitch(g, test_pitcher, test_catcher)
         print(p)
         for __ in range(0, 5):
-            print(Swing(g, p, test_batter))
+            w = Swing(g, p, test_batter)
+            print(w)
+            print(w.text)
         print("")
 
     print("")

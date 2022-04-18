@@ -3,7 +3,8 @@
 This is vastly premature, so mostly it just holds some coordinate data."""
 
 
-from blaseball.util.geometry import Coord, polygonize
+from blaseball.util.geometry import Coord
+from shapely.geometry import Polygon
 
 
 ANGELS_STADIUM = [330, 365, 396, 389, 330]
@@ -26,10 +27,14 @@ class Stadium:
         self.points = [Stadium.HOME_PLATE]
         for i, distance in enumerate(distances):
             self.points += [Coord(distance + Stadium.WALLS_BONUS, 90 * i / (len(distances)-1), True)]
-        self.polygon = polygonize(self.points)
+        self.polygon = Polygon(self.points)
 
 
 if __name__ == "__main__":
     s = Stadium(ANGELS_STADIUM)
     print(int(s.polygon.area))
     print(int(s.polygon.length))
+
+    print(s.polygon.contains(Coord(550, 200)))
+    print(s.polygon.contains(Coord(360, 100)))
+    print(s.polygon.contains(Coord(100, 100)))

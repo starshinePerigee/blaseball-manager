@@ -151,6 +151,7 @@ Batting:
 - Contact: How good a player is at hitting difficult pitches
 - Discipline: A player's ability to read pitches - to let balls be balls and swing at strikes,
               as well as their ability to decide if special hits are required.
+- Pull: a player's average launch angle when hitting; set at random but averages middle-left field
 
 Baserunning:
 - Speed: A player's base speed, helps in all baserunning attempts, but is a larger advantage when running
@@ -159,13 +160,14 @@ Baserunning:
            If a player has bad enough timing, bravery is a downside.
 - Timing: A player's decision-making while on the bases. Prevents being thrown out and lets read
           plays like fly outs better, allowing them to take extra bases.
-- Pull: a player's average launch angle when hitting; set at random but averages middle-left field
 
 Defense:
 - Reach: The amount of ground a player can cover, and how good they are at catching fly outs.
          Required for outfielders
 - Grabbiness: A player's catching ability, helping with ground outs, double plays, and avoiding errors.
               Required for infielders
+- Throwing: A player's ability to throw the ball to a fellow defender quickly, accurately, and with few errors.
+- Awareness: A pitcher or catcher's awareness of the field, helping them defend against steals.
 - Calling: The player's ability to call for pitches, pickoffs, and set pitch targets as catcher (or pitcher).
 a low calling will cause pitchers to give up more walks and first-pitch hits, while a high calling will even
 improve the difficulty of a pitcher's pitches.

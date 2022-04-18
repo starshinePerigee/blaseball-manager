@@ -4,11 +4,11 @@ to the pitch.
 """
 
 from blaseball.playball.ballgame import BallGame
+from blaseball.playball.event import Update
 from blaseball.stats.players import Player
-from blaseball.stats import stadium
 
 from scipy.stats import norm
-from numpy.random import normal
+from numpy.random import normal, rand
 from math import tanh
 
 
@@ -67,14 +67,14 @@ def calc_calling_modifier(game: BallGame) -> float:
 
     # calculate runners to walk vs. runners to bat in
     bases_occupied = [i is not None for i in game.bases]
-    runner_in_scoring_position = bases_occupied[stadium.NUMBER_OF_BASES - 1]
+    runner_in_scoring_position = bases_occupied[game.stadium.NUMBER_OF_BASES - 1]
     runners_to_walk = 0
     for base in bases_occupied:
         if base:
             runners_to_walk += 1
         else:
             break
-    if runners_to_walk != stadium.NUMBER_OF_BASES and runner_in_scoring_position:
+    if runners_to_walk != game.stadium.NUMBER_OF_BASES and runner_in_scoring_position:
         # there is a player in socring position who won't score on a walk:
         risp_effect = RUNNER_IN_SCORING_POSITION_MODIFIER
     else:
@@ -184,7 +184,7 @@ def calc_reduction(pitcher_trickery) -> float:
     return REDUCTION_FROM_TRICKERY * pitcher_trickery
 
 
-class Pitch:
+class Pitch(Update):
     """
     Represents an actual pitch. has four key stats:
     location: where the pitch is, from 0 +, where 0 is right over the plate
@@ -193,6 +193,9 @@ class Pitch:
     reduction: how much successful hits are reduced
     """
     def __init__(self, game: BallGame, pitcher: Player, catcher: Player):
+        catcher = catcher
+        pitcher = pitcher
+
         self.target = decide_call(game, catcher, pitcher)
         self.location = roll_location(self.target, pitcher['accuracy'])
         self.strike = check_strike(self.location, catcher['calling'])
@@ -200,15 +203,76 @@ class Pitch:
         self.difficulty = calc_difficulty(self.location, pitcher['force'])
         self.reduction = calc_reduction(pitcher['trickery'])
 
+        super().__init__(self.description_string(pitcher))
+        self.update_stats(pitcher, catcher)
+
+    def description_string(self, pitcher: Player):
+        if self.location > 1.6:
+            loc_text = "to the far outside"
+        elif self.location > 1.2:
+            loc_text = "to the wide outside"
+        elif self.location > 0.8:
+            loc_text = "right on the edge"
+        elif self.location  > 0.4:
+            loc_text = "to the near outside"
+        elif self.location > -0.4:
+            loc_text = "straight down the middle"
+        elif self.location > -1:
+            loc_text = "to the near inside"
+        else:
+            loc_text = "to the far inside"
+
+        text_obscurity = pitcher['trickery'] * rand()
+        if text_obscurity > 1.5:
+            pitch_text = "screwball"
+        elif text_obscurity > 1:
+            pitch_text = "curveball"
+        elif text_obscurity > 0.8:
+            pitch_text = "changeup"
+        elif text_obscurity > 0.6:
+            pitch_text = "slider"
+        elif text_obscurity > 0.5:
+            pitch_text = "cutter"
+        elif text_obscurity > 0.3:
+            pitch_text = "four seam fastball"
+        else:
+            pitch_text = "two seam fastball"
+
+        text_force = normal(pitcher['force'] * 20 + 70, 20)
+
+        return f"{text_force:.0f} mph {pitch_text} {loc_text}."
+
     def __str__(self):
         strike_text = "Strike" if self.strike else "Ball"
         return (f"{strike_text}: loc {self.location:.2f} call {self.target:.2f} obs {self.obscurity:.2f} "
                 f"dif {self.difficulty:.2f} red {self.reduction:.2f}")
 
+    def update_stats(self, pitcher: Player, catcher: Player):
+        catcher.add_average("average called location", self.location)
+        pitcher.add_average(
+            [
+                'average pitch difficulty',
+                'average pitch obscurity',
+                'average pitch distance from edge',
+                'average pitch distance from call',
+                'thrown strike rate',
+                'average reduction'
+            ],
+            [
+                self.difficulty,
+                self.obscurity,
+                min(abs(self.location - 1), abs(self.location + 1)),
+                abs(self.location - self.target),
+                int(self.strike),
+                self.reduction
+            ]
+        )
+
 
 if __name__ == "__main__":
     from blaseball.stats import players, teams, stats
     from blaseball.stats.lineup import Lineup
+    from blaseball.stats.stadium import Stadium, ANGELS_STADIUM
     from data import teamdata
     pb = players.PlayerBase()
     team_names = teamdata.TEAMS_99
@@ -219,8 +283,9 @@ if __name__ == "__main__":
     l1.generate(league[0])
     l2 = Lineup("Away Lineup")
     l2.generate(league[1])
+    s = Stadium(ANGELS_STADIUM)
 
-    g = BallGame(l1, l2, False)
+    g = BallGame(l1, l2, s, False)
 
     test_pitcher = g.defense()['pitcher']
     print(f"Pitcher: {test_pitcher}")
@@ -239,11 +304,42 @@ if __name__ == "__main__":
               f"strike {strike_percent*100:.1f}%")
         p = Pitch(g, test_pitcher, test_catcher)
         print(p)
+        print(p.text)
+        for i in range(0, 100):
+            Pitch(g, test_pitcher, test_catcher)
 
-    do_pitch()
-    g.balls = 1
-    do_pitch()
-    g.balls = 2
-    do_pitch()
-    g.strikes = 2
-    do_pitch()
+    def run_game():
+        for stat in stats.all_stats['averaging'] + stats.all_stats['performance']:
+            test_pitcher[stat.name] = 0
+            test_catcher[stat.name] = 0
+
+        do_pitch()
+        g.balls = 1
+        do_pitch()
+        g.balls = 2
+        do_pitch()
+        g.strikes = 2
+        do_pitch()
+
+        print(f"Total pitches: {test_pitcher['total pitches thrown']}")
+        print(f"PITCH AVERAGES")
+        print(f"Call: {test_catcher['average called location']:.2f}")
+        print(f"Difficulty: {test_pitcher['average pitch difficulty']:.2f}")
+        print(f"Obscurity: {test_pitcher['average pitch obscurity']:.2f}")
+        print(f"Strike rate: {test_pitcher['thrown strike rate'] * 100:.1f}")
+        print(f"Distance from call: {test_pitcher['average pitch distance from call']:.2f}")
+        print(f"Reduction: {test_pitcher['average reduction']:.2f}")
+        print(f"Distance from edge: {test_pitcher['average pitch distance from edge']:.2f}")
+        print("")
+
+    run_game()
+
+    test_catcher['calling'] = 1
+    test_pitcher['accuracy'] = 1
+    test_pitcher['force'] = 0.3
+    test_pitcher['trickery'] = 0.5
+    run_game()
+    test_pitcher['accuracy'] = 0.3
+    test_pitcher['force'] = 1
+    run_game()
+

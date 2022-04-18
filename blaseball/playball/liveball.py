@@ -2,8 +2,11 @@
 Governs the flight of a ball after it is hit, errored out, etc.
 """
 
+from blaseball.playball.event import Update
 from blaseball.playball.hitting import Swing
+from blaseball.playball.ballgame import BallGame
 from blaseball.stats.players import Player
+from blaseball.stats.stadium import Stadium
 from blaseball.util.geometry import Coord
 
 import math
@@ -20,9 +23,14 @@ WIND_RESISTANCE = 16
 class LiveBall:
     """A ball live on the field that must be fielded."""
     def __init__(self, launch_angle, field_angle, speed, origin=Coord(0, 0)):
+        if launch_angle < 0:  # hack to handle grounders
+            self.launch_angle = -launch_angle
+            self.speed = speed / 2
+        else:
+            self.launch_angle = launch_angle
+            self.speed = speed
         self.launch_angle = launch_angle  # 0 is flat horizontal, 90 is straight up, can go negative
         self.field_angle = field_angle  # 0 is right to first base, 90 is to third base, can go 360
-        self.speed = speed  # speed of the ball in miles per hour
         self.origin = origin  # the originating point of the ball, from 0,0 for home plate to 1,1 for second base
         # can extend past home base into the field - actual limit depends on the field.
 
@@ -94,15 +102,36 @@ def roll_exit_velocity(quality_remainder, reduction, batter_power) -> float:
     return exit_velocity
 
 
-def roll_hit(swing: Swing, batter: Player) -> LiveBall:
-    quality_remainder = swing.hit_quality - 1
+def check_home_run(live: LiveBall, stadium: Stadium):
+    return not stadium.polygon.contains(live.ground_location())
 
-    launch_angle = roll_launch_angle(quality_remainder, batter['power'])
-    field_angle = roll_field_angle(batter['pull'])
-    reduction = EXIT_VELOCITY_RANGE * swing.reduction
-    exit_velocity = roll_exit_velocity(quality_remainder, reduction, batter['power'])
 
-    return LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
+class HitBall(Update):
+    def __init__(self, game: BallGame, swing: Swing, batter: Player):
+        super().__init__()
+
+        quality_remainder = swing.hit_quality - 1
+
+        launch_angle = roll_launch_angle(quality_remainder, batter['power'])
+        field_angle = roll_field_angle(batter['pull'])
+        reduction = EXIT_VELOCITY_RANGE * swing.reduction
+        exit_velocity = roll_exit_velocity(quality_remainder, reduction, batter['power'])
+        self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
+        self.homerun = check_home_run(self.live, game.stadium)
+
+        if self.homerun:
+            self.text = "Home run!!"
+
+        self.update_stats(batter)
+
+    def update_stats(self, batter: Player):
+        batter.add_average(
+            ['average hit distance', 'average exit velocity'],
+            [self.live.distance(), self.live.speed]
+        )
+
+        if self.homerun:
+            batter['total home runs'] += 1
 
 
 if __name__ == "__main__":
@@ -110,6 +139,7 @@ if __name__ == "__main__":
     from blaseball.playball.ballgame import BallGame
     from blaseball.stats import players, teams, stats
     from blaseball.stats.lineup import Lineup
+    from blaseball.stats.stadium import Stadium, ANGELS_STADIUM
     from data import teamdata
     pb = players.PlayerBase()
     team_names = teamdata.TEAMS_99
@@ -120,8 +150,9 @@ if __name__ == "__main__":
     l1.generate(league[0])
     l2 = Lineup("Away Lineup")
     l2.generate(league[1])
+    s = Stadium(ANGELS_STADIUM)
 
-    g = BallGame(l1, l2, False)
+    g = BallGame(l1, l2, s, False)
 
     test_pitcher = g.defense()['pitcher']
     test_catcher = g.defense()['catcher']
@@ -144,11 +175,11 @@ if __name__ == "__main__":
             p.location = 0
             s = Swing(g, p, test_batter)
             if s.hit:
-                h = roll_hit(s, test_batter)
+                h = HitBall(g, s, test_batter)
                 all_hits += [h]
-                if h.distance() > furthest_distance:
-                    furthest_distance = h.distance()
-                    furthest_hit = h
+                if h.live.distance() > furthest_distance:
+                    furthest_distance = h.live.distance()
+                    furthest_hit = h.live
                     furthest_swing = s
 
         print(f"Furthest hit is {furthest_distance:.0f} ft, "

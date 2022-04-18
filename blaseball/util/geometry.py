@@ -13,16 +13,16 @@ import math
 DEGSY = u'\N{DEGREE SIGN}'
 
 
-class Coord:  # noqa - we don't really care about the abstract methods here.
+class Coord(Point):  # noqa - we don't really care about the abstract methods here.
     def __init__(self, a, b, polar=False):
         """Create a new coordinate; a = x and b = y if polar is false, else a = radius and b = degrees"""
         if polar:
-            self.x = a * math.cos(math.radians(b))
-            self.y = a * math.sin(math.radians(b))
+            x = a * math.cos(math.radians(b))
+            y = a * math.sin(math.radians(b))
         else:
-            self.x = a
-            self.y = b
-        self.p = Point(self.x, self.y)
+            x = a
+            y = b
+        super().__init__(x, y)
 
     def theta(self):
         if self.x == 0:
@@ -36,9 +36,6 @@ class Coord:  # noqa - we don't really care about the abstract methods here.
             theta = math.degrees(math.atan(self.y / self.x))
         return theta
 
-    def distance(self, other: "Coord") -> float:
-        return self.p.distance(other.p)
-
     def __bool__(self):
         return self.x != 0 or self.y != 0
 
@@ -47,11 +44,6 @@ class Coord:  # noqa - we don't really care about the abstract methods here.
 
     def __repr__(self):
         return F"<Coords({self.x:.3f}, {self.y:.3f})>"
-
-
-def polygonize(coords: List[Coord]) -> Polygon:
-    """Converts a list of Coords into a sympy polygon"""
-    return Polygon([c.p for c in coords])
 
 
 if __name__ == "__main__":
@@ -64,5 +56,5 @@ if __name__ == "__main__":
     p3 = Coord(60.5, 45, True)
     print(p3)
 
-    pg = polygonize([p1, p2, p3])
+    pg = Polygon([p1, p2, p3])
     print(f"Area: {pg.area} and perimeter: {pg.length}")

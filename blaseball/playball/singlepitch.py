@@ -6,15 +6,13 @@ The result can be a live ball, or an updated game state.
 
 from blaseball.playball.pitching import Pitch
 from blaseball.playball.hitting import Swing
-from blaseball.playball.liveball import roll_hit, LiveBall
+from blaseball.playball.liveball import HitBall
+from blaseball.playball.fielding import FieldBall
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.event import Event
 
 from typing import List
 
-# TODO: either move liveball out somewhere else (like in here) or make hitting pass only a hit quality
-# TODO: maybe move liveball to hitting, and liveball init takes hit quality?
-# TODO: iunno
 
 class PitchHit(Event):
     """
@@ -28,7 +26,6 @@ class PitchHit(Event):
 
         # TODO: This is going to need a lot of work to make nice and pretty, describe the pitch, etc.
         # this is a very quick pass to make things work.
-        self.text = []
 
         # pitch the ball
         self.pitch = Pitch(
@@ -36,30 +33,31 @@ class PitchHit(Event):
             game.defense()['pitcher'],
             game.defense()['catcher']
         )
-        # maybe describe the pitch some?
+        self.updates += [self.pitch]
 
         # batter decides swing
-        self.live = None
         self.swing = Swing(game, self.pitch, game.batter())
-        if self.swing:
-            if self.swing.strike:
-                self.text += ["Strike, swinging."]
-                self.text += [game.add_strike()]
-            elif self.swing.foul:
-                self.text += ["Foul ball."]
-                self.text += [game.add_foul()]
+        self.updates += [self.swing]
+
+        if self.swing.strike:
+            self.updates += [game.add_strike()]
+        if self.swing.ball:
+            self.updates += [game.add_ball()]
+        if self.swing.foul:
+            self.updates += [game.add_foul()]
+
+        # handle the hit
+        if self.swing.hit:
+            self.live = HitBall(game, self.swing, game.batter())
+            self.updates += [self.live]
+            if self.live.homerun:
+                self.fielding = None
             else:
-                self.text += ["It's a hit!"]  # maybe expand this some?
-                self.live = roll_hit(self.swing, game.batter())
-                self.text += [str(self.live)]
+                self.fielding = FieldBall(game, self.live)
+                # TODO
         else:
-            # batter does not swing
-            if self.swing.strike:
-                self.text += ["Strike, looking."]
-                self.text += [game.add_strike()]
-            else:
-                self.text += ["Ball."]
-                self.text += [game.add_ball()]
+            self.live = None
+            self.fielding = None
 
     def feed_text(self, debug=False) -> List[str]:
         if debug:
@@ -70,7 +68,7 @@ class PitchHit(Event):
                 string += [f"Hit: {self.live}"]
             return string
         else:
-            return self.text
+            super().feed_text()
 
 
 if __name__ == "__main__":

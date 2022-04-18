@@ -10,9 +10,10 @@ from typing import Union, List
 from random import random
 from decimal import Decimal
 
+from blaseball.playball.event import Update
 from blaseball.stats.players import Player
 from blaseball.stats.lineup import Lineup
-from blaseball.settings import Settings
+from blaseball.stats.stadium import Stadium
 
 
 class BallGame:
@@ -28,11 +29,13 @@ class BallGame:
     INNINGS = 9
     BATTING_ORDER_LENGTH = 9
 
-    def __init__(self, home: Lineup, away: Lineup, print_events: bool=False) -> None:
+    def __init__(self, home: Lineup, away: Lineup, stadium: Stadium, print_events: bool=False) -> None:
         self.home_team = home
         self.away_team = away
 
         self.teams = [home, away]
+
+        self.stadium = stadium
 
         self.inning = 1
         # away always bats first!
@@ -45,7 +48,7 @@ class BallGame:
         self.at_bat_numbers = [0, 0]  # home, away
         self.scores = [Decimal('0.0')] * 2  # home, away
 
-        self.bases = [None] * Settings.base_count
+        self.bases = [None] * Stadium.NUMBER_OF_BASES
 
         self.summary = BallGameSummary(print_events)
         self.complete = False
@@ -108,14 +111,20 @@ class BallGame:
         if self.outs > 2:
             self.next_inning()
 
-    def add_strike(self) -> str:
-        return "0-1"
+    def add_strike(self) -> Update:
+        return Update("0-1")
 
-    def add_ball(self) -> str:
-        return "1-0"
+    def add_ball(self) -> Update:
+        return Update("1-0")
 
-    def add_foul(self) -> str:
-        return "0-1"
+    def add_foul(self) -> Update:
+        return Update("0-1")
+
+    def add_runs(self, runs: int) -> Update:
+        return Update(f"{self.home_team.name} {runs}, {self.away_team} 0")
+
+    def home_run(self) -> Update:
+        return self.add_runs(len(self.bases))  # TODO
 
     def next(self) -> None:
         if self.complete:
