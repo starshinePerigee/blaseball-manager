@@ -14,3 +14,27 @@ All players have a location. Bases and the ball also have locations.
 7. on error, add error time and return to 4,
 
 4 can use the same logic as stealing?
+
+
+
+
+
+second pass:
+
+1. roll for catch
+2. if catch, mark runner out, mark all other runners tagging up
+3. fielder decides where to throw
+4. roll for throw time
+5. advance all runners by throw time
+6. check if player is out
+7. go to 3
+
+if not catch:
+2. get safe time
+3. advance all runners by safe time
+4. iterate through runners to decide
+5. fielder decides where to throw
+6. roll for throw time
+7. advance all runners by throw time
+8. check if player is out
+9. go to 4

@@ -126,6 +126,9 @@ class BallGame:
     def home_run(self) -> Update:
         return self.add_runs(len(self.bases))  # TODO
 
+    def add_out(self) -> Update:
+        return Update()
+
     def next(self) -> None:
         if self.complete:
             return

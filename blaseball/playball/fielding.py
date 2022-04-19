@@ -3,7 +3,7 @@ This handles fielding, with the end goal of creating an event
 which captures everything that has happened.
 """
 
-
+from blaseball.playball.runner import Runner, Basepaths
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.liveball import LiveBall
 from blaseball.playball.event import Update
@@ -39,6 +39,11 @@ THROW_SPEED_FACTOR = 0.0025  # how much faster a throw is for 1 throwing, in sec
 SECONDS_PER_MPH = (60 * 60) / 5280
 
 
+def throw_duration_base(throwing: float, distance: float) -> float:
+    inv_throw_speed = THROW_SPEED_BASE - (THROW_SPEED_FACTOR * throwing)
+    return distance * inv_throw_speed
+
+
 class Throw(Update):
     """A single throw from one player to another."""
     def __init__(self,
@@ -47,7 +52,6 @@ class Throw(Update):
                  end_player: Player,
                  end_location: Coord
                  ):
-        inv_throw_speed = THROW_SPEED_BASE - (THROW_SPEED_FACTOR * start_player['throwing'])
         self.distance = start_location.distance(end_location)
         self.difficulty = roll_throw_difficulty(start_player['throwing'])
         error_magnitude = self.difficulty - end_player['grabbiness']
@@ -56,7 +60,7 @@ class Throw(Update):
             self.error_time = roll_error_time(error_magnitude)
         else:
             self.error_time = 0
-        self.duration = self.distance * inv_throw_speed + self.error_time
+        self.duration = throw_duration_base(start_player['throwing'], self.distance) + self.error_time
 
         super().__init__(self.description_string(start_player, end_player))
 
@@ -124,6 +128,7 @@ class Rundown(Update):
     pass
 
 
+
 class FieldBall:
     """
     This is EARLYFIELDING: as simple as possible so we can build a game and then a UI, since tuning fielding needs UI
@@ -135,19 +140,32 @@ class FieldBall:
     - z axis catchability
     - errors as new balls
 
-    this will spit out a series of Updates.
+    this will spit out a series of Updates, a new base list, and a bunch of game updates.
     """
-    def __init__(self, game: BallGame, live: LiveBall):
+    def __init__(self, game: BallGame, bases: Basepaths, live: LiveBall):
         self.live = live
+        self.bases = bases
+        pitcher = game.defense().defense['pitcher']
+        catcher = game.defense().defense['catcher']
+        batter = game.batter()
 
         self.updates = []
 
-        self.catch = Catch(self.live, game.defense().defense)
+        self.catch = Catch(self.live, pitcher)
         self.updates += [self.catch]
 
+        self.outs = 0
+
         if self.catch:
-            game.batter_out()
-        
+            self.updates += [game.add_out()]
+            self.bases.reset(pitcher, catcher)  # TODO: you can proceed after tagging up, also double plays exist
+        else:
+            self.bases += batter
+            runs = self.bases.advance_all(self.catch.duration)
+            if runs > 0:
+                self.updates += [game.add_runs(runs)]
+            while self.bases:
+                pass
 
 
 if __name__ == "__main__":
