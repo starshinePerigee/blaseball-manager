@@ -167,6 +167,10 @@ class FieldBall:
             while self.bases:
                 pass
 
+    def fielders_choice(self):
+        # TODO
+        pass
+
 
 if __name__ == "__main__":
     from blaseball.stats import players, teams, stats

@@ -21,20 +21,33 @@ All players have a location. Bases and the ball also have locations.
 
 second pass:
 
-1. roll for catch
-2. if catch, mark runner out, mark all other runners tagging up
-3. fielder decides where to throw
-4. roll for throw time
-5. advance all runners by throw time
-6. check if player is out
+1. roll for catch  <Catch()>
+2. if catch, mark runner out, mark all other runners tagging up <Basepaths.tag_up_all()>
+3. fielder decides where to throw <Fieldball.fielders_choice()>
+4. roll for throw time <Throw()>
+5. advance all runners by throw time <Basepaths.advance_all()>
+6. check if player is out <Basepaths.check_out()>
 7. go to 3
 
 if not catch:
-2. get safe time
-3. advance all runners by safe time
-4. iterate through runners to decide
-5. fielder decides where to throw
-6. roll for throw time
-7. advance all runners by throw time
-8. check if player is out
+2. get safe time <Catch()>
+3. advance all runners by safe time <Basepaths.advance_all()>
+4. iterate through runners to decide <Basepaths.decide_all()>
+5. fielder decides where to throw <Fieldball.fielders_choice()>
+6. roll for throw time <Throw()>
+7. advance all runners by throw time <Basepaths.advance_all()>
+8. check if player is out <Basepaths.check_out()>
 9. go to 4
+
+you also need to:
+- spawn rundowns
+- spawn out Updates
+- track and notify on double/triple plays
+- track and notify home runs
+- track and update stats
+
+should these two modules (which are very tightly coupled) be one module?
+- move FieldBall into singlepitch
+- have throw, catch, runner, and even a new Fielder class in the Fielding class?
+- that's pretty stacked.
+- part of the issue is Basepaths is a very loaded class - it has all the runner logic, plus all the event handling.

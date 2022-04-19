@@ -102,6 +102,15 @@ class Runner:
         remainder = total_distance % self.basepath_length
         return advanced_bases, remainder
 
+    def time_to_base(self):
+        if self.safe:
+            distance_remaining = 0
+        elif self.forward:
+            distance_remaining = self.basepath_length - self.remainder
+        else:
+            distance_remaining = self.remainder
+        return distance_remaining / self.speed
+
     def total_distance(self):
         return self.remainder + self.base * self.basepath_length
 
@@ -126,7 +135,7 @@ class Basepaths:
 
         self.base_coords = stadium.BASES + [stadium.HOME_PLATE] # 0 - 3 and then 0 again
 
-    def decide_advance(self, fielder: Player, location: Coord) -> List[Runner]:
+    def decide_all(self, fielder: Player, location: Coord) -> List[Runner]:
         advancing_runners = []  # example in comments is a 3-1-0 split
         most_recent_base = self.number_of_bases # 4
         for i, runner in enumerate(self.runners):  # 0, 1, 2
@@ -163,8 +172,19 @@ class Basepaths:
 
         return advancing_runners
 
+    def tag_up_all(self) -> List[Runner]:
+        advancing_runners = []
+        for runner in self.runners:
+            if runner:
+                runner.tag_up()
+                advancing_runners += [runner]
+        return advancing_runners
+
     def advance_all(self, duration: float) -> int:
         """Moves all runners forward by duration, """
+        # TODO: handle decisions when a runner reaches a base
+        # TODO: errors on double-occupied bases
+
         runs = 0
         previous_runner = None
         for runner in self.runners:
@@ -184,6 +204,10 @@ class Basepaths:
             else:
                 previous_runner = runner
         return runs
+
+    def check_out(self):
+        # TODO
+        pass
 
     def reset(self, pitcher: Player, catcher: Player):
         """Moves all runners back to their most recently passed base, then sets them at leadoff"""
