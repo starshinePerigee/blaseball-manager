@@ -6,7 +6,7 @@ The result can be a live ball, or an updated game state.
 
 from blaseball.playball.pitching import Pitch
 from blaseball.playball.hitting import Swing
-from blaseball.playball.liveball import HitBall
+from blaseball.playball.liveball import HitBall, LiveBall
 from blaseball.playball.fielding import FieldBall
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.event import Event
@@ -58,6 +58,9 @@ class PitchHit(Event):
         else:
             self.live = None
             self.fielding = None
+
+    def field_ball(self, live: LiveBall):
+        pass
 
     def feed_text(self, debug=False) -> List[str]:
         if debug:
