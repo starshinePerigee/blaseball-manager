@@ -21,9 +21,9 @@ All players have a location. Bases and the ball also have locations.
 
 second pass:
 
-1. roll for catch  <Catch()>
-2. if catch, mark runner out, mark all other runners tagging up <Basepaths.tag_up_all()>
-3. fielder decides where to throw <Fieldball.fielders_choice()>
+x1. roll for catch  <Catch()>
+x2. if catch, mark runner out, mark all other runners tagging up <Basepaths.tag_up_all()>
+x3. fielder decides where to throw <Fieldball.fielders_choice()>
 4. roll for throw time <Throw()>
 5. advance all runners by throw time <Basepaths.advance_all()>
 6. check if player is out <Basepaths.check_out()>
@@ -51,3 +51,25 @@ should these two modules (which are very tightly coupled) be one module?
 - have throw, catch, runner, and even a new Fielder class in the Fielding class?
 - that's pretty stacked.
 - part of the issue is Basepaths is a very loaded class - it has all the runner logic, plus all the event handling.
+
+
+
+third pass:
+
+Fielder, Runner, Basepaths class
+1. create a Catch
+2. Catch creates a Fielder and a safe time
+3a. If catch:
+- add out (Catch should include this in itself as it's an Update)
+- Basepaths.tag_up_all()
+3b. if not catch:
+- (leave runners at their leadoffs)
+4. basepaths.advance_all(safe time, safe=True)
+- this includes players reaching safe and staying there - as players reach bases they re-run Decide()
+5. Fielder.fielders_choice()
+- creates a Throw, which has a duration
+- updates player, location, etc.
+6. basepaths.advance_all(throw_time)
+- advance can create run updates
+7. basepaths.check_out
+8. create thrown_out update or rundown update

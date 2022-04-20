@@ -12,6 +12,7 @@ from blaseball.stats.lineup import Defense
 from blaseball.util.geometry import Coord
 
 from numpy.random import normal, rand
+from typing import List
 
 
 ERROR_TIME_STDV = 3
@@ -40,6 +41,7 @@ SECONDS_PER_MPH = (60 * 60) / 5280
 
 
 def throw_duration_base(throwing: float, distance: float) -> float:
+    """calculates the time of a throw assuming no errors."""
     inv_throw_speed = THROW_SPEED_BASE - (THROW_SPEED_FACTOR * throwing)
     return distance * inv_throw_speed
 
@@ -107,6 +109,8 @@ def roll_to_catch(difficulty, grabbiness) -> bool:
 class Catch(Update):
     """A player's attempt to catch a LiveBall"""
     def __init__(self, ball: LiveBall, defense: Defense):
+        super().__init__()
+
         self.fielder_position, self.distance = defense.closest(ball.ground_location())
         self.difficulty = reach_difficulty(self.distance, self.fielder_position.player['reach'])
         self.caught = roll_to_catch(self.difficulty, self.fielder_position.player['grabbiness'])
@@ -118,6 +122,35 @@ class Catch(Update):
 
     def __str__(self):
         return f"Catch with difficulty {self.difficulty} and duration {self.duration}"
+
+
+DECISION_FUZZ_STDV = 1
+PROBABILITY_WINDOW = 1  # how much time you need to be 100% confident of a throw
+
+
+def prioritize_runner(runner: Runner, fielder: Player, start_position: Coord, base_coords: List[Coord]) -> float:
+    """Determines a weight for a runner"""
+    # base weight (pun intended):
+    next_base = runner.next_base()
+
+    # modify by odds of throw
+    duration = throw_duration_base(fielder['throwing'], start_position.distance(base_coords[next_base]))
+
+    time_fuzz = normal(0, DECISION_FUZZ_STDV * (2 - fielder['awareness']))
+    runner_time = runner.time_to_base() + time_fuzz
+
+    # if runner time >>> duration, this evaluates to 0. if duration >>> runner time, this evaluate to 1.
+    # if 0 < delta < PROBABILITY_WINDOW this evalutes to somewhere between 0 and 1 continuously
+    net_time = (duration - runner_time) * PROBABILITY_WINDOW
+    odds = max(0.0, min(1.0, net_time))
+    return odds
+
+
+def fielders_choice(fielder: Player, location: Coord, active_runners: List[Runner], base_coords: List[Coord]) -> int:
+    """Decide which base to throw to based on the list of runners"""
+    runners = [(prioritize_runner(runner, fielder, location, base_coords), runner) for runner in active_runners]
+    runners.sort(key = lambda x: x[0])
+    return runners[0][1].next_base()
 
 
 class ThrownOut(Update):
@@ -148,6 +181,7 @@ class FieldBall:
         pitcher = game.defense().defense['pitcher']
         catcher = game.defense().defense['catcher']
         batter = game.batter()
+        base_coords = game.stadium.BASES
 
         self.updates = []
 
@@ -156,9 +190,9 @@ class FieldBall:
 
         self.outs = 0
 
-        if self.catch:
+        if self.catch and live.catchable:
             self.updates += [game.add_out()]
-            self.bases.reset(pitcher, catcher)  # TODO: you can proceed after tagging up, also double plays exist
+            self.bases.tag_up_all()
         else:
             self.bases += batter
             runs = self.bases.advance_all(self.catch.duration)
@@ -166,10 +200,6 @@ class FieldBall:
                 self.updates += [game.add_runs(runs)]
             while self.bases:
                 pass
-
-    def fielders_choice(self):
-        # TODO
-        pass
 
 
 if __name__ == "__main__":

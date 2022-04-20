@@ -42,8 +42,8 @@ class Runner:
 
         self.speed = 1 / (BASE_SPEED - SPEED_FACTOR * player['speed'])  # player speed in feet per second
 
-        self.base = 0
-        self.remainder = 0
+        self.base = 0  # last base touched by this player
+        self.remainder = 0  # how far down the basepath they've gone, in feet
         self.forward = True  # is the runner trying to return to base
         self.force = True  # runner is forced to move forward
         self.safe = False  # is the runner done running?
@@ -57,7 +57,7 @@ class Runner:
 
     def reset(self, base: int, pitcher: Player, catcher: Player) -> None:
         self.base = base
-        self.remainder = calc_leadoff(self.player['bravery'], )
+        self.remainder = calc_leadoff(self.player, pitcher, catcher)
         self.forward = True
         self.force = False
         self.safe = False
@@ -86,8 +86,7 @@ class Runner:
         duration_fuzz = normal(0, effective_timing)
         effective_duration = duration + duration_fuzz  # the runner guesses at how much time they have
 
-        time_to_base = (self.basepath_length - self.remainder) / self.speed  # how much time is needed to reach base
-        time_required = effective_duration - time_to_base  # how much extra time a player has -
+        time_required = effective_duration - self.time_to_base()  # how much extra time a player has -
         # a negative time required means a player doens't have enough time.
 
         decision_threshold = Runner.TIME_REQUIRED_BEFORE_BRAVERY - self.player['bravery'] * Runner.TIME_REQUIRED_FACTOR
@@ -100,9 +99,13 @@ class Runner:
         total_distance = self.speed * duration + self.remainder
         advanced_bases = int(total_distance / self.basepath_length)
         remainder = total_distance % self.basepath_length
+        remainder_time = remainder / self.speed  # ugly hack to get this back
+        # if self.decide(remainder_time):
+
         return advanced_bases, remainder
 
-    def time_to_base(self):
+    def time_to_base(self) -> float:
+        """Calculate long it will take this runner to reach their next base"""
         if self.safe:
             distance_remaining = 0
         elif self.forward:
@@ -111,7 +114,10 @@ class Runner:
             distance_remaining = self.remainder
         return distance_remaining / self.speed
 
-    def total_distance(self):
+    def next_base(self) -> int:
+        return self.base + 1 if self.forward and not self.safe else self.base
+
+    def total_distance(self) -> float:
         return self.remainder + self.base * self.basepath_length
 
     def coords(self, stadium: Stadium) -> Coord:
@@ -120,7 +126,13 @@ class Runner:
         return stadium.BASES[self.base]
 
     def __str__(self):
-        return f"{self.player['name']} on base {self.base} with remainder {self.remainder:.0f3}"
+        if self.safe:
+            text = "safe on"
+        elif self.forward:
+            text = "advancing from"
+        else:
+            text = "tagging up to"
+        return f"{self.player['name']} {text} base {self.base} with remainder {self.remainder:.0f3}"
 
     def __bool__(self):
         return not self.safe
@@ -128,47 +140,43 @@ class Runner:
 
 class Basepaths:
     """Stores the bases and basepaths, and manipulates runners on base. Each game should have one Basepaths"""
-    def __init__(self, stadium:Stadium):
+    def __init__(self, stadium: Stadium):
         self.runners = []  # runners acts as a FIFO queue - the first entry is the furthest down.
         self.number_of_bases = stadium.NUMBER_OF_BASES  # does not count home
         self.basepath_length = stadium.BASEPATH_LENGTH
 
-        self.base_coords = stadium.BASES + [stadium.HOME_PLATE] # 0 - 3 and then 0 again
+        self.base_coords = stadium.BASES + [stadium.HOME_PLATE]  # 0 - 3 and then 0 again
 
     def decide_all(self, fielder: Player, location: Coord) -> List[Runner]:
         advancing_runners = []  # example in comments is a 3-1-0 split
-        most_recent_base = self.number_of_bases # 4
+        most_recent_base = self.number_of_bases  # 4
         for i, runner in enumerate(self.runners):  # 0, 1, 2
             runners_left = len(self.runners) - i  # 3, 2, 1
             if runner.base < runners_left:  # 3 < 3: False, 1 < 2: True, 0 < 1: True
                 # runner is forced forward
-                most_recent_base = runner.base + 1
                 advancing_runners += [runner]
                 if runner.safe:
-                    raise RuntimeError(f"Runner forced off base! {len(self)} runners present.")
+                    raise RuntimeError(f"Runner forced off base! Runner: {runner} and Basepaths {self}")
                 else:
                     runner.force = True
+                    runner.forward = True
             else:
                 runner.force = False
                 if not runner:
-                    # runner is already safe, or their next base is occupied (4, 3, 1, 0)
-                    most_recent_base = runner.base
+                    # runner is already safe
+                    pass
                 elif runner.base + 1 >= most_recent_base:
                     # the base ahead of the runner is blocked, so you have to go back.
                     runner.tag_up()
                     advancing_runners += [runner]
-                    most_recent_base = runner.base
                 else:
                     runner_distance = location.distance(self.base_coords[runner.base])
                     runner_time = throw_duration_base(fielder['throwing'], runner_distance)
                     advancing_runners += [runner]
 
-                    if runner.decide(runner_time):
-                        # runner goes for it
-                        most_recent_base = runner.base + 1
-                    else:
+                    if not runner.decide(runner_time):
                         runner.tag_up()
-                        most_recent_base = runner.base
+            most_recent_base = runner.next_base()
 
         return advancing_runners
 
@@ -225,6 +233,7 @@ class Basepaths:
         return len(self.runners)
 
     def __str__(self):
+        # TODO
         return f"Basepaths with {len(self)} runners"
 
     def __bool__(self):

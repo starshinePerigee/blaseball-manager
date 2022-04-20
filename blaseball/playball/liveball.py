@@ -26,9 +26,11 @@ class LiveBall:
         if launch_angle < 0:  # hack to handle grounders
             self.launch_angle = -launch_angle
             self.speed = speed / 2
+            self.catchable = False
         else:
             self.launch_angle = launch_angle
             self.speed = speed
+            self.catchable = True
         self.launch_angle = launch_angle  # 0 is flat horizontal, 90 is straight up, can go negative
         self.field_angle = field_angle  # 0 is right to first base, 90 is to third base, can go 360
         self.origin = origin  # the originating point of the ball, from 0,0 for home plate to 1,1 for second base
