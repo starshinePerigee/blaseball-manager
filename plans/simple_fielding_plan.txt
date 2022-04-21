@@ -64,7 +64,7 @@ Fielder, Runner, Basepaths class
 - Basepaths.tag_up_all()
 3b. if not catch:
 - (leave runners at their leadoffs)
-4. basepaths.advance_all(safe time, safe=True)
+4. basepaths.advance_all(safe time)
 - this includes players reaching safe and staying there - as players reach bases they re-run Decide()
 5. Fielder.fielders_choice()
 - creates a Throw, which has a duration
@@ -72,4 +72,5 @@ Fielder, Runner, Basepaths class
 6. basepaths.advance_all(throw_time)
 - advance can create run updates
 7. basepaths.check_out
-8. create thrown_out update or rundown update
+- create FieldingOut update if needed
+8. repeat throw - possibility for rundown

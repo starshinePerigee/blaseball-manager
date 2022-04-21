@@ -25,7 +25,7 @@ FIELDER_DISTANCE = 290
 
 
 def place_fielder(instance, fielder_count) -> Coord:
-    fielder_angles = 90 * instance / (fielder_count + 1)
+    fielder_angles = 90 * (instance + 1) / (fielder_count + 1)
     return Coord(FIELDER_DISTANCE, fielder_angles, True)
 
 

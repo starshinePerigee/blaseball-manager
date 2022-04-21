@@ -40,10 +40,10 @@ class Coord(Point):  # noqa - we don't really care about the abstract methods he
         return self.x != 0 or self.y != 0
 
     def __str__(self):
-        return f"Coords x: {self.x:.0f}' y: {self.y:.0f}' θ: {self.theta():.1f}{DEGSY}"
+        return f"{self.x:.0f}'x{self.y:.0f}' {self.theta():.1f}{DEGSY}"
 
     def __repr__(self):
-        return F"<Coords({self.x:.3f}, {self.y:.3f})>"
+        return F"<Coords(x: {self.x:.3f} y: {self.y:.3f}) θ: {self.theta():.1f}{DEGSY}>"
 
 
 if __name__ == "__main__":

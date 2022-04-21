@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class Update:
     """An update is a single moment, which updates the game state, draws on the image, or adds text."""
-    def __init__(self, text: str = None, update: Callable = None):
+    def __init__(self, text: str = None):
         self.text = text
 
     def __str__(self):

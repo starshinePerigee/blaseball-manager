@@ -11,6 +11,7 @@ from random import random
 from decimal import Decimal
 
 from blaseball.playball.event import Update
+from blaseball.playball.basepaths import Basepaths
 from blaseball.stats.players import Player
 from blaseball.stats.lineup import Lineup
 from blaseball.stats.stadium import Stadium
@@ -48,7 +49,7 @@ class BallGame:
         self.at_bat_numbers = [0, 0]  # home, away
         self.scores = [Decimal('0.0')] * 2  # home, away
 
-        self.bases = [None] * Stadium.NUMBER_OF_BASES
+        self.bases = Basepaths(self.stadium)
 
         self.summary = BallGameSummary(print_events)
         self.complete = False
