@@ -211,7 +211,7 @@ class Player(Mapping):
 
     def __eq__(self, other: Union['Player', pd.Series, dict]) -> bool:
         if isinstance(other, Player):
-            return other.cid == self.cid
+            return self == other.stat_row()
         else:
             if isinstance(other, pd.Series):
                 keys = other.index

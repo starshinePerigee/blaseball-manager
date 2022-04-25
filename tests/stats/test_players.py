@@ -12,13 +12,6 @@ def playerbase_10():
     return pb
 
 
-@pytest.fixture()
-def player_1():
-    pb = PlayerBase()
-    pb.new_players(1)
-    return pb.iloc(0)
-
-
 class TestPlayer:
     def test_generate_name(self):
         assert isinstance(Player.generate_name(), str)
@@ -30,28 +23,28 @@ class TestPlayer:
 
     def test_index_get(self, player_1):
         assert isinstance(player_1["name"], str)
-        assert isinstance(player_1["hitting"], float)
+        assert isinstance(player_1["power"], float)
 
     def test_index_set(self, player_1):
         player_1["name"] = "Test Player"
         assert player_1["name"] == "Test Player"
-        player_1["hitting"] = 0.5
-        assert player_1["hitting"] == 0.5
+        player_1["power"] = 0.5
+        assert player_1["power"] == 0.5
 
-    stat_dict = {"name": "Test Player2", "fielding": 0.75}
+    stat_dict = {"name": "Test Player2", "contact": 0.75}
 
     def test_assign_dict(self, player_1):
         player_1.assign(TestPlayer.stat_dict)
         assert player_1["name"] == "Test Player2"
-        assert player_1["fielding"] == 0.75
+        assert player_1["contact"] == 0.75
 
     def test_assign_series(self, player_1):
         stat_series = pd.Series(TestPlayer.stat_dict)
         player_1.assign(stat_series)
         assert player_1["name"] == "Test Player2"
-        assert player_1["fielding"] == 0.75
+        assert player_1["contact"] == 0.75
 
-    def test_eq_1(self, playerbase_10):
+    def test_eq(self, playerbase_10):
         p1 = playerbase_10.iloc(0)
         p2 = playerbase_10.iloc(1)
 
@@ -65,10 +58,6 @@ class TestPlayer:
         for key in p1.stat_row().keys():
             assert p1[key] == p2[key]
 
-    def test_eq_2(self, player_1):
-        assert player_1 != "player one is not a string"
-        assert player_1 != [1, 2, 3, 4]
-
     def test_iterable(self, player_1):
         for stat, index in zip(player_1, player_1.stat_row().index):
             assert player_1[index] == stat
@@ -77,6 +66,31 @@ class TestPlayer:
         assert isinstance(player_1.__str__(), str)
         assert isinstance(player_1.__repr__(), str)
         assert isinstance(player_1.total_stars(), str)
+
+    def test_add_average(self, player_1):
+        assert player_1['pitches seen'] == 0
+        assert player_1['strike rate'] == 0
+        assert player_1['hit rate'] == 0
+        player_1.add_average(
+            ['strike rate', 'ball rate', 'foul rate', 'hit rate', 'pitch read chance'],
+            [1, 0, 0, 0, 0]
+        )
+
+        assert player_1['pitches seen'] == 1
+        assert player_1['strike rate'] == 1
+        assert player_1['hit rate'] == 0
+
+        player_1.add_average(
+            ['strike rate', 'ball rate', 'foul rate', 'hit rate', 'pitch read chance'],
+            [0, 1, 0, 0, 0]
+        )
+
+        assert player_1['pitches seen'] == 2
+        assert player_1['strike rate'] == 1 / 2
+        assert player_1['hit rate'] == 0
+
+    def test_stat_breakdown(self, player_1):
+        assert isinstance(player_1.text_breakdown(), str)
 
 
 class TestPlayerBase:
@@ -140,31 +154,7 @@ class TestPlayerBase:
         first_player = playerbase_10.iloc(0)
         assert isinstance(playerbase_10[first_player.cid], Player)
         assert playerbase_10[first_player['name']] == first_player
-        assert isinstance(playerbase_10[first_player.cid]['hitting'], float)
-
-    # indexers = [
-    #     [1001, 1005, 1003],
-    #     range(1001, 5),
-    # ]
-    # @pytest.mark.parametrize("indexer", indexers)
-    # def test_index_lists(self, playerbase_10, indexer):
-    #     subset = playerbase_10[indexer]
-    #     assert isinstance(subset, list)
-    #     assert isinstance(subset[0], Player)
-    #     for i, j in zip(subset, indexer):
-    #         assert i.df_index() == j
-    #
-    # def test_index_slice(self, playerbase_10):
-    #     subset = playerbase_10[:]
-    #     assert isinstance(subset, list)
-    #     assert isinstance(subset[0], Player)
-    #     for i, j in zip(subset, range(0, 10)):
-    #         assert i.df_index() == j
-    #     subset = playerbase_10[1:7:2]
-    #     assert isinstance(subset, list)
-    #     assert isinstance(subset[0], Player)
-    #     for i, j in zip(subset, [1, 3, 5, 7]):
-    #         assert i.df_index() == j
+        assert isinstance(playerbase_10[first_player.cid]['speed'], float)
 
     def test_index_set(self, playerbase_10, player_1):
         player_cids = playerbase_10.df.index
@@ -180,7 +170,7 @@ class TestPlayerBase:
     def test_generate_random_stats(self, playerbase_10):
         cid_a = playerbase_10.iloc(0).cid
         cid_b = playerbase_10.iloc(1).cid
-        assert playerbase_10[cid_a]['hitting'] != playerbase_10[cid_b]['hitting']
+        assert playerbase_10[cid_a]['speed'] != playerbase_10[cid_b]['speed']
         assert playerbase_10[cid_a]['name'] != playerbase_10[cid_b]['name']
 
     def test_iterable(self, playerbase_10):

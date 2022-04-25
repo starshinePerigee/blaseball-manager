@@ -46,7 +46,7 @@ class TestAllStats:
 
 class TestNewStat:
     # not using a fixture because this is basically modifying a global
-    test_stat = stats.Stat('test_stat', 'rating')
+    test_stat = stats.Stat('test_stat', 'test')
 
     def test_stat_addition(self):
         assert TestNewStat.test_stat in all_stats

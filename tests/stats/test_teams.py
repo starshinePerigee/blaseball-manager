@@ -2,19 +2,6 @@ import pytest
 
 from blaseball.stats.teams import Team, League
 from blaseball.stats import players
-from data import teamdata
-
-
-@pytest.fixture()
-def league_20():
-    pb = players.PlayerBase()
-    l = League(pb, teamdata.TEAMS_99)
-    return l
-
-
-@pytest.fixture
-def team_1(league_20):
-    return league_20.teams[0]
 
 
 class TestTeam:
@@ -48,6 +35,6 @@ class TestLeague:
         assert len(league) == 2
         assert pb.verify_players()
 
-    def test_league_strings(self, league_20):
-        assert isinstance(repr(league_20), str)
-        assert isinstance(str(league_20), str)
+    def test_league_strings(self, league_2):
+        assert isinstance(repr(league_2), str)
+        assert isinstance(str(league_2), str)

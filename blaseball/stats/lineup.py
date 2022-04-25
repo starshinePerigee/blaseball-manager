@@ -250,10 +250,8 @@ class Lineup(Collection):
 
 
 if __name__ == "__main__":
-    from blaseball.stats import players, teams
-    from data import teamdata
-    pb = players.PlayerBase()
-    l = teams.League(pb, teamdata.TEAMS_99[0:1])
+    from blaseball.util import quickteams
+    l = quickteams.league
 
     lu = Lineup("main lineup")
     lu.generate(l[0])

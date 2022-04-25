@@ -20,6 +20,7 @@ STAT_KINDS = [
     'character',  # a miscellaneous player attribute
     'performance',  # a tracked performance metric
     'averaging',  # a performance stat that is a running average; requires a total performance stat.
+    'test'  # stats in the test group are only for use in testing and shouldn't be called anywhere else
 ]
 
 
