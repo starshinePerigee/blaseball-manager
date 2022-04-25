@@ -2,6 +2,11 @@
 defines stats for use in other classes
 """
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from blaseball.stats.players import Player
+
 from collections.abc import Collection
 from typing import Union, List
 
@@ -50,8 +55,8 @@ class AllStats(Collection):
 
     def __contains__(self, item):
         if isinstance(item, Stat):
-            return item.name in self.all_stats
-        return item in self.all_stats
+            return item.name in self
+        return item in [this_stat.name for this_stat in self.all_stats]
 
     def __iter__(self):
         return iter(self.all_stats)

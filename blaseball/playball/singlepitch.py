@@ -75,20 +75,11 @@ class PitchHit(Event):
 
 
 if __name__ == "__main__":
-    from blaseball.stats import players, teams, stats
-    from blaseball.stats.lineup import Lineup
-    from data import teamdata
-    pb = players.PlayerBase()
-    team_names = teamdata.TEAMS_99
-    league = teams.League(pb, team_names[5:7])
-    print('setup complete..\r\n')
+    from blaseball.stats import stats
 
-    l1 = Lineup("Home Lineup")
-    l1.generate(league[0])
-    l2 = Lineup("Away Lineup")
-    l2.generate(league[1])
+    from blaseball.util import quickteams
+    g = quickteams.ballgame
 
-    g = BallGame(l1, l2, False)
     g.balls = 1
 
     test_pitcher = g.defense()['pitcher']

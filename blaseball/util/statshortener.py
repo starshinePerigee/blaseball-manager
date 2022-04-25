@@ -2,12 +2,15 @@
 A quick utility to convert stat/rating names into 3 letter strings and back
 
 also does lookups for first three characters, case sensitivity, underscores, etc.
+
+this breaks if you try to add stats anywhere but the stat module.
 """
 
 from blaseball.stats.stats import all_stats
 
 long_to_short = {stat.name: stat.abbreviation for stat in all_stats if stat.abbreviation is not None}
 short_to_long = {stat.abbreviation: stat.name for stat in all_stats if stat.abbreviation is not None}
+
 
 class Shortener:
     def __init__(self):

@@ -20,6 +20,7 @@ from blaseball.stats.stats import all_stats
 from blaseball.stats import traits
 from blaseball.util.descriptors import get_descriptor
 
+
 class Player(Mapping):
     """
     A representation of a single player.

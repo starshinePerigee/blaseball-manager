@@ -295,23 +295,8 @@ class FieldBall:
         return Update(f"{runner.player['name']} hit a {BASE_LENGTH[runner.base]}")
 
 if __name__ == "__main__":
-    from blaseball.stats import players, teams
-    from blaseball.stats.lineup import Lineup
-    from blaseball.stats.stadium import Stadium, ANGELS_STADIUM
-    from data import teamdata
-
-    pb = players.PlayerBase()
-    team_names = teamdata.TEAMS_99
-    league = teams.League(pb, team_names[5:7])
-    print('setup complete..\r\n')
-
-    l1 = Lineup("Home Lineup")
-    l1.generate(league[0])
-    l2 = Lineup("Away Lineup")
-    l2.generate(league[1])
-    s = Stadium(ANGELS_STADIUM)
-
-    g = BallGame(l1, l2, s, False)
+    from blaseball.util import quickteams
+    g = quickteams.ballgame
 
     infield_fly = LiveBall(30, 70, 90)
 
