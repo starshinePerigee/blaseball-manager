@@ -1,25 +1,33 @@
 import pytest
 
-from blaseball.stats.lineup import Lineup, Defense
+from blaseball.stats import lineup
 from blaseball.stats import players
 
 
-@pytest.fixture
-def lineup_1(team_1):
-    lineup = Lineup("Test Lineup")
-    lineup.generate(team_1, in_order=True)
-    return lineup
+class TestPosition:
+    def test_position(self, player_1):
+        catcher = lineup.Position('catcher', player_1)
+        assert catcher.location.x == 0
 
+        rf = lineup.Position('fielder 3', player_1)
+        assert rf.location.theta() > 45
+        assert rf.group == 'fielder'
 
-@pytest.fixture
-def defense_1(lineup_1):
-    return lineup_1.defense
+        assert isinstance(str(rf), str)
 
 
 class TestDefense:
-    def test_init(self, team_1):
-        test_d = Defense()
-        assert isinstance(test_d, Defense)
+    def test_init(self):
+        test_d = lineup.Defense()
+        assert isinstance(test_d, lineup.Defense)
+        assert len(test_d) == 0
+
+    def test_add(self, team_1):
+        test_d = lineup.Defense()
+        assert len(test_d) == 0
+        test_d.add('catcher', team_1[0])
+        assert len(test_d) == 1
+        assert test_d['catcher'].player == team_1[0]
 
     def test_all_players(self, defense_1):
         all_players = defense_1.all_players()
@@ -27,18 +35,20 @@ class TestDefense:
         assert isinstance(all_players[0], players.Player)
         assert isinstance(all_players[-1], players.Player)
         assert len(all_players) == 9
-        
-    # def test_index(self, d_fixture):
-    #     assert isinstance(d_fixture["catcher"], players.Player)
-    #     assert d_fixture["catcher"]['name'] == "Test0 Bobson"
-    #     assert isinstance(d_fixture["basepeeps"], list)
-    #     assert d_fixture["fielders"][0]['name'] == "Test5 Bobson"
+
+    def test_index(self, defense_1):
+        # assert isinstance(defense_1["catcher"], players.Player)
+        assert defense_1["catcher"].player['name'] == "Test1 Bobson"
+        assert isinstance(defense_1["basepeep"], list)
+        assert defense_1["fielder"][0].player['name'] == "Test6 Bobson"
+
+    def test_find(self, defense_1):
+        assert defense_1.find('Test1 Bobson').position == 'catcher'
 
 
 class TestLineup:
-    @pytest.mark.xfail
     def test_generate(self, team_1):
-        test_lineup = Lineup()
+        test_lineup = lineup.Lineup('test lineup')
         test_lineup.generate(team_1)
         assert test_lineup.validate()[0]
 

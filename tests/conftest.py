@@ -6,7 +6,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 
 import pytest
 
-from blaseball.stats import players, teams
+from blaseball.stats import players, teams, stadium, lineup
 from data import teamdata
 
 
@@ -32,3 +32,19 @@ def player_1():
     return player
 
 
+@pytest.fixture(scope='class')
+def stadium_a():
+    angels_coords = stadium.ANGELS_STADIUM
+    return stadium.Stadium(angels_coords)
+
+
+@pytest.fixture(scope='class')
+def lineup_1(team_1):
+    test_lineup = lineup.Lineup("Test Lineup")
+    test_lineup.generate(team_1, in_order=True)
+    return test_lineup
+
+
+@pytest.fixture(scope='class')
+def defense_1(lineup_1):
+    return lineup_1.defense

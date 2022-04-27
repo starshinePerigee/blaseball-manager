@@ -118,7 +118,7 @@ class Defense(MutableMapping):
             player = player['name']
         for position in self.positions:
             if self.positions[position].player['name'] == player or self.positions[position].player.cid == player:
-                return position
+                return self.positions[position]
         raise KeyError(f"Player {player} not found in defense with length {len(self)}")
 
     def __getitem__(self, key: Union[str, Player]) -> Union[Position, List[Position]]:
@@ -211,15 +211,15 @@ class Lineup(Collection):
         - all players are on the same team
         - all players are in playing condition (TBD)
         """
-        return False, "Not yet implimented"
+        return True, "Not yet implimented"
 
     def string_summary(self):
         to_print = ""
         to_print += f"Pitcher: {self.pitcher['name']} {self.pitcher.total_stars()}\r\n"
         to_print += "Batting order:"
         for i, player in enumerate(self.batting_order):
-            to_print+=f"\r\n\t[{i+1}] {player['name']} {player.total_stars()}   " \
-                      f"{self.defense.find(player).title()}"
+            to_print += f"\r\n\t[{i+1}] {player['name']} {player.total_stars()}   " \
+                        f"{self.defense.find(player).position}"
         return to_print
 
     def __len__(self) -> int:
