@@ -48,8 +48,8 @@ class Player(Mapping):
         return Player.player_class_id
 
     def __init__(self) -> None:
-        self.cid = Player.new_cid()  # players "Character ID", a unique identifier
-        self.pb = None  # pointer to the row of playerbase containing this player's stats
+        self._cid = Player.new_cid()  # players "Character ID", a unique identifier
+        self.pb = None  # pointer to the playerbase containing this player's stats
         self.traits = []
         # you MUST call initialize after this.
 
@@ -59,6 +59,7 @@ class Player(Mapping):
         self.pb = playerbase
         for stat in all_stats:
             self[stat.name] = stat.default
+        self.traits = []
 
     def generate_player_number(self) -> int:
         """dumb fun function to create a player number based partially on CID"""
@@ -66,7 +67,7 @@ class Player(Mapping):
 
         low_thresh = max(random.randrange(-20, 20, 2), (-20 if unusual else 0))
         high_thresh = random.randrange(45, random.randrange(50, (1000 if unusual else 100)))
-        base = self.cid % 100
+        base = self._cid % 100
 
         if (base < high_thresh) and (base > low_thresh) and not unusual:
             return base
@@ -96,10 +97,10 @@ class Player(Mapping):
             self.add_trait(traits.personality_traits.draw(), derive=False)
 
         for stat in all_stats['rating']:
-            self[stat.name] = random.random() * max(self[stat.personality], 0.5)
+            self[stat.name] = random.random() * max(min(self[stat.personality], 1), 0.5)
+            # traits can result in personalities higher than 1. if this happens, it's cool, so
+            # this bit makes sure you get that bonus
             if self[stat.personality] > 1:
-                # this is a dumb hack - contrary to the plan, this can result in deep stats higher than
-                # the respective personalities. In my defense, it'll be rare and cool when it happens.
                 self[stat.name] += self[stat.personality] - 1
 
         self.derive()
@@ -136,6 +137,12 @@ class Player(Mapping):
 
         self["fingers"] += 1
 
+    def set_all_stats(self, value):
+        for stat in all_stats['personality'] + all_stats['rating']:
+            self[stat.name] = value
+        self['clutch'] = value
+        self.traits = []
+
     def add_trait(self, trait: traits.Trait, derive=True) -> None:
         self.traits += [trait]
         for stat in trait:
@@ -169,24 +176,24 @@ class Player(Mapping):
             raise RuntimeError(f"{self} not linked to a valid PlayerBase! Call player.initialize"
                                f"before using this player!")
         else:
-            return self.pb.df.loc[self.cid]
+            return self.pb.df.loc[self._cid]
 
     def df_index(self) -> int:
         """get the CID / dataframe index of this player."""
-        if self.stat_row().name == self.cid:
-            return self.cid
+        if self.stat_row().name == self._cid:
+            return self._cid
         else:
             raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row().name} "
-                               f"does not match player CID {self.cid}, likely playerbase corruption.")
+                               f"does not match player CID {self._cid}, likely playerbase corruption.")
 
     def __getitem__(self, item) -> Union[float, str]:
         if item == 'cid':
-            return self.cid
+            return self._cid
         else:
             return self.stat_row()[item]
 
     def __setitem__(self, item: Hashable, value: object) -> None:
-        self.pb.df.loc[self.cid][item] = value
+        self.pb.df.loc[self._cid][item] = value
 
     def add_average(self, item: Union[List, str], value: Union[List, Union[int, float]]) -> None:
         """Updates a stat which is a running average, such as batting average. Pass one or more stats and values in
@@ -290,16 +297,16 @@ class Player(Mapping):
         return text
 
     def __str__(self) -> str:
-        return(f"[{self.cid}] "
+        return(f"[{self._cid}] "
                f"'{self['name']}' ({self['team']}) "
                f"{self.total_stars()}"
                )
 
     def __repr__(self) -> str:
         return (f"<{self.__module__}.{self.__class__.__name__} "
-                f"[{self.cid}] "
+                f"[{self._cid}] "
                 f"'{self['name']}' "
-                f"(c{self.cid}) at {hex(id(self))}>")
+                f"(c{self._cid}) at {hex(id(self))}>")
 
 
 class PlayerBase(MutableMapping):
@@ -325,7 +332,7 @@ class PlayerBase(MutableMapping):
         for i in range(num_players):
             # create a set of new players:
             player = Player()
-            self.df.loc[player.cid] = None
+            self.df.loc[player._cid] = None  # noqa - this is the one time we're setting _cid
             player.initialize(self)
             player.randomize()
 
@@ -345,7 +352,7 @@ class PlayerBase(MutableMapping):
         """
         try:
             for key in self.players.keys():
-                if self.players[key].cid != key:
+                if self.players[key]._cid != key:
                     raise RuntimeError(
                         f"Player CID and key mismatch:"
                         f"key {key}, "

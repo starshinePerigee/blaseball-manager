@@ -27,7 +27,7 @@ class Team(MutableSequence):  # should probably be a mutablemapping
             return key  # assume we already have a key, this is kind of a hack to support get/set later
         elif isinstance(key, Player):
             for i, player in enumerate(self.players):
-                if player.cid == key.cid:
+                if player._cid == key._cid:
                     return i
         elif isinstance(key, str):
             key_case = key.title()

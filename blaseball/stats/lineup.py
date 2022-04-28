@@ -117,7 +117,7 @@ class Defense(MutableMapping):
         if isinstance(player, Player):
             player = player['name']
         for position in self.positions:
-            if self.positions[position].player['name'] == player or self.positions[position].player.cid == player:
+            if self.positions[position].player['name'] == player or self.positions[position].player._cid == player:
                 return self.positions[position]
         raise KeyError(f"Player {player} not found in defense with length {len(self)}")
 

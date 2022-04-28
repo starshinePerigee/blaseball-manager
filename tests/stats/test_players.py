@@ -3,6 +3,7 @@ import pytest
 import pandas as pd
 
 from blaseball.stats.players import Player, PlayerBase
+from blaseball.stats import traits
 
 
 @pytest.fixture
@@ -50,7 +51,7 @@ class TestPlayer:
 
         assert p1 != p2
 
-        stat_row = playerbase_10.df.loc[p1.cid]
+        stat_row = playerbase_10.df.loc[p1._cid]
         p2.assign(stat_row)
 
         assert p1 == p2
@@ -66,6 +67,68 @@ class TestPlayer:
         assert isinstance(player_1.__str__(), str)
         assert isinstance(player_1.__repr__(), str)
         assert isinstance(player_1.total_stars(), str)
+
+    def test_initialize(self, player_1):
+        player_1.initialize(player_1.pb)
+        assert player_1['name'] == 'WYATT MASON'
+        assert player_1['leadership'] == 0
+        assert player_1['pitches seen'] == 0
+
+    def test_generate_player_number(self, player_1, monkeypatch):
+        # this runction is not really essential but it's a good place to practice monkeypatch
+        # force non-unusual
+        monkeypatch.setattr('random.random', lambda: 0.9)
+
+        def min_randrange(start, stop, step=1):
+            return start
+
+        monkeypatch.setattr('random.randrange', min_randrange)
+        # range is 0 to 45
+        player_1._cid = 1001  # THIS BREAKS EVERYTHING (except player numbers)
+        assert player_1.generate_player_number() == 1
+        player_1._cid = 1051
+        assert 0 < player_1.generate_player_number() < 45
+
+        # force unusual
+        monkeypatch.setattr('random.random', lambda: 0.01)
+        player_1._cid = 1001
+        assert player_1.generate_player_number() < 0
+
+    def test_set_all_stats(self, player_1):
+        player_1.set_all_stats(0.3)
+        assert player_1['enthusiasm'] == 0.3
+        assert player_1['power'] == 0.3
+        assert player_1['pitches seen'] == 0
+
+    def test_add_remove_trait(self, player_1):
+        player_1.set_all_stats(0.5)
+        assert player_1['determination'] == 0.5
+        determination_trait = traits.Trait(ratings={'determination': 0.5})
+        player_1.add_trait(determination_trait)
+        assert player_1['determination'] == pytest.approx(1.0)
+
+        player_1.remove_trait(determination_trait)
+        assert player_1['determination'] == pytest.approx(0.5)
+
+    def test_generate_stats(self, player_1, monkeypatch):
+        player_1.set_all_stats(0)
+        determination_trait = traits.Trait(ratings={'determination': 0.25})
+        monkeypatch.setattr('random.randrange', lambda start, stop, step=1: 2)
+        monkeypatch.setattr(traits.TraitsList, 'draw', lambda tl: determination_trait)
+
+        monkeypatch.setattr('random.random', lambda: 0.5)
+        player_1.randomize()
+        assert player_1['enthusiasm'] == pytest.approx(0.5)
+        assert player_1['determination'] == pytest.approx(1.0)
+        assert player_1['speed'] == pytest.approx(0.25)
+        assert player_1['power'] == pytest.approx(0.5)
+
+        monkeypatch.setattr('random.random', lambda: 1.0)
+        player_1.randomize()
+        assert player_1['enthusiasm'] == pytest.approx(1.0)
+        assert player_1['determination'] == pytest.approx(1.5)
+        assert player_1['speed'] == pytest.approx(1.0)
+        assert player_1['power'] == pytest.approx(1.5)
 
     def test_add_average(self, player_1):
         assert player_1['pitches seen'] == 0
@@ -113,10 +176,10 @@ class TestPlayerBase:
     def test_verify_players(self, playerbase_10):
         assert playerbase_10.verify_players()
         del_player = playerbase_10.iloc(0)
-        del playerbase_10.players[del_player.cid]
+        del playerbase_10.players[del_player._cid]
         with pytest.raises(RuntimeError):
             playerbase_10.verify_players()
-        playerbase_10.df.drop(axis=1, index=del_player.cid, inplace=True)
+        playerbase_10.df.drop(axis=1, index=del_player._cid, inplace=True)
         assert playerbase_10.verify_players()
 
     def test_new_players(self):
@@ -128,12 +191,12 @@ class TestPlayerBase:
             assert player == pb[player.df_index()]
 
     def test_verify_assign(self, playerbase_10):
-        cid_0 = playerbase_10.iloc(0).cid
+        cid_0 = playerbase_10.iloc(0)._cid
         playerbase_10[cid_0]["name"] = "Test Bobson"
         assert playerbase_10[cid_0]["name"] == "Test Bobson"
         assert playerbase_10.df.loc[cid_0]["name"] == "Test Bobson"
 
-        cid_1 = playerbase_10.iloc(1).cid
+        cid_1 = playerbase_10.iloc(1)._cid
         playerbase_10[cid_0] = playerbase_10[cid_1]
         assert playerbase_10[cid_0]["name"] == playerbase_10[cid_1]["name"]
         assert playerbase_10.verify_players()
@@ -152,9 +215,9 @@ class TestPlayerBase:
 
     def test_index_get(self, playerbase_10):
         first_player = playerbase_10.iloc(0)
-        assert isinstance(playerbase_10[first_player.cid], Player)
+        assert isinstance(playerbase_10[first_player._cid], Player)
         assert playerbase_10[first_player['name']] == first_player
-        assert isinstance(playerbase_10[first_player.cid]['speed'], float)
+        assert isinstance(playerbase_10[first_player._cid]['speed'], float)
 
     def test_index_set(self, playerbase_10, player_1):
         player_cids = playerbase_10.df.index
@@ -168,8 +231,8 @@ class TestPlayerBase:
         assert playerbase_10[player_cids[3]]['name'] == player_1['name']
 
     def test_generate_random_stats(self, playerbase_10):
-        cid_a = playerbase_10.iloc(0).cid
-        cid_b = playerbase_10.iloc(1).cid
+        cid_a = playerbase_10.iloc(0)._cid
+        cid_b = playerbase_10.iloc(1)._cid
         assert playerbase_10[cid_a]['speed'] != playerbase_10[cid_b]['speed']
         assert playerbase_10[cid_a]['name'] != playerbase_10[cid_b]['name']
 
