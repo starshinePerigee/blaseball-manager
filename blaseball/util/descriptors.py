@@ -45,10 +45,15 @@ def get_descriptor(player, stat, extras=True) -> str:
     descriptor_options = DESCRIPTOR_DB[stat][primary][secondary]
 
     for option, threshold in zip(descriptor_options, ASPECTS[stat][1]):
-        if high_threshold < threshold:
+        if high_threshold <= threshold:
             return option
-    raise RuntimeError(f"Could not build a descriptor for {stat} and player {player}!"
-                       f"High threshold: {high_threshold}, options: {descriptor_options}")
+    # TODO:
+    #  this warning /should/ exist and be valid, but there's a bug somewhere that's causing weights to calculate
+    #  weirdly so you're seeing a player with all 2s with a fielding weight of >2. as a workaround, just give the
+    #  highest descriptor.
+    # raise RuntimeError(f"Could not build a descriptor for {stat} and player {player}! "
+    #                    f"High threshold: {high_threshold}, options: {descriptor_options}")
+    return descriptor_options[-1]
 
 
 if __name__ == "__main__":

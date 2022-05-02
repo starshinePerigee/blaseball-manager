@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 
 from blaseball.stats.players import Player, PlayerBase
-from blaseball.stats import traits
+from blaseball.stats import traits, stats
 
 
 @pytest.fixture
@@ -96,9 +96,17 @@ class TestPlayer:
 
     def test_set_all_stats(self, player_1):
         player_1.set_all_stats(0.3)
-        assert player_1['enthusiasm'] == 0.3
-        assert player_1['power'] == 0.3
+        for stat in stats.all_stats['personality'] + stats.all_stats['rating']:
+            assert player_1[stat] == 0.3
+
         assert player_1['pitches seen'] == 0
+
+    def test_reset_tracking(self, player_1):
+        player_1['thrown strike rate'] = 0.5
+        player_1['total pitches thrown'] = 20
+        player_1.reset_tracking()
+        assert player_1['thrown strike rate'] == 0
+        assert player_1['total pitches thrown'] == 0
 
     def test_add_remove_trait(self, player_1):
         player_1.set_all_stats(0.5)
@@ -216,6 +224,7 @@ class TestPlayerBase:
     def test_index_get(self, playerbase_10):
         first_player = playerbase_10.iloc(0)
         assert isinstance(playerbase_10[first_player._cid], Player)
+        assert playerbase_10[first_player._cid]['name'] == first_player['name']
         assert playerbase_10[first_player['name']] == first_player
         assert isinstance(playerbase_10[first_player._cid]['speed'], float)
 

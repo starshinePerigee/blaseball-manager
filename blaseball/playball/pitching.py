@@ -10,6 +10,7 @@ from blaseball.stats.players import Player
 from scipy.stats import norm
 from numpy.random import normal, rand
 from math import tanh
+from typing import List
 
 
 ONE_STDV_AT_ONE_ACCURACY = 0.7  # how wide one standard deviation is at one accuracy
@@ -26,6 +27,76 @@ def decide_pitch_effect(game: BallGame):
     pass
 
 
+FIRST_PITCH_BIAS = -0.2  # extra bias
+
+
+def calling_mod_from_count(balls, strikes) -> float:
+    # evaluate current count:
+    ball_ratio = balls / (BallGame.BALL_COUNT - 1)
+    strike_ratio = strikes / (BallGame.STRIKE_COUNT - 1)
+    if ball_ratio == 0 and strike_ratio == 0:
+        count_effect = FIRST_PITCH_BIAS
+    else:
+        count_effect = strike_ratio - ball_ratio
+    if balls == BallGame.BALL_COUNT - 1:
+        count_effect += -0.2  # bonus hyper modifier
+    return count_effect
+
+
+def calling_mod_from_discipline_bias(power, discipline) -> float:
+    # evaluate hitter discipline bias
+    # the more disciplined a hitter is, the more strikes to throw and thus the more negative
+    # the more powerful a hitter is, the more balls to throw and thus more positive
+    return power - discipline
+
+
+RUNNERS_EXPONENT = 1.5  # the exponential factor for how much to worry about walking players
+RUNNERS_TO_WALK_MODIFIER = -2  # the linear counterfactor of the above number
+RUNNER_IN_SCORING_POSITION_MODIFIER = 3
+
+
+def calling_mod_from_runners(runners: List[bool]) -> float:
+    # calculate runners to walk vs. runners to bat in
+    # ref https://www.beyondtheboxscore.com/2009/3/30/814883/bases-loaded-2-outs-full-c
+
+    # if the bases are loaded, it's between you and god:
+    # if all(runners):
+    #     return 0
+
+    runners_to_walk = 0
+    for base in runners:
+        if base:
+            runners_to_walk += 1
+        else:
+            break
+
+    runners_to_walk_effect = runners_to_walk ** RUNNERS_EXPONENT
+    runners_to_walk_effect *= RUNNERS_TO_WALK_MODIFIER
+
+    runners_in_scoring_position = 0
+    for base in runners[::-1]:
+        if base:
+            runners_in_scoring_position += 1
+        else:
+            break
+
+    risp_effect = runners_in_scoring_position ** RUNNERS_EXPONENT
+    risp_effect *= RUNNER_IN_SCORING_POSITION_MODIFIER
+    bases_loaded_effect = runners_to_walk_effect + risp_effect
+
+    return bases_loaded_effect
+
+
+def calling_mod_from_outs(outs: int) -> float:
+    # calculate effect from current number of outs
+    median_out = (BallGame.OUTS_COUNT - 1) / 2  # 1 for three outs, 1.5 for four
+    return outs - median_out
+
+
+def calling_mod_from_next_hitter(current: Player, on_deck: Player) -> float:
+    return current['total offense'] - on_deck['total offense']
+
+
 CALLING_WEIGHTS = {
     'count': 20,
     'discipline_bias': 5,
@@ -33,10 +104,6 @@ CALLING_WEIGHTS = {
     'outs_number': 3,
     'current_v_next_hitter': 1
 }
-FIRST_PITCH_BIAS = -0.2  # extra bias
-RUNNER_IN_SCORING_POSITION_MODIFIER = 0.5  # how much to weight a runner in scoring position
-RUNNERS_TO_WALK_FACTOR = 1.5  # the exponential factor for how much to worry about walking players
-RUNNERS_TO_WALK_MODIFIER = 0.5  # the linear counterfactor of the above number
 
 
 def calc_calling_modifier(game: BallGame) -> float:
@@ -46,55 +113,13 @@ def calc_calling_modifier(game: BallGame) -> float:
     or negative (towards the strike zone)
     """
     calling_modifier = 0
-
-    # evaluate current count:
-    ball_ratio = game.balls / (BallGame.BALL_COUNT - 1)
-    strike_ratio = game.strikes / (BallGame.STRIKE_COUNT - 1)
-    if ball_ratio == 0 and strike_ratio == 0:
-        count_effect = FIRST_PITCH_BIAS
-    else:
-        count_effect = strike_ratio - ball_ratio
-    if game.balls == BallGame.BALL_COUNT - 1:
-        count_effect += -0.2  # bonus hyper modifier
-    count_effect *= CALLING_WEIGHTS['count']
-    calling_modifier += count_effect
-
-    # evaluate hitter discipline bias
-    # the more disciplined a hitter is, the more strikes to throw and thus the more negative
-    # the more powerful a hitter is, the more balls to throw and thus more positive
-    discipline_bias_effect = game.batter()['power'] - game.batter()['discipline']
-    discipline_bias_effect *= CALLING_WEIGHTS['discipline_bias']
-
-    # calculate runners to walk vs. runners to bat in
-    bases_occupied = [i is not None for i in game.bases]
-    runner_in_scoring_position = bases_occupied[game.stadium.NUMBER_OF_BASES - 1]
-    runners_to_walk = 0
-    for base in bases_occupied:
-        if base:
-            runners_to_walk += 1
-        else:
-            break
-    if runners_to_walk != game.stadium.NUMBER_OF_BASES and runner_in_scoring_position:
-        # there is a player in socring position who won't score on a walk:
-        risp_effect = RUNNER_IN_SCORING_POSITION_MODIFIER
-    else:
-        risp_effect = 0
-    runners_to_walk_effect = runners_to_walk ** RUNNERS_TO_WALK_FACTOR
-    runners_to_walk_effect /= RUNNERS_TO_WALK_MODIFIER
-    bases_loaded_effect = runners_to_walk_effect + risp_effect
-    bases_loaded_effect *= CALLING_WEIGHTS['bases_loaded']
-    calling_modifier += bases_loaded_effect
-
-    # calculate effect from current number of outs
-    median_out = (BallGame.OUTS_COUNT - 1) / 2  # 1 for three outs, 1.5 for four
-    outs_effect = game.outs - median_out
-    outs_effect *= CALLING_WEIGHTS['outs_number']
-    calling_modifier += outs_effect
-
-    # calculate effect of current hitter vs next hitter difficulty
-    cvn_hitter = game.batter()['total offense'] - game.batter(1)['total offense']
-    cvn_hitter *= CALLING_WEIGHTS['current_v_next_hitter']
-    calling_modifier += cvn_hitter
+    calling_modifier += calling_mod_from_count(game.balls, game.strikes) * CALLING_WEIGHTS['count']
+    calling_modifier += (calling_mod_from_discipline_bias(game.batter()['power'], game.batter()['discipline'])
+                         * CALLING_WEIGHTS['discipline_bias'])
+    calling_modifier += calling_mod_from_runners(game.bases.to_occupied_list()) * CALLING_WEIGHTS['bases_loaded']
+    calling_modifier += calling_mod_from_outs(game.outs) * CALLING_WEIGHTS['outs_number']
+    calling_modifier += (calling_mod_from_next_hitter(game.batter(), game.batter(1))
+                         * CALLING_WEIGHTS['current_v_next_hitter'])
     return calling_modifier
 
 
@@ -146,7 +171,8 @@ def roll_location(target_location, pitcher_accuracy) -> float:
 FRAMING_FACTOR = 0.1  # how much exceptionally good catchers can bias the upires
 
 
-def check_strike(pitch_location, catcher_calling):
+def check_strike(pitch_location, catcher_calling) -> bool:
+    """Returns True if pitch is a strike"""
     catcher_mod = max(0.0, catcher_calling - 1) * FRAMING_FACTOR
     return abs(pitch_location) <= 1 + catcher_mod
 
@@ -172,7 +198,7 @@ FORCE_FACTOR = 1  # how much a pitcher's force affects difficulty
 
 def calc_difficulty(pitch_location, pitcher_force) -> float:
     force_difficulty = FORCE_FACTOR * pitcher_force
-    location_base = max(0.0, pitch_location - STRIKE_ZONE_DIFFICULTY_CENTER)
+    location_base = max(0.0, abs(pitch_location) - STRIKE_ZONE_DIFFICULTY_CENTER)
     location_difficulty = location_base ** DIFFICULTY_DISTANCE_FACTOR
     return force_difficulty + location_difficulty
 
@@ -185,6 +211,7 @@ def calc_reduction(pitcher_trickery) -> float:
 
 
 class Pitch(Update):
+    # TODO: fuzz more than just location values?
     """
     Represents an actual pitch. has four key stats:
     location: where the pitch is, from 0 +, where 0 is right over the plate
@@ -321,13 +348,13 @@ if __name__ == "__main__":
         print("")
 
     run_game()
-
-    test_catcher['calling'] = 1
-    test_pitcher['accuracy'] = 1
-    test_pitcher['force'] = 0.3
-    test_pitcher['trickery'] = 0.5
-    run_game()
-    test_pitcher['accuracy'] = 0.3
-    test_pitcher['force'] = 1
-    run_game()
+    #
+    # test_catcher['calling'] = 1
+    # test_pitcher['accuracy'] = 1
+    # test_pitcher['force'] = 0.3
+    # test_pitcher['trickery'] = 0.5
+    # run_game()
+    # test_pitcher['accuracy'] = 0.3
+    # test_pitcher['force'] = 1
+    # run_game()
 

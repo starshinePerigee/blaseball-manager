@@ -245,6 +245,9 @@ class Lineup(Collection):
             return self.pitcher
         elif key_l == "batters" or key_l == "batting_order":
             return self.batting_order
+        elif 'batter ' in key_l:
+            batter = int(key_l.split(' ')[1]) - 1  # zero indexed
+            return self.batting_order[batter]
         else:
             return self.defense[key].player
 

@@ -6,7 +6,8 @@ from blaseball.stats.stadium import Stadium
 from blaseball.util.geometry import Coord
 
 from numpy.random import normal
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Union
+from collections.abc import MutableMapping
 
 
 # Running:
@@ -194,10 +195,13 @@ class Runner:
 
 # TODO: there's defs a bug allowing multiple people to pile on a base.
 
-class Basepaths:
-    """Stores the bases and basepaths, and manipulates runners on base. Each game should have one Basepaths"""
+class Basepaths(MutableMapping):
+    """Stores the bases and basepaths, and manipulates runners on base. Each game should have one Basepaths
+
+    Iterating over this gives you None entries for empty bases."""
     def __init__(self, stadium: Stadium):
-        self.runners = []  # runners acts as a FIFO queue - the first entry is the furthest down.
+        self.runners = []  # runners acts as a FIFO queue - the first entry is the furthest down. We don't track
+        # empty bases here. Is this a hack? is this bad? future self will find out.
         self.number_of_bases = stadium.NUMBER_OF_BASES  # does not count home
         self.basepath_length = stadium.BASEPATH_LENGTH
 
@@ -267,9 +271,48 @@ class Basepaths:
             string += "\r\n"
         return string
 
+    def __getitem__(self, key: int) -> Optional[Player]:
+        if key < 0 or key > self.number_of_bases:
+            raise KeyError(f"Tried to get runner on invalid base {key} against number of bases {self.number_of_bases}")
+        for runner in self.runners:
+            if runner.base == key:
+                return runner.player
+        return None
+
+    def __setitem__(self, key: int, value: Player) -> None:
+        new_runner = Runner(value, self.basepath_length)
+        new_runner.base = key
+
+        for i, runner in enumerate(self.runners):
+            if runner.base == key:
+                raise KeyError(f"Tried to set a runner to base {key} which was already occupied by {runner}")
+            if runner.base > key:
+                self.runners.insert(i, new_runner)
+                return
+        self.runners += [new_runner]
+
+    def __delitem__(self, key) -> None:
+        for i, runner in enumerate(self.runners):
+            if runner.base == key:
+                del(self.runners[i])
+                return
+        raise KeyError(f"Attempted to delete nonexistent player on base {key}!")
+
+    def as_list(self) -> List[Union[Player, None]]:
+        return [self[i] for i in range(1, self.number_of_bases + 1)]
+
+    def to_occupied_list(self):
+        return [i is not None for i in list(self)]
+
     def __add__(self, player: Player):
         self.runners += [Runner(player, self.basepath_length)]
         return self
+
+    def __iter__(self):
+        # i think this is abuse - as_list should be using this function instead?
+        # we'll come back to this later.
+        # TODO: make sure you unit test this sucka
+        return iter(self.as_list())
 
     def __len__(self):
         return len(self.runners)

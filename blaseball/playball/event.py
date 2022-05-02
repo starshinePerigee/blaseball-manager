@@ -39,3 +39,12 @@ class Event:
     def __str__(self):
         name = self.name if self.name is not None else id(self)
         return f"Event {name}"
+
+    def __add__(self, other):
+        if isinstance(other, Update):
+            self.updates += [other]
+        elif isinstance(other, Event):
+            self.updates += other.updates
+        else:
+            raise ValueError(f'Invalid type: {type(other)}')
+        return self

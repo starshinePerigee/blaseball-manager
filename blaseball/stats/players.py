@@ -16,7 +16,7 @@ from numpy import integer
 from numpy.random import normal
 
 from data import playerdata
-from blaseball.stats.stats import all_stats
+from blaseball.stats.stats import all_stats, Stat
 from blaseball.stats import traits
 from blaseball.util.descriptors import get_descriptor
 
@@ -142,6 +142,11 @@ class Player(Mapping):
             self[stat.name] = value
         self['clutch'] = value
         self.traits = []
+        self.derive()
+
+    def reset_tracking(self):
+        for stat in all_stats['performance'] + all_stats['averaging']:
+            self[stat.name] = 0
 
     def add_trait(self, trait: traits.Trait, derive=True) -> None:
         self.traits += [trait]
@@ -189,6 +194,8 @@ class Player(Mapping):
     def __getitem__(self, item) -> Union[float, str]:
         if item == 'cid':
             return self._cid
+        elif isinstance(item, Stat):
+            return self.stat_row()[item.name]
         else:
             return self.stat_row()[item]
 
@@ -386,6 +393,7 @@ class PlayerBase(MutableMapping):
         return len(self.df.index)
 
     def __getitem__(self, key: Hashable) -> Union[Player, List[Player]]:
+        """Get a player or range of players by name(s) or cid(s)"""
         if isinstance(key, str):
             item_row = self.df.loc[self.df['name'] == key.title()]
             if len(item_row) > 1:
