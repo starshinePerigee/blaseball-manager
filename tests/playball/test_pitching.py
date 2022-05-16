@@ -6,6 +6,11 @@ from blaseball.playball import pitching
 from blaseball.util.mock_functions import normal_across_range
 
 
+# note: this was written mostly avoiding parameterize, relying on comparisons instead. compare test_hitting
+# for the parameterized variant.
+# somewhat curious which one will hold up better.
+
+
 class TestCallingModifiers:
     # reminder: calling mod is a unitless number and can be positive (away from the strike zone)
     # or negative (towards the strike zone)
@@ -262,6 +267,14 @@ class TestPitch:
         difficulties = []
         obscurities = []
         reductions = []
+
+        # This *should be* an ideal candidate for pytest parameterization, but we need to compare each iteration
+        # to each other to make sure trends go up. We could split this into two tests, but at that point you're
+        # not really saving anything, are you?
+        # In general, this failure mode is really common for almost all these tests. The parameters are arbitrary magic
+        # numbers and we really only care that they trend in the right direction with the right proportionality.
+        # once the ball is hit, we convert to real values (seconds, feet, etc) and then we can check for 'sanity'.
+        # we do take a shot at parameterizing this in test_hitting.
         for stat in [0, 0.5, 1, 2]:
             catcher.reset_tracking()
             catcher.set_all_stats(stat)

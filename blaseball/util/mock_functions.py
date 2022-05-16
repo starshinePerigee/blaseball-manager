@@ -15,7 +15,6 @@ def random_across_range(target_function, my_monkeypatch):
         yield value
 
 
-
 def normal_across_range(target_function, my_monkeypatch):
     """This mocks out norm() but also inclues one in a million outliers in either direction"""
     worst_case_order_of_magnitude = 6

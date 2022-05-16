@@ -22,10 +22,13 @@ def decide_hit_effect(game: BallGame):
     pass
 
 
-def calc_desperation(game: BallGame) -> float:
-    total_balls = game.balls + BONUS_BALLS
+def calc_desperation(balls, strikes) -> float:
+    """Desperation is a measure of how much a player wants to swing vs take.
+    It is a unitless number from 0 to 1.14, with 1 being "average"
+    Note that there is no difference between one and two strikes."""
+    total_balls = balls + BONUS_BALLS
     ball_ratio = total_balls / (BallGame.BALL_COUNT + BONUS_BALLS - 1)
-    strike_ratio = game.strikes / (BallGame.STRIKE_COUNT - 1)
+    strike_ratio = strikes / (BallGame.STRIKE_COUNT - 1)
     balls_over = ball_ratio - strike_ratio
     if balls_over < 0:
         balls_over = 0
@@ -69,6 +72,7 @@ def roll_hit_quality(net_contact) -> float:
 
 
 def roll_reduction(pitch_reduction: float) -> float:
+    # TODO: this should be part of the pitch roll, not part of the hit.
     scaled_reduction = pitch_reduction * 2 * rand()
     return scaled_reduction
 
@@ -78,7 +82,7 @@ class Swing(Update):
     def __init__(self, game: BallGame, pitch: Pitch, batter: Player):
         super().__init__()
 
-        self.desperation = calc_desperation(game)
+        self.desperation = calc_desperation(game.balls, game.strikes)
         self.read_chance = calc_read_chance(pitch.obscurity, batter['discipline'])
         self.swing_chance = calc_swing_chance(self.read_chance, self.desperation, pitch.strike)
         self.did_swing = roll_for_swing_decision(self.swing_chance)
