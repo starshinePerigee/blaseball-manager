@@ -71,12 +71,6 @@ def roll_hit_quality(net_contact) -> float:
     return normal(loc=(net_contact + FOUL_BIAS) * NET_CONTACT_FACTOR, scale=1)
 
 
-def roll_reduction(pitch_reduction: float) -> float:
-    # TODO: this should be part of the pitch roll, not part of the hit.
-    scaled_reduction = pitch_reduction * 2 * rand()
-    return scaled_reduction
-
-
 class Swing(Update):
     """A player's swing, from decision up to hit quality"""
     def __init__(self, game: BallGame, pitch: Pitch, batter: Player):
@@ -91,7 +85,6 @@ class Swing(Update):
         self.ball = False
         self.foul = False
         self.hit = False
-        self.reduction = 0
 
         if self.did_swing:
             self.net_contact = batter['contact'] - pitch.difficulty
@@ -104,7 +97,6 @@ class Swing(Update):
                 self.text = "Foul ball."
             else:
                 self.hit = True
-                self.reduction = roll_reduction(pitch.reduction)
                 self.text = "It's a hit!"
         else:
             self.net_contact = 0
@@ -148,7 +140,6 @@ class Swing(Update):
         else:
             if self.hit:
                 text += "Hit ball"
-                text += f" with reduction {self.reduction:.03f}"
             elif self.foul:
                 text += "Foul ball"
             else:

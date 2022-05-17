@@ -3,7 +3,7 @@ import statistics
 
 from blaseball.stats import stats
 from blaseball.playball import pitching
-from blaseball.util.mock_functions import normal_across_range
+from blaseball.util.mock_functions import normal_across_range, random_across_range
 
 
 # note: this was written mostly avoiding parameterize, relying on comparisons instead. compare test_hitting
@@ -252,10 +252,23 @@ class TestPitch:
                 print_str += f"{pitching.calc_difficulty(loc, force):0.2f}  "
             print(print_str)
 
-    def test_calc_reduction(self):
-        assert pitching.calc_reduction(1) > pitching.calc_reduction(0.9)
+    @pytest.mark.parametrize('trickery', [0, 0.5, 1, 2])
+    def test_roll_reduction(self, trickery, monkeypatch):
+        reductions = [
+            pitching.roll_reduction(trickery)
+            for __
+            in random_across_range('blaseball.playball.pitching.rand', monkeypatch)
+        ]
+        reductions_minus_one = [
+            pitching.roll_reduction(trickery - 0.1)
+            for __
+            in random_across_range('blaseball.playball.pitching.rand', monkeypatch)
+        ]
+
+        assert statistics.mean(reductions) > statistics.mean(reductions_minus_one)
         print(" ~pitch reduction~")
-        print(f"Reduction at 1 trickery: {pitching.calc_reduction(1)}")
+        print(f"Reduction at {trickery:0.0f} trickery: {reductions[0]} to {reductions[-1]}, "
+              f"mean {statistics.mean(reductions)}")
 
     def test_pitch(self, ballgame_1, monkeypatch):
         ballgame_1.outs = 1
@@ -280,6 +293,11 @@ class TestPitch:
             catcher.set_all_stats(stat)
             pitcher.reset_tracking()
             pitcher.set_all_stats(stat)
+
+            monkeypatch.setattr(
+                'blaseball.playball.pitching.roll_reduction',
+                lambda pitcher_trickery: pitcher_trickery * pitching.REDUCTION_FROM_TRICKERY
+            )
 
             pitches = [
                 pitching.Pitch(ballgame_1, pitcher, catcher)

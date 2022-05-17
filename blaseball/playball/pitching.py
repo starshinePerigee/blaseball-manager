@@ -206,8 +206,10 @@ def calc_difficulty(pitch_location, pitcher_force) -> float:
 REDUCTION_FROM_TRICKERY = 0.2  # the percentage removed from exit velocity for a pitcher with 1 trickery
 
 
-def calc_reduction(pitcher_trickery) -> float:
-    return REDUCTION_FROM_TRICKERY * pitcher_trickery
+def roll_reduction(pitcher_trickery) -> float:
+    base_reduction = REDUCTION_FROM_TRICKERY * pitcher_trickery
+    scaled_reduction = base_reduction * 2 * rand()
+    return scaled_reduction
 
 
 class Pitch(Update):
@@ -228,7 +230,7 @@ class Pitch(Update):
         self.strike = check_strike(self.location, catcher['calling'])
         self.obscurity = calc_obscurity(self.location, pitcher['trickery'])
         self.difficulty = calc_difficulty(self.location, pitcher['force'])
-        self.reduction = calc_reduction(pitcher['trickery'])
+        self.reduction = roll_reduction(pitcher['trickery'])
 
         super().__init__(self.description_string(pitcher))
         self.update_stats(pitcher, catcher)
