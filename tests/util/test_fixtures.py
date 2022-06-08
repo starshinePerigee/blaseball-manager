@@ -2,9 +2,10 @@
 
 import pytest
 import blaseball
-from support.mock_functions import FunctionPatcher
 
 from support import fixturetarget
+
+from scipy.stats import norm
 
 
 class TestFixtures:
@@ -83,3 +84,44 @@ class TestFunctionPatch:
         assert sorted(results[1]) == sorted([0, 1] * 12)
         assert sorted(results[2]) == sorted([0, 1, 2] * 8)
         assert sorted(results[3]) == sorted([0, 1, 2, 3] * 6)
+
+    def test_patch_double(self, patcher):
+        patcher.patch("support.fixturetarget.add_average_2", noop_fn)
+        assert len([fixturetarget.add_average_2(1) for __ in patcher]) == 10
+        assert len([fixturetarget.add_average_2(3) for __ in patcher]) == 10
+        patcher.reset()
+        patcher.patch("support.fixturetarget.add_average_2", noop_fn, iterations=100)
+        assert len([fixturetarget.add_average_2(1) for __ in patcher]) == 100
+
+    def test_patch_rand(self, patcher):
+        patcher.patch_rand("support.fixturetarget.rand", iterations=1)
+        for __ in patcher:
+            assert fixturetarget.add_average_1(1) == pytest.approx(2)
+        patcher.patch_rand("support.fixturetarget.rand", iterations=100)
+        for i in patcher:
+            assert fixturetarget.add_average_1(1) == pytest.approx(1 + (i / 99) * 2)
+
+    def test_patch_rand_iterative(self, patcher):
+        def mock_add_average(x, iteration):
+            return x + iteration
+        patcher.patch_rand("support.fixturetarget.rand")
+        patcher.patch("support.fixturetarget.add_average_2", mock_add_average, 2)
+        patcher.patch("support.fixturetarget.add_average_3", mock_add_average, 3)
+
+        all_values = [fixturetarget.add_all_average(1) for i in patcher]
+
+        assert len(all_values) == 600
+        assert min(all_values) == pytest.approx(3)
+        assert all_values[0] == min(all_values)
+        assert max(all_values) == pytest.approx(8)
+        assert all_values[-1] == max(all_values)
+
+    def test_patch_normal(self, patcher):
+        patcher.patch_normal("support.fixturetarget.normal", 100, 6)
+        all_values = [fixturetarget.normal_test() for i in patcher]
+
+        assert len(all_values) == 100
+        assert min(all_values) == pytest.approx(norm.ppf(10**-6) + 100)
+        assert all_values[0] == min(all_values)
+        assert max(all_values) == pytest.approx(norm.ppf(1-10**-6) + 100)
+        assert all_values[-1] == max(all_values)

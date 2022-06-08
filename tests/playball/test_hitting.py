@@ -3,8 +3,6 @@ import statistics
 
 from blaseball.playball import hitting, pitching
 
-from support.mock_functions import random_across_range, normal_across_range
-
 
 class TestHitting:
 
@@ -96,12 +94,9 @@ class TestHitting:
             print(print_str)
 
     @pytest.mark.parametrize('swing_percent', [0, 0.1, 0.5, 0.9, 1])
-    def test_roll_for_swing_decision(self, swing_percent, monkeypatch):
-        swings = [
-            hitting.roll_for_swing_decision(swing_percent)
-            for __
-            in random_across_range('blaseball.playball.hitting.rand', monkeypatch)
-        ]
+    def test_roll_for_swing_decision(self, swing_percent, patcher):
+        patcher.patch_normal('blaseball.playball.hitting.normal')
+        swings = [hitting.roll_for_swing_decision(swing_percent) for __ in patcher]
         actual_percent = sum(swings) / 100
         assert actual_percent == pytest.approx(swing_percent, abs=0.05)  # rand_across_range includes outliers.
 
@@ -114,21 +109,14 @@ class TestHitting:
     net_contacts = [-10, -4, -3, -1, -0.5, 0, 0.5, 0.8, 1, 2]
 
     @pytest.mark.parametrize('net_contact, previous_contact', zip(net_contacts[1:], net_contacts[:-1]))
-    def test_roll_hit_quality(self, net_contact, previous_contact, monkeypatch):
-        qualities = [
-            hitting.roll_hit_quality(net_contact)
-            for __
-            in normal_across_range('blaseball.playball.hitting.normal', monkeypatch)
-        ]
+    def test_roll_hit_quality(self, net_contact, previous_contact, patcher):
+        patcher.patch_normal('blaseball.playball.hitting.normal')
+        qualities = [hitting.roll_hit_quality(net_contact) for i in patcher]
         print(f" ~Hit Quality~")
         print(f"Net contact: {net_contact:0.1f}")
         average_hit_quality = statistics.mean(qualities)
 
-        average_previous_quality = statistics.mean([
-            hitting.roll_hit_quality(previous_contact)
-            for __
-            in normal_across_range('blaseball.playball.hitting.normal', monkeypatch)
-        ])
+        average_previous_quality = statistics.mean([hitting.roll_hit_quality(previous_contact) for i in patcher])
         assert average_hit_quality > average_previous_quality
 
         print(f"Average hit quality: {average_hit_quality:.2f}")
@@ -140,13 +128,10 @@ class TestHitting:
         assert max_hit_quality > 0
         print(f"Min: {min_hit_quality:.2f}, Max: {max_hit_quality:.2f}")
 
-    def test_print_roll_hit_quality(self, monkeypatch):
+    def test_print_roll_hit_quality(self, patcher):
+        patcher.patch_normal('blaseball.playball.hitting.normal')
         for net_contact in TestHitting.net_contacts[1:]:
-            qualities = [
-                hitting.roll_hit_quality(net_contact)
-                for __
-                in normal_across_range('blaseball.playball.hitting.normal', monkeypatch)
-            ]
+            qualities = [hitting.roll_hit_quality(net_contact) for __ in patcher]
 
             strikes = sum([x <= 0 for x in qualities])
             fouls = sum([0 < x < 1 for x in qualities])
@@ -154,12 +139,9 @@ class TestHitting:
             print(f"* {net_contact:+0.1f} *  {strikes: >3} strikes, {fouls: >3} fouls, {fairs: >3} fair hits.")
 
     @pytest.mark.xfail
-    def test_foul_rate(self, monkeypatch):
-        qualities = [
-            hitting.roll_hit_quality(-0.3)
-            for __
-            in normal_across_range('blaseball.playball.hitting.normal', monkeypatch)
-        ]
+    def test_foul_rate(self, patcher):
+        patcher.patch_normal('blaseball.playball.hitting.normal')
+        qualities = [hitting.roll_hit_quality(-0.3) for __ in patcher]
         strikes = sum([x <= 0 for x in qualities])
         fouls = sum([0 < x < 1 for x in qualities])
         fairs = sum([x >= 1 for x in qualities])

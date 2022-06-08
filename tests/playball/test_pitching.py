@@ -3,7 +3,6 @@ import statistics
 
 from blaseball.stats import stats
 from blaseball.playball import pitching
-from support.mock_functions import normal_across_range, random_across_range
 
 
 # note: this was written mostly avoiding parameterize, relying on comparisons instead. compare test_hitting
@@ -198,12 +197,9 @@ class TestPitching:
         monkeypatch.setattr('blaseball.playball.pitching.normal', lambda loc=0, scale=1: 0.1 * scale + loc)
         assert pitching.roll_location(1, 1) == 1.07
 
-    def test_roll_location(self, monkeypatch):
-        locations = [
-            pitching.roll_location(1, 1)
-            for __
-            in normal_across_range('blaseball.playball.pitching.normal', monkeypatch)
-        ]
+    def test_roll_location(self, patcher):
+        patcher.patch_normal('blaseball.playball.pitching.normal')
+        locations = [pitching.roll_location(1, 1) for __ in patcher]
         assert statistics.mean(locations) == pytest.approx(1)
 
         deviations = [abs(x - 1) for x in locations]
@@ -253,17 +249,11 @@ class TestPitching:
             print(print_str)
 
     @pytest.mark.parametrize('trickery', [0, 0.5, 1, 2])
-    def test_roll_reduction(self, trickery, monkeypatch):
-        reductions = [
-            pitching.roll_reduction(trickery)
-            for __
-            in random_across_range('blaseball.playball.pitching.rand', monkeypatch)
-        ]
-        reductions_minus_one = [
-            pitching.roll_reduction(trickery - 0.1)
-            for __
-            in random_across_range('blaseball.playball.pitching.rand', monkeypatch)
-        ]
+    def test_roll_reduction(self, trickery, patcher):
+        patcher.patch_normal('blaseball.playball.pitching.normal')
+
+        reductions = [pitching.roll_reduction(trickery) for __ in patcher]
+        reductions_minus_one = [pitching.roll_reduction(trickery - 0.1) for __ in patcher]
 
         assert statistics.mean(reductions) > statistics.mean(reductions_minus_one)
         print(" ~pitch reduction~")
@@ -272,7 +262,7 @@ class TestPitching:
 
 
 class TestPitchIntegrated:
-    def test_pitch(self, ballgame_1, monkeypatch):
+    def test_pitch(self, ballgame_1, monkeypatch, patcher):
         ballgame_1.outs = 1
         catcher = ballgame_1.defense()['catcher']
         pitcher = ballgame_1.defense()['pitcher']
@@ -282,6 +272,8 @@ class TestPitchIntegrated:
         difficulties = []
         obscurities = []
         reductions = []
+
+        patcher.patch_normal('blaseball.playball.pitching.normal')
 
         # This *should be* an ideal candidate for pytest parameterization, but we need to compare each iteration
         # to each other to make sure trends go up. We could split this into two tests, but at that point you're
@@ -301,11 +293,7 @@ class TestPitchIntegrated:
                 lambda pitcher_trickery: pitcher_trickery * pitching.REDUCTION_FROM_TRICKERY
             )
 
-            pitches = [
-                pitching.Pitch(ballgame_1, pitcher, catcher)
-                for __
-                in normal_across_range('blaseball.playball.pitching.normal', monkeypatch)
-            ]
+            pitches = [pitching.Pitch(ballgame_1, pitcher, catcher) for __ in patcher]
 
             assert catcher['total pitches called'] == 100
             assert pitcher['total pitches thrown'] == 100
