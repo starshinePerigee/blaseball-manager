@@ -297,6 +297,15 @@ class Pitch(Update):
             ]
         )
 
+    def __eq__(self, other):
+        return (
+            self.difficulty == other.difficulty
+            and self.obscurity == other.obscurity
+            and self.location == other.location
+            and self.reduction == other.reduction
+            and self.strike == other.strike
+        )
+
 
 if __name__ == "__main__":
     from blaseball.stats import stats

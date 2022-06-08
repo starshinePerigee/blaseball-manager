@@ -3,7 +3,7 @@ import statistics
 
 from blaseball.stats import stats
 from blaseball.playball import pitching
-from blaseball.util.mock_functions import normal_across_range, random_across_range
+from support.mock_functions import normal_across_range, random_across_range
 
 
 # note: this was written mostly avoiding parameterize, relying on comparisons instead. compare test_hitting
@@ -193,7 +193,7 @@ class TestCalling:
         assert bad_pitcher > both_bad  # -catcher
 
 
-class TestPitch:
+class TestPitching:
     def test_roll_location_local(self, monkeypatch):
         monkeypatch.setattr('blaseball.playball.pitching.normal', lambda loc=0, scale=1: 0.1 * scale + loc)
         assert pitching.roll_location(1, 1) == 1.07
@@ -270,6 +270,8 @@ class TestPitch:
         print(f"Reduction at {trickery:0.0f} trickery: {reductions[0]} to {reductions[-1]}, "
               f"mean {statistics.mean(reductions)}")
 
+
+class TestPitchIntegrated:
     def test_pitch(self, ballgame_1, monkeypatch):
         ballgame_1.outs = 1
         catcher = ballgame_1.defense()['catcher']

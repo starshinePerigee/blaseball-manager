@@ -3,7 +3,7 @@ import statistics
 
 from blaseball.playball import hitting, pitching
 
-from blaseball.util.mock_functions import random_across_range, normal_across_range
+from support.mock_functions import random_across_range, normal_across_range
 
 
 class TestHitting:
@@ -170,5 +170,13 @@ class TestHitting:
         assert 25 < fouls < 50
 
 
-class TestHit:
-    pass
+class TestHitIntegrated:
+    def test_print_pitch_fixture(self, pitch_1):
+        # just a quickly accessible read on the default pitch
+        print(pitch_1)
+
+    def test_swing_results(self, pitch_1):
+        pass
+
+    def test_swing_stats_tracking(self, pitch_1, monkeypatch):
+        pass

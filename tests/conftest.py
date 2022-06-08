@@ -7,8 +7,15 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 import pytest
 
 from blaseball.stats import players, teams, stadium, lineup
-from blaseball.playball import ballgame
+from blaseball.playball import ballgame, pitching
+from support.mock_functions import FunctionPatcher
 from data import teamdata
+from numpy.random import normal, rand
+
+
+@pytest.fixture(scope='function')
+def patcher(monkeypatch):
+    return FunctionPatcher(monkeypatch)
 
 
 @pytest.fixture(scope='class')
@@ -60,3 +67,43 @@ def ballgame_1(league_2, stadium_a):
 
     test_ballgame = ballgame.BallGame(home_lineup, away_lineup, stadium_a)
     return test_ballgame
+
+
+@pytest.fixture(scope='function')
+def pitch_1(ballgame_1, monkeypatch):
+    """A nice pitch right through the zone."""
+    catcher = ballgame_1.defense()['catcher']
+    catcher.set_all_stats(1)
+    pitcher = ballgame_1.defense()['pitcher']
+    pitcher.set_all_stats(1)
+
+    ballgame_1.outs = 1
+
+    monkeypatch.setattr('blaseball.playball.pitching.normal', lambda loc, scale=1: loc)
+    monkeypatch.setattr('blaseball.playball.pitching.rand', lambda: 0.5)
+
+    calling_mod_from_discipline_bias = pitching.calling_mod_from_discipline_bias
+    monkeypatch.setattr(
+        'blaseball.playball.pitching.calling_mod_from_discipline_bias',
+        lambda power, discipline: 0
+    )
+    calling_mod_from_next_hitter = pitching.calling_mod_from_next_hitter
+    monkeypatch.setattr(
+        'blaseball.playball.pitching.calling_mod_from_next_hitter',
+        lambda current, on_deck: 0
+    )
+
+    pitch = pitching.Pitch(ballgame_1, pitcher, catcher)
+
+    monkeypatch.setattr('blaseball.playball.pitching.normal', normal)
+    monkeypatch.setattr('blaseball.playball.pitching.rand', rand)
+    monkeypatch.setattr(
+        'blaseball.playball.pitching.calling_mod_from_discipline_bias',
+        calling_mod_from_discipline_bias
+    )
+    monkeypatch.setattr(
+        'blaseball.playball.pitching.calling_mod_from_next_hitter',
+        calling_mod_from_next_hitter
+    )
+
+    return pitch
