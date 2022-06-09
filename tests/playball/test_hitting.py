@@ -153,12 +153,111 @@ class TestHitting:
 
 
 class TestHitIntegrated:
-    def test_print_pitch_fixture(self, pitch_1):
-        # just a quickly accessible read on the default pitch
-        print(pitch_1)
+    hit_parameters = {
+        # "location, swing, quality, strike, ball, foul, hit"
+        'wide strike swinging': (1.2, True, -2, True, False, False, False),
+        'narrow strike swinging': (0.8, True, -2, True, False, False, False),
+        'narrow strike looking': (0.5, False, 0, True, False, False, False),
+        'take ball': (1.2, False, 0, False, True, False, False),
+        'foul tip': (1.2, True, 0.5, False, False, True, False),
+        'clean hit': (-0.1, True, 3, False, False, False, True),
+        'reach hit': (1.5, True, 1.1, False, False, False, True)
+    }
 
-    def test_swing_results(self, pitch_1):
-        pass
+    @pytest.mark.parametrize(
+        "location, swing, quality, strike, ball, foul, hit",
+        hit_parameters.values(),
+        ids=list(hit_parameters.keys())
+    )
+    def test_swing_results(self, patcher, ballgame_1, pitch_1, location, swing, quality, strike, ball, foul, hit):
+        pitch_1.location = location
+        pitch_1.strike = pitching.check_strike(location, 1)
+        patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: swing)
+        patcher.patch('blaseball.playball.hitting.roll_hit_quality', lambda net_contact: quality)
 
-    def test_swing_stats_tracking(self, pitch_1, monkeypatch):
-        pass
+        swing = hitting.Swing(ballgame_1, pitch_1, ballgame_1.batter())
+
+        assert swing.strike == strike
+        assert swing.ball == ball
+        assert swing.foul == foul
+        assert swing.hit == hit
+
+    def test_swing_stats_tracking(self, ballgame_1, patcher):
+        # be aware that we're mocking for legibility - the rates seen in this test have no resemblance
+        # to expected or desired rates.
+
+        # hit_stats = ['strike rate', 'ball rate', 'foul rate', 'hit rate', 'pitch read chance']
+
+        # set 50 percent strike rate:
+        def set_location(target_location, pitcher_accuracy, iteration):
+            return 1.5 if iteration != 0 else 0.5
+        patcher.patch('blaseball.playball.pitching.roll_location', set_location, iterations=2)
+
+        def set_check_strike(pitch_location, catcher_calling):
+            return abs(pitch_location) <= 1
+        patcher.patch('blaseball.playball.pitching.check_strike', set_check_strike)
+        # remainder of pitch stats don't matter (we're mocking them out basically)
+
+        # remove desperation
+        patcher.patch('blaseball.playball.hitting.calc_desperation', lambda balls, strikes: 1.0)
+
+        # half the time, read chance is 0%, the other half the read chance is 100% - 50% average
+        def set_read_chance(obscurity, batter_discipline, iteration):
+            return 0 if iteration == 0 else 1
+        patcher.patch('blaseball.playball.hitting.calc_read_chance', set_read_chance, iterations=2)
+
+        # swing one third of the time:
+        def set_swing_decision(swing_chance, iteration):
+            return iteration == 0
+        patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', set_swing_decision, iterations=3)
+
+        # cycle hit quality from -2.5 to 2.5
+        def set_hit_quality(net_contact, iteration):
+            return -2.5 + iteration
+        patcher.patch('blaseball.playball.hitting.roll_hit_quality', set_hit_quality, iterations=6)
+
+        batter = ballgame_1.batter()
+
+        all_swings = []
+        for __ in patcher:
+            pitch = pitching.Pitch(ballgame_1, ballgame_1.defense()['pitcher'], ballgame_1.defense()['catcher'])
+            swing = hitting.Swing(ballgame_1, pitch, batter)
+            all_swings += [swing]
+
+        print(f"Total pitches simulated: {len(all_swings)}")
+
+        # results breakdown:
+        # 36 inside, 36 outside
+        # 36 inside: 12 swing, 24 strike
+        # 30 outside: 12 swing, 24 ball
+        # if swing:
+        #   3 are strike swinging (-2.5, -1.5, -0.5)
+        #   1 is foul (0.5)
+        #   2 are hits (1.5, 2.5)
+        #
+        # so:
+        # 24 balls
+        # 24 strike, looking
+        # 24 swings, giving:
+        #   12 strike, swinging
+        #   4 fouls
+        #   8 hits
+        # 36 total strikes.
+
+        strikes = sum([1 if swing.strike else 0 for swing in all_swings])
+        assert strikes == 36
+        assert batter['strike rate'] == pytest.approx(strikes/len(all_swings))
+
+        balls = sum([1 if swing.ball else 0 for swing in all_swings])
+        assert balls == 24
+        assert batter['ball rate'] == pytest.approx(balls/len(all_swings))
+
+        fouls = sum([1 if swing.foul else 0 for swing in all_swings])
+        assert fouls == 4
+        assert batter['foul rate'] == pytest.approx(fouls/len(all_swings))
+
+        hits = sum([1 if swing.hit else 0 for swing in all_swings])
+        assert hits == 8
+        assert batter['hit rate'] == pytest.approx(hits/len(all_swings))
+
+        assert batter['pitch read chance'] == pytest.approx(0.5)

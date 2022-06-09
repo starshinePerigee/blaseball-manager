@@ -86,6 +86,7 @@ class Swing(Update):
         self.foul = False
         self.hit = False
 
+        # this could probably use cleaning up
         if self.did_swing:
             self.net_contact = batter['contact'] - pitch.difficulty
             self.hit_quality = roll_hit_quality(self.net_contact)

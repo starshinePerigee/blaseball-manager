@@ -53,7 +53,7 @@ def return_iter(x, iteration):
 class TestFunctionPatch:
     def test_function_patcher_length(self, patcher):
         patcher.patch("support.fixturetarget.add_average_1", noop_fn, 15)
-        patcher.patch("support.fixturetarget.add_average_2", noop_fn)
+        patcher.patch("support.fixturetarget.add_average_2", noop_fn, 10)
 
         assert len(patcher) == 150
 
@@ -84,6 +84,18 @@ class TestFunctionPatch:
         assert sorted(results[1]) == sorted([0, 1] * 12)
         assert sorted(results[2]) == sorted([0, 1, 2] * 8)
         assert sorted(results[3]) == sorted([0, 1, 2, 3] * 6)
+
+    def test_patch_single(self, patcher):
+        patcher.patch("support.fixturetarget.add_average_1", lambda x: 1)
+        assert fixturetarget.add_average_1(3) == 1
+        patcher.patch('support.fixturetarget.add_average_2', lambda x: 2)
+        patcher.patch('support.fixturetarget.add_average_3', lambda x, iteration: x + iteration, iterations=20)
+
+        results = [fixturetarget.add_all_average(3) for __ in patcher]
+
+        assert len(results) == 20
+        assert results[0] == 6
+        assert results[-1] == 25
 
     def test_patch_double(self, patcher):
         patcher.patch("support.fixturetarget.add_average_2", noop_fn)
