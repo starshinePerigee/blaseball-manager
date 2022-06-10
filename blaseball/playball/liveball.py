@@ -69,22 +69,23 @@ LA_HIT_QUALITY_FACTOR = 0.5  # magic factor for launch angle hit quality,
 # LAHQF of 1 means a remainder of 1 cuts launch angle stdev in half.
 
 
-def roll_launch_angle(quality_remainder, batter_power) -> float:
-    median_launch_angle = BASE_LAUNCH_ANGLE + batter_power * BASE_LAUNCH_ANGLE
-    angle_modifier = LA_HIT_QUALITY_FACTOR / (LA_HIT_QUALITY_FACTOR + quality_remainder)
+def roll_launch_angle(quality, batter_power) -> float:
+    median_launch_angle = BASE_LAUNCH_ANGLE + batter_power * LAUNCH_ANGLE_POWER_FACTOR
+    angle_modifier = LA_HIT_QUALITY_FACTOR / (LA_HIT_QUALITY_FACTOR + quality)
     launch_angle_stdev = LAUNCH_ANGLE_BASE_STDEV * angle_modifier
     launch_angle = normal(loc=median_launch_angle, scale=launch_angle_stdev)
     return launch_angle
 
 
-PULL_STDEV = 90
+PULL_STDEV = 45
 
 
 def roll_field_angle(batter_pull) -> float:
-    while True:
+    for __ in range(0, 10):
         field_angle = normal(loc=batter_pull, scale=PULL_STDEV)
-        if 0 < field_angle < 90:
+        if 0 <= field_angle <= 90:
             return field_angle
+    return 45
 
 
 MIN_EXIT_VELOCITY_AVERAGE = 80  # average EV for a player at 0 stars
@@ -96,30 +97,29 @@ EXIT_VELOCITY_PITY_FACTOR = 0.2  # the higher this is, the less exit velo is red
 EXIT_VELOCITY_QUALITY_EXPONENT = 1 / 4
 
 
-def roll_exit_velocity(quality_remainder, reduction, batter_power) -> float:
+def roll_exit_velocity(quality, reduction, batter_power) -> float:
     exit_velocity_base = MIN_EXIT_VELOCITY_AVERAGE + batter_power * EXIT_VELOCITY_RANGE / 2
-    quality_modifier = (quality_remainder + EXIT_VELOCITY_PITY_FACTOR) ** EXIT_VELOCITY_QUALITY_EXPONENT
+    quality_modifier = (quality + EXIT_VELOCITY_PITY_FACTOR) ** EXIT_VELOCITY_QUALITY_EXPONENT
     exit_velocity = normal(loc=exit_velocity_base * quality_modifier, scale=EXIT_VELOCITY_STDEV)
     exit_velocity -= reduction
     return exit_velocity
 
 
-def check_home_run(live: LiveBall, stadium: Stadium):
-    return not stadium.polygon.contains(live.ground_location())
+def check_home_run(location: Coord, stadium: Stadium):
+    return not stadium.polygon.contains(location)
 
 
 class HitBall(Update):
-    def __init__(self, game: BallGame, swing: Swing, batter: Player):
+    """A hit ball is an update which turns a swing into a live ball, which it carries with it."""
+    def __init__(self, game: BallGame, quality: float, reduction: float, batter: Player):
         super().__init__()
 
-        quality_remainder = swing.hit_quality - 1
-
-        launch_angle = roll_launch_angle(quality_remainder, batter['power'])
+        launch_angle = roll_launch_angle(quality, batter['power'])
         field_angle = roll_field_angle(batter['pull'])
-        reduction = EXIT_VELOCITY_RANGE * swing.reduction
-        exit_velocity = roll_exit_velocity(quality_remainder, reduction, batter['power'])
+        reduction = EXIT_VELOCITY_RANGE * reduction
+        exit_velocity = roll_exit_velocity(quality, reduction, batter['power'])
         self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
-        self.homerun = check_home_run(self.live, game.stadium)
+        self.homerun = check_home_run(self.live.ground_location(), game.stadium)
 
         if self.homerun:
             self.text = "Home run!!"
@@ -163,7 +163,7 @@ if __name__ == "__main__":
             p.location = 0
             s = Swing(g, p, test_batter)
             if s.hit:
-                h = HitBall(g, s, test_batter)
+                h = HitBall(g, s.hi, test_batter)
                 all_hits += [h]
                 if h.live.distance() > furthest_distance:
                     furthest_distance = h.live.distance()

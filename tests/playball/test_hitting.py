@@ -98,15 +98,15 @@ class TestHitting:
         patcher.patch_normal('blaseball.playball.hitting.normal')
         swings = [hitting.roll_for_swing_decision(swing_percent) for __ in patcher]
         actual_percent = sum(swings) / 100
-        assert actual_percent == pytest.approx(swing_percent, abs=0.05)  # rand_across_range includes outliers.
+        assert actual_percent == pytest.approx(swing_percent, abs=0.06)  # rand_across_range includes outliers.
 
     # hit quality uses net contact: contact - pitch difficulty.
     # 0 force difficulty is about 0.3, 1 force difficulty is about 1.35.
     # net contact is thus 2 to about -3 for a far, far outside the plate 2 force.
     # 2 - (-2) is a wide range and 1 - (-1) is average.
 
-    # MUST BE IN INCREASING ORDER:
     net_contacts = [-10, -4, -3, -1, -0.5, 0, 0.5, 0.8, 1, 2]
+    net_contacts.sort()
 
     @pytest.mark.parametrize('net_contact, previous_contact', zip(net_contacts[1:], net_contacts[:-1]))
     def test_roll_hit_quality(self, net_contact, previous_contact, patcher):
@@ -155,13 +155,13 @@ class TestHitting:
 class TestHitIntegrated:
     hit_parameters = {
         # "location, swing, quality, strike, ball, foul, hit"
-        'wide strike swinging': (1.2, True, -2, True, False, False, False),
-        'narrow strike swinging': (0.8, True, -2, True, False, False, False),
-        'narrow strike looking': (0.5, False, 0, True, False, False, False),
+        'wide strike swinging': (1.2, True, -3, True, False, False, False),
+        'narrow strike swinging': (0.8, True, -3, True, False, False, False),
+        'narrow strike looking': (0.5, False, -1, True, False, False, False),
         'take ball': (1.2, False, 0, False, True, False, False),
-        'foul tip': (1.2, True, 0.5, False, False, True, False),
-        'clean hit': (-0.1, True, 3, False, False, False, True),
-        'reach hit': (1.5, True, 1.1, False, False, False, True)
+        'foul tip': (1.2, True, -0.5, False, False, True, False),
+        'clean hit': (-0.1, True, 2, False, False, False, True),
+        'reach hit': (1.5, True, 0.1, False, False, False, True)
     }
 
     @pytest.mark.parametrize(
@@ -211,9 +211,9 @@ class TestHitIntegrated:
             return iteration == 0
         patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', set_swing_decision, iterations=3)
 
-        # cycle hit quality from -2.5 to 2.5
+        # cycle hit quality from -3.5 to 1.5
         def set_hit_quality(net_contact, iteration):
-            return -2.5 + iteration
+            return -3.5 + iteration
         patcher.patch('blaseball.playball.hitting.roll_hit_quality', set_hit_quality, iterations=6)
 
         batter = ballgame_1.batter()

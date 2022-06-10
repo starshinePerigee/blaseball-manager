@@ -98,7 +98,7 @@ class TestFunctionPatch:
         assert results[-1] == 25
 
     def test_patch_double(self, patcher):
-        patcher.patch("support.fixturetarget.add_average_2", noop_fn)
+        patcher.patch("support.fixturetarget.add_average_2", noop_fn, 10)
         assert len([fixturetarget.add_average_2(1) for __ in patcher]) == 10
         assert len([fixturetarget.add_average_2(3) for __ in patcher]) == 10
         patcher.reset()
@@ -120,7 +120,7 @@ class TestFunctionPatch:
         patcher.patch("support.fixturetarget.add_average_2", mock_add_average, 2)
         patcher.patch("support.fixturetarget.add_average_3", mock_add_average, 3)
 
-        all_values = [fixturetarget.add_all_average(1) for i in patcher]
+        all_values = [fixturetarget.add_all_average(1) for __ in patcher]
 
         assert len(all_values) == 600
         assert min(all_values) == pytest.approx(3)
@@ -130,10 +130,14 @@ class TestFunctionPatch:
 
     def test_patch_normal(self, patcher):
         patcher.patch_normal("support.fixturetarget.normal", 100, 6)
-        all_values = [fixturetarget.normal_test() for i in patcher]
+        all_values = [fixturetarget.normal_test(5) for __ in patcher]
 
         assert len(all_values) == 100
-        assert min(all_values) == pytest.approx(norm.ppf(10**-6) + 100)
+        assert min(all_values) == pytest.approx(norm.ppf(10**-6) * 5 + 100)
         assert all_values[0] == min(all_values)
-        assert max(all_values) == pytest.approx(norm.ppf(1-10**-6) + 100)
+        assert max(all_values) == pytest.approx(norm.ppf(1-10**-6) * 5 + 100)
         assert all_values[-1] == max(all_values)
+
+
+        all_values_20 = [fixturetarget.normal_test(20) for __ in patcher]
+        assert all_values_20[10] - 100 == pytest.approx((all_values[10] - 100) * 4)

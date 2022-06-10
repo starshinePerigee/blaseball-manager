@@ -48,7 +48,7 @@ class PitchHit(Event):
 
         # handle the hit
         if self.swing.hit:
-            self.live = HitBall(game, self.swing, game.batter())
+            self.live = HitBall(game, self.swing.hit_quality, self.pitch.reduction, game.batter())
             self.updates += [self.live]
             if self.live.homerun:
                 self.fielding = None

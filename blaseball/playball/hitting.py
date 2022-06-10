@@ -64,11 +64,13 @@ def roll_for_swing_decision(swing_chance) -> bool:
 
 FOUL_BIAS = 0.6  # the higher this is, the more frequently fouls and hits occur vs strike swinging
 NET_CONTACT_FACTOR = 0.4  # how much net contact affects the ability to hit.
+FOUL_HIT_QUALITY_THRESHOLD = 1
 
 
 def roll_hit_quality(net_contact) -> float:
     """Roll for hit quality. 1 is a good hit, 0-1 is a foul"""
-    return normal(loc=(net_contact + FOUL_BIAS) * NET_CONTACT_FACTOR, scale=1)
+    base_quality = normal(loc=(net_contact + FOUL_BIAS) * NET_CONTACT_FACTOR, scale=1)
+    return base_quality - FOUL_HIT_QUALITY_THRESHOLD
 
 
 class Swing(Update):
@@ -90,10 +92,10 @@ class Swing(Update):
         if self.did_swing:
             self.net_contact = batter['contact'] - pitch.difficulty
             self.hit_quality = roll_hit_quality(self.net_contact)
-            if self.hit_quality < 0:
+            if self.hit_quality < -FOUL_HIT_QUALITY_THRESHOLD:
                 self.strike = True
                 self.text = "Strike, swinging."
-            elif 0 < self.hit_quality < 1:
+            elif self.hit_quality < 0:
                 self.foul = True
                 self.text = "Foul ball."
             else:
