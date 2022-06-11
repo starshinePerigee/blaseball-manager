@@ -1,6 +1,9 @@
 import pytest
 
 from blaseball.playball import liveball
+from blaseball.stats.stadium import Stadium
+from blaseball.util.geometry import Coord
+
 
 import math
 import statistics
@@ -161,7 +164,7 @@ class TestHitBall:
         print(" ~Exit Velocity Reduction")
         patcher.patch_normal('blaseball.playball.liveball.normal')
         reduction_evs = {}
-        reductions = [-1, -0.1, 0, 0.2, 0.8, 2, 3]
+        reductions = [-1, -0.1, 0, 0.2, 0.5, 1, 3]
         reductions.sort()
         for reduction in reductions:
             reduction_evs[reduction] = [liveball.roll_exit_velocity(1, reduction, 1) for __ in patcher]
@@ -178,14 +181,50 @@ class TestHitBall:
 
             TestHitBall.print_ev_list(reduction_evs[reduction], f"{reduction} reduction")
 
-    def test_exit_velocity_reduction_absolute(self, patcher):
-        pass
+    @pytest.mark.parametrize(
+        "field_angle, distance, text",
+        [
+            (0, 500, "Home run!!"),
+            (1, 405, "Off the outfield wall!"),
+            (45, 200, None)
+        ]
+    )
+    def test_hit_ball_integrated(self, ballgame_1, patcher, field_angle, distance, text):
+        patcher.patch("blaseball.playball.liveball.LiveBall.distance",
+                      lambda x: distance)
+        patcher.patch("blaseball.playball.liveball.roll_field_angle",
+                      lambda batter_pull: field_angle)
 
-    def test_check_home_run(self, patcher):
-        pass
+        hit_ball = liveball.HitBall(ballgame_1, 0, 0, ballgame_1.batter())
+        assert hit_ball.text == text
+        assert hit_ball.live.distance() == distance
 
-    def test_hit_ball_integrated(self, patcher):
-        pass
+    def test_hit_ball_stats(self, patcher, ballgame_1):
+        # two averaging stats: average hit distance, and average exit velocity.
+        # plus "total home runs"
+        def distance_iterator(iteration):  # noqa
+            return iteration * 100 + 120  # avoid wall strikes
 
-    def test_hit_ball_stats(self, patcher):
-        pass
+        # iterate from 100 to 1000
+        patcher.patch("blaseball.playball.liveball.LiveBall.distance", distance_iterator, iterations=10)
+
+        def exit_velocity_iterator(quality, reduction, batter_power, iteration):
+            return iteration * 10 + 10
+
+        # iterate from 10 to 100
+        patcher.patch("blaseball.playball.liveball.roll_exit_velocity", exit_velocity_iterator, iterations=10)
+
+        # fix field angle to be constant down the middle
+        patcher.patch("blaseball.playball.liveball.roll_field_angle", lambda batter_pull: 45)
+
+        # fix launch angle to avoid ground rebounds
+        patcher.patch("blaseball.playball.liveball.roll_launch_angle", lambda quality, batter_power: 20)
+
+        batter = ballgame_1.batter()
+
+        all_hit_balls = [liveball.HitBall(ballgame_1, 0, 0, batter) for __ in patcher]
+        all_evs = [hb.live.speed for hb in all_hit_balls]
+
+        assert batter['average hit distance'] == pytest.approx(570)
+        assert batter['average exit velocity'] == pytest.approx(55)
+        assert batter['total home runs'] == 70

@@ -63,6 +63,9 @@ def stadium_a():
     angels_coords = stadium.ANGELS_STADIUM
     return stadium.Stadium(angels_coords)
 
+@pytest.fixture(scope='class')
+def stadium_cut_lf():
+    return stadium.Stadium([300, 400, 400, 400, 400])
 
 @pytest.fixture(scope='class')
 def lineup_1(team_1):
@@ -77,13 +80,13 @@ def defense_1(lineup_1):
 
 
 @pytest.fixture(scope='function')
-def ballgame_1(league_2, stadium_a):
+def ballgame_1(league_2, stadium_cut_lf):
     home_lineup = lineup.Lineup("Home Lineup")
     home_lineup.generate(league_2[0])
     away_lineup = lineup.Lineup("Away Lineup")
     away_lineup.generate(league_2[1])
 
-    test_ballgame = ballgame.BallGame(home_lineup, away_lineup, stadium_a)
+    test_ballgame = ballgame.BallGame(home_lineup, away_lineup, stadium_cut_lf)
     return test_ballgame
 
 

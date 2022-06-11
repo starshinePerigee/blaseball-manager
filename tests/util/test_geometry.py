@@ -26,16 +26,15 @@ class TestCoord:
         theta_point = geometry.Coord(9, 30, True)
         assert zero_point.distance(theta_point) == pytest.approx(9)
 
-
-class TestStadiumGeo:
-    def test_stadium_size(self, stadium_a):
-        assert stadium_a.polygon.area == pytest.approx(110481, abs=10)
-        assert stadium_a.polygon.length == pytest.approx(1291, abs=1)
-
-    def test_stadium_contains(self, stadium_a):
-        assert not stadium_a.polygon.contains(geometry.Coord(550, 200))
-        assert not stadium_a.polygon.contains(geometry.Coord(360, 100))
-        assert stadium_a.polygon.contains(geometry.Coord(100, 100))
+    def test_move_toward(self, zero_point):
+        one_zero = geometry.Coord(1, 0)
+        pfive_zero = one_zero.move_towards(zero_point, 0.5)
+        assert pfive_zero.x == pytest.approx(0.5)
+        assert pfive_zero.y == 0
+        three_two = geometry.Coord(3, 2)
+        two_one = three_two.move_towards(one_zero, 2 ** 0.5)
+        assert two_one.x == pytest.approx(2)
+        assert two_one.y == pytest.approx(1)
 
 
 class TestDefenseGeo:

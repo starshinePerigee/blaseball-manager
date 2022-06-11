@@ -7,7 +7,7 @@ we can deal with that later.
 """
 
 from typing import List
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, LineString
 import math
 
 DEGSY = u'\N{DEGREE SIGN}'
@@ -35,6 +35,12 @@ class Coord(Point):  # noqa - we don't really care about the abstract methods he
         else:
             theta = math.degrees(math.atan(self.y / self.x))
         return theta
+
+    def move_towards(self, location: "Coord", distance: float) -> "Coord":
+        """Returns a coord that's equal to this point moved distance towards another point.
+        Can move past the other point."""
+        line = LineString([self, location])
+        return line.interpolate(distance)
 
     def __bool__(self):
         return self.x != 0 or self.y != 0

@@ -25,6 +25,11 @@ class TestFixtures:
     def test_stadium_a(self, stadium_a):
         assert isinstance(stadium_a, blaseball.stats.stadium.Stadium)
 
+    def test_compare_stadiums(self, stadium_a, stadium_cut_lf):
+        assert stadium_cut_lf.polygon.area > stadium_a.polygon.area
+        print(f"Stadium a: {stadium_a.polygon.area:.0f} sqft, stadium cut lf: {stadium_cut_lf.polygon.area:.0f} sqft")
+        print(f"Delta: {stadium_cut_lf.polygon.area - stadium_a.polygon.area:.0f} sqft")
+
     def test_lineup_1(self, lineup_1):
         assert isinstance(lineup_1, blaseball.stats.lineup.Lineup)
 

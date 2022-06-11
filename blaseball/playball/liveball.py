@@ -6,7 +6,6 @@ from blaseball.playball.event import Update
 from blaseball.playball.hitting import Swing
 from blaseball.playball.ballgame import BallGame
 from blaseball.stats.players import Player
-from blaseball.stats.stadium import Stadium
 from blaseball.util.geometry import Coord
 
 import math
@@ -114,10 +113,6 @@ def roll_exit_velocity(quality, reduction, batter_power) -> float:
     return max(exit_velocity, 0)
 
 
-def check_home_run(location: Coord, stadium: Stadium):
-    return not stadium.polygon.contains(location)
-
-
 class HitBall(Update):
     """A hit ball is an update which turns a swing into a live ball, which it carries with it."""
     def __init__(self, game: BallGame, quality: float, reduction: float, batter: Player):
@@ -128,10 +123,13 @@ class HitBall(Update):
         reduction = EXIT_VELOCITY_RANGE * reduction
         exit_velocity = roll_exit_velocity(quality, reduction, batter['power'])
         self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
-        self.homerun = check_home_run(self.live.ground_location(), game.stadium)
+        self.homerun, hit_wall = game.stadium.check_home_run(self.live.ground_location())
 
         if self.homerun:
             self.text = "Home run!!"
+        elif hit_wall:
+            self.text = "Off the outfield wall!"
+            self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity-5)
 
         self.update_stats(batter)
 
