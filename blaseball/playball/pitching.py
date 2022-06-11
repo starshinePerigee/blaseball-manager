@@ -203,15 +203,16 @@ def calc_difficulty(pitch_location, pitcher_force) -> float:
     return force_difficulty + location_difficulty
 
 
-REDUCTION_FROM_TRICKERY = 0.2  # the percentage removed from exit velocity for a pitcher with 1 trickery
+REDUCTION_FROM_TRICKERY = 1  # reduction counteracts batter power directly.
+REDUCTION_OFFSET = -1
 
 
 def roll_reduction(pitcher_trickery) -> float:
-    """Reduction is a number from 0 to 0.2 (for a 1 trick average pitch) to 0.8 (maximum 2 trick)
-    It represents a percentage reduction of a hit at 300 ft, with less effects for shorter hits and greater effects
-    beyond. """
-    base_reduction = REDUCTION_FROM_TRICKERY * pitcher_trickery
-    scaled_reduction = base_reduction * 2 * rand()
+    """Reduction is a number from -1 to 0 (for a 1 trick average pitch) to 3 (maximum 2 trick)
+    It directly counters batter power."""
+    reduction_with_offset = pitcher_trickery * 2 + REDUCTION_OFFSET  # can be negative
+    base_reduction = reduction_with_offset * rand()
+    scaled_reduction = base_reduction * REDUCTION_FROM_TRICKERY
     return scaled_reduction
 
 

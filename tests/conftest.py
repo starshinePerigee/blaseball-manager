@@ -37,14 +37,17 @@ def seed_randoms():
 def league_2():
     playerbase = players.PlayerBase()
     league = teams.League(playerbase, teamdata.TEAMS_99[0:2])
+    for i, player in enumerate(league[0]):
+        player["name"] = f"Test{i} Bobson"
+        player.set_all_stats(1)
+    for i, player in enumerate(league[1]):
+        player["name"] = f"Test{i} Johnson"
+        player.set_all_stats(1)
     return league
 
 
 @pytest.fixture(scope='class')
 def team_1(league_2):
-    for i, player in enumerate(league_2[0]):
-        player["name"] = f"Test{i} Bobson"
-
     return league_2[0]
 
 
@@ -110,8 +113,8 @@ def pitch_1(ballgame_1, monkeypatch):
 
     pitch = pitching.Pitch(ballgame_1, pitcher, catcher)
 
-    monkeypatch.setattr('blaseball.playball.pitching.normal', random.normal)
-    monkeypatch.setattr('blaseball.playball.pitching.rand', random.rand)
+    monkeypatch.setattr('blaseball.playball.pitching.normal', numpy.random.normal)
+    monkeypatch.setattr('blaseball.playball.pitching.rand', numpy.random.rand)
     monkeypatch.setattr(
         'blaseball.playball.pitching.calling_mod_from_discipline_bias',
         calling_mod_from_discipline_bias

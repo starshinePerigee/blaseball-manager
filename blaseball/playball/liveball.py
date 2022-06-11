@@ -88,37 +88,30 @@ def roll_field_angle(batter_pull) -> float:
     return 45
 
 
-# the cutoff threshold for reduction scaling - before this point, reduction is reduced, and reduced more the closer
-# to zero you get
-REDUCTION_SPEED_CUTOFF = 100
-# how much reduction scales before the cutoff
-REDUCTION_SCALING_EXPONENT = 2
-
-
-def scale_reduction(reduction: float, exit_velocity: float) -> float:
-    # scale reduction to be stronger the further out you are, half as strong at 0:
-    if exit_velocity < REDUCTION_SPEED_CUTOFF:
-        reduction_scale_factor = (exit_velocity / REDUCTION_SPEED_CUTOFF) ** REDUCTION_SCALING_EXPONENT
-        return reduction * reduction_scale_factor
-    else:
-        return reduction
-
-
 MIN_EXIT_VELOCITY_AVERAGE = 80  # average EV for a player at 0 stars
 MAX_EXIT_VELOCITY_AVERAGE = 120  # max for a juiced player at 10 stars
 EXIT_VELOCITY_RANGE = MAX_EXIT_VELOCITY_AVERAGE - MIN_EXIT_VELOCITY_AVERAGE
 EXIT_VELOCITY_STDEV = 10  # additional fuzz on top of hit quality, should be low
 EXIT_VELOCITY_PITY_FACTOR = 0.2  # the higher this is, the less exit velo is reduced with low hit quality.
-# This is very sensitive - 0 means exit velo is 0 at 1.0 quality, 0.1 means exit velo is 40% and 0.2 means 60%
+# This is very sensitive:
+# 0 means exit velo is 0 at 0 quality
+# 0.1 means exit velo is 56%%
+# 0.2 means 66%
 EXIT_VELOCITY_QUALITY_EXPONENT = 1 / 4
 
 
 def roll_exit_velocity(quality, reduction, batter_power) -> float:
-    exit_velocity_base = MIN_EXIT_VELOCITY_AVERAGE + batter_power * EXIT_VELOCITY_RANGE / 2
+    """Determine how fast the ball is going when it leaves the bat.
+    There are two factors:
+    net power (power - reduction) is the primary driving force;
+    hit quality has diminishing return scaling, so you get your best work at 1; past a certain point
+    you're playing tee ball.
+    """
+    net_power = batter_power - reduction  # can - and often will - be negative!
+    exit_velocity_base = MIN_EXIT_VELOCITY_AVERAGE + net_power * EXIT_VELOCITY_RANGE / 2
     quality_modifier = (quality + EXIT_VELOCITY_PITY_FACTOR) ** EXIT_VELOCITY_QUALITY_EXPONENT
     exit_velocity = normal(loc=exit_velocity_base * quality_modifier, scale=EXIT_VELOCITY_STDEV)
-    exit_velocity *= 1 - (scale_reduction(reduction, exit_velocity))
-    return exit_velocity
+    return max(exit_velocity, 0)
 
 
 def check_home_run(location: Coord, stadium: Stadium):

@@ -248,7 +248,7 @@ class TestPitching:
                 print_str += f"{pitching.calc_difficulty(loc, force):0.2f}  "
             print(print_str)
 
-    @pytest.mark.parametrize('trickery', [0, 0.5, 1, 2])
+    @pytest.mark.parametrize('trickery', [0, 0.1, 0.25, 0.5, 1, 2])
     def test_roll_reduction(self, trickery, patcher):
         patcher.patch_rand('blaseball.playball.pitching.rand')
 
@@ -256,8 +256,12 @@ class TestPitching:
         reductions_minus_one = [pitching.roll_reduction(trickery - 0.1) for __ in patcher]
 
         assert statistics.mean(reductions) > statistics.mean(reductions_minus_one)
+        if trickery * 2 < -pitching.REDUCTION_OFFSET:
+            assert max(reductions) == pytest.approx(0)
+        else:
+            assert min(reductions) == pytest.approx(0)
         print(" ~pitch reduction~")
-        print(f"Reduction at {trickery:0.0f} trickery: {reductions[0]:.2f} to {reductions[-1]:.2f}, "
+        print(f"Reduction at {trickery:0.1f} trickery: {reductions[0]:.2f} to {reductions[-1]:.2f}, "
               f"mean {statistics.mean(reductions):.2f}")
 
 

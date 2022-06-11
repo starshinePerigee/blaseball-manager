@@ -156,3 +156,37 @@ as a reminder, here's the stats at play:
     https://baseballsavant.mlb.com/league
     https://fantasy.fangraphs.com/lets-talk-about-launch-angle-tightness/
     https://baseballcloud.blog/2021/02/08/what-goes-into-a-mlb-draft-model-batted-ball-profiles/
+
+
+THOUGHTS ON REDUCTION
+
+reduction as a stat is kinda weird. :t serves a few purposes:
+1. allow a new kind of pitcher / aspect of pitcher skill
+2. counter the trend towards three true outcomes as player power increases
+
+right now, EV is based on:
+normal(net contact) -> quality
+normal(power + quality^exponent) -> EV
+
+becuase net contact is the base of quality, force directly affects LA and EV.
+
+
+so for #2, we can apply a flat modifier just fine; you can even apply it to oppose power if you want it to be
+precise.
+
+But for #1: a reduction pitcher (vs a force pitcher):
+- depends on defense
+- is less reliable
+- is better at shutting down power hitters, worse vs. run manufacturers
+
+also don't forget, since reduction is keyed off trickery, high reduction is also high obscurity
+(this might get split though)
+
+the core of the issue is hit quality scaling. right now, a home run can be driven entirely by contact:
+get enough hit quality and anyone can get out of the park via hit quality exponent.
+
+That exponent needs to be *negative*, so there's basically an upper bound - a good hit is a good hit, but
+some players have the power to slug a good hit further (and some pitchers reduce all hits, so good /
+mediocre hits get brought in most of the time)
+
+for the swinginess factor, reduction should defs still use rand() instead of normal()

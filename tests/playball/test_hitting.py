@@ -95,7 +95,7 @@ class TestHitting:
 
     @pytest.mark.parametrize('swing_percent', [0, 0.1, 0.5, 0.9, 1])
     def test_roll_for_swing_decision(self, swing_percent, patcher):
-        patcher.patch_normal('blaseball.playball.hitting.normal')
+        patcher.patch_rand('blaseball.playball.hitting.normal')
         swings = [hitting.roll_for_swing_decision(swing_percent) for __ in patcher]
         actual_percent = sum(swings) / 100
         assert actual_percent == pytest.approx(swing_percent, abs=0.06)  # rand_across_range includes outliers.
