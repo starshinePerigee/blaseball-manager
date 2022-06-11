@@ -207,6 +207,9 @@ REDUCTION_FROM_TRICKERY = 0.2  # the percentage removed from exit velocity for a
 
 
 def roll_reduction(pitcher_trickery) -> float:
+    """Reduction is a number from 0 to 0.2 (for a 1 trick average pitch) to 0.8 (maximum 2 trick)
+    It represents a percentage reduction of a hit at 300 ft, with less effects for shorter hits and greater effects
+    beyond. """
     base_reduction = REDUCTION_FROM_TRICKERY * pitcher_trickery
     scaled_reduction = base_reduction * 2 * rand()
     return scaled_reduction

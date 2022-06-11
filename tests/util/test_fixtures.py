@@ -6,6 +6,8 @@ import blaseball
 from support import fixturetarget
 
 from scipy.stats import norm
+import numpy
+import random
 
 
 class TestFixtures:
@@ -138,6 +140,24 @@ class TestFunctionPatch:
         assert max(all_values) == pytest.approx(norm.ppf(1-10**-6) * 5 + 100)
         assert all_values[-1] == max(all_values)
 
-
         all_values_20 = [fixturetarget.normal_test(20) for __ in patcher]
         assert all_values_20[10] - 100 == pytest.approx((all_values[10] - 100) * 4)
+
+
+class TestRandomSeed:
+    last_seed_value = -1
+    last_normal = -1
+    last_numpy_random = -1
+    last_python_random = -1
+
+    def test_random_seed_1(self, seed_randoms):
+        TestRandomSeed.last_seed_value = numpy.random.get_state()[1][0]
+        TestRandomSeed.last_python_random = random.random()
+        TestRandomSeed.last_normal = numpy.random.normal()
+        TestRandomSeed.last_numpy_random = numpy.random.random()
+
+    def test_random_seed_2(self, seed_randoms):
+        assert numpy.random.get_state()[1][0] == TestRandomSeed.last_seed_value + 1
+        assert TestRandomSeed.last_python_random != random.random()
+        assert TestRandomSeed.last_normal != numpy.random.normal()
+        assert TestRandomSeed.last_numpy_random != numpy.random.random()

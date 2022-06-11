@@ -10,12 +10,27 @@ from blaseball.stats import players, teams, stadium, lineup
 from blaseball.playball import ballgame, pitching
 from support.mock_functions import FunctionPatcher
 from data import teamdata
-from numpy.random import normal, rand
+import numpy
+import random
 
 
 @pytest.fixture(scope='function')
 def patcher(monkeypatch):
     return FunctionPatcher(monkeypatch)
+
+
+class RunningSeed:
+    """Since we're writing to this variable, we can't leave it floating out in the module scope ether.
+    So it becomes a static member of a singleton class.
+    There has to be a better way?"""
+    running_seed = 383  # feather lucky number :3
+
+
+@pytest.fixture(scope='function')
+def seed_randoms():
+    numpy.random.seed(RunningSeed.running_seed)
+    random.seed(RunningSeed.running_seed)
+    RunningSeed.running_seed += 1
 
 
 @pytest.fixture(scope='class')
@@ -95,8 +110,8 @@ def pitch_1(ballgame_1, monkeypatch):
 
     pitch = pitching.Pitch(ballgame_1, pitcher, catcher)
 
-    monkeypatch.setattr('blaseball.playball.pitching.normal', normal)
-    monkeypatch.setattr('blaseball.playball.pitching.rand', rand)
+    monkeypatch.setattr('blaseball.playball.pitching.normal', random.normal)
+    monkeypatch.setattr('blaseball.playball.pitching.rand', random.rand)
     monkeypatch.setattr(
         'blaseball.playball.pitching.calling_mod_from_discipline_bias',
         calling_mod_from_discipline_bias

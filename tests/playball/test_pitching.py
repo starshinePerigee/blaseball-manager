@@ -250,15 +250,15 @@ class TestPitching:
 
     @pytest.mark.parametrize('trickery', [0, 0.5, 1, 2])
     def test_roll_reduction(self, trickery, patcher):
-        patcher.patch_normal('blaseball.playball.pitching.normal')
+        patcher.patch_rand('blaseball.playball.pitching.rand')
 
         reductions = [pitching.roll_reduction(trickery) for __ in patcher]
         reductions_minus_one = [pitching.roll_reduction(trickery - 0.1) for __ in patcher]
 
         assert statistics.mean(reductions) > statistics.mean(reductions_minus_one)
         print(" ~pitch reduction~")
-        print(f"Reduction at {trickery:0.0f} trickery: {reductions[0]} to {reductions[-1]}, "
-              f"mean {statistics.mean(reductions)}")
+        print(f"Reduction at {trickery:0.0f} trickery: {reductions[0]:.2f} to {reductions[-1]:.2f}, "
+              f"mean {statistics.mean(reductions):.2f}")
 
 
 class TestPitchIntegrated:

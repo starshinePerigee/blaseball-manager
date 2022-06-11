@@ -120,11 +120,25 @@ class TestHitBall:
             f"{distances_over_350:>3.0f}% greater than 350 ft"
         )
 
-    def test_roll_exit_velocity(self, patcher):
+    def test_roll_exit_velocity_batter_power(self, patcher):
         patcher.patch_normal('blaseball.playball.liveball.normal')
+        print(" ~Exit Velocity Batter Power~")
+
         exit_velocities = [liveball.roll_exit_velocity(1, 0, 1) for __ in patcher]
-        assert statistics.mean(exit_velocities) == pytest.approx(100, abs=10)
+        one_power_average_ev = (liveball.MIN_EXIT_VELOCITY_AVERAGE + liveball.MAX_EXIT_VELOCITY_AVERAGE) / 2
+        assert statistics.mean(exit_velocities) == pytest.approx(one_power_average_ev, abs=10)
         assert exit_velocities[10] < liveball.MAX_EXIT_VELOCITY_AVERAGE
+
+        exit_velocities_0 = [liveball.roll_exit_velocity(1, 0, 0) for __ in patcher]
+        assert statistics.mean(exit_velocities_0) == pytest.approx(liveball.MIN_EXIT_VELOCITY_AVERAGE, abs=10)
+        exit_velocities_10 = [liveball.roll_exit_velocity(1, 0, 2) for __ in patcher]
+        assert statistics.mean(exit_velocities_10) == pytest.approx(liveball.MAX_EXIT_VELOCITY_AVERAGE, abs=10)
+
+        for zero, five, ten in zip(exit_velocities_0, exit_velocities, exit_velocities_10):
+            assert zero <= five <= ten
+
+        for ev_list, power in zip([exit_velocities_0, exit_velocities, exit_velocities_10], [0, 1, 2]):
+            TestHitBall.print_ev_list(ev_list, f"{power} hitter power")
 
     def test_roll_exit_velocity_quality(self, patcher):
         qualities = [0, 0.1, 0.5, 1, 2, 5]
@@ -135,7 +149,7 @@ class TestHitBall:
             "ave": -1
         }
         patcher.patch_normal('blaseball.playball.liveball.normal')
-        print(" ~Exit Velocity~")
+        print(" ~Exit Velocity Quality~")
         for quality in qualities:
             exit_velocities = [liveball.roll_exit_velocity(quality, 0, 1) for __ in patcher]
             TestHitBall.print_ev_list(exit_velocities, f"{quality} hit quality")
@@ -143,10 +157,48 @@ class TestHitBall:
             assert max(exit_velocities) > previous['max']
             assert statistics.mean(exit_velocities) > previous['ave']
 
-    def test_exit_velocity_batter_power(self, patcher):
-        pass
+    def test_scale_reduction_zero(self):
+        for velocity in range(0, 600, 20):
+            assert liveball.scale_reduction(0, velocity) == 0
 
-    def test_exit_velocity_reduction(self, patcher):
+    @pytest.mark.parametrize("reduction", (0.1, 0.2, 0.4, 0.8))
+    def test_scale_reduction(self, reduction):
+        previous_reduction = liveball.scale_reduction(reduction, 0)
+        previous_delta = -1
+        for velocity in range(20, 600, 20):
+            scaled_reduction = liveball.scale_reduction(reduction, velocity)
+            assert 0 <= scaled_reduction < 0.9
+            delta = scaled_reduction - previous_reduction
+            if velocity < liveball.REDUCTION_SPEED_CUTOFF:
+                assert scaled_reduction < reduction or reduction == 0
+                assert delta > previous_delta
+            else:
+                assert scaled_reduction == reduction
+                if velocity != liveball.REDUCTION_SPEED_CUTOFF:  # running deltas are off for the transition
+                    assert delta == 0
+            previous_reduction = scaled_reduction
+            previous_delta = delta
+
+    def test_exit_velocity_reduction_relative(self, patcher):
+        print(" ~Exit Velocity Reduction")
+        patcher.patch_normal('blaseball.playball.liveball.normal')
+        reduction_evs = {}
+        reductions = [0, 0.1, 0.2, 0.8]
+        for reduction in reductions:
+            reduction_evs[reduction] = [liveball.roll_exit_velocity(1, reduction, 1) for __ in patcher]
+
+        for i in range(0, len(reductions)-1):
+            for faster, slower in zip(reduction_evs[i], reduction_evs[i+1]):
+                assert faster >= slower
+
+        # evs should never go backwards
+        for reduction in reductions:
+            for ev0, ev1 in zip(reduction_evs[reduction][:-1], reduction_evs[reduction][1:])
+                assert ev0 <= ev1
+
+            TestHitBall.print_ev_list(reduction_evs[reduction], f"{reduction} reduction")
+
+    def test_exit_velocity_reduction_absolute(self, patcher):
         pass
 
     def test_check_home_run(self, patcher):
