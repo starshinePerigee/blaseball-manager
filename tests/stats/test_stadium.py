@@ -5,9 +5,16 @@ from blaseball.stats import stadium
 
 
 class TestStadiumGeo:
+    def test_stadium_reverse(self, stadium_a):
+        points = [330, 365, 396, 389, 330]
+        points.reverse()
+        test_stadium = stadium.Stadium(points)
+        assert stadium_a.polygon.area == test_stadium.polygon.area
+        assert stadium_a.polygon.length == test_stadium.polygon.length
+
     def test_stadium_size(self, stadium_a):
-        assert stadium_a.polygon.area == pytest.approx(110481, abs=10)
-        assert stadium_a.polygon.length == pytest.approx(1291, abs=1)
+        assert stadium_a.polygon.area == pytest.approx(104741, abs=10)
+        assert stadium_a.polygon.length == pytest.approx(1256, abs=1)
 
     def test_stadium_contains(self, stadium_a):
         assert not stadium_a.polygon.contains(geometry.Coord(550, 200))
