@@ -145,11 +145,10 @@ MIN_GRAB_THINK_TIME = 0  # min time at 2 grab
 GRAB_THINK_FACTOR = (MAX_GRAB_THINK_TIME - MIN_GRAB_THINK_TIME) / 2
 
 
-def calc_decision_time(grabbiness:float) -> float
+def calc_decision_time(grabbiness:float) -> float:
     return grabbiness * GRAB_THINK_FACTOR
 
 
-# TODO: remove "difficulty"
 class Throw(Update):
     """A single throw from one player to another."""
     def __init__(
@@ -163,7 +162,7 @@ class Throw(Update):
         self.grab_odds = calc_grabbiness_odds(end_player['grabbiness'])
 
         self.total_odds = self.throw_odds * self.grab_odds
-        self.error = not roll_to_catch()
+        self.error = not roll_to_catch(self.total_odds)
 
         self.duration = calc_throw_duration_base(start_player['throwing'], self.distance)
         self.duration += calc_decision_time(start_player['grabbiness'])
