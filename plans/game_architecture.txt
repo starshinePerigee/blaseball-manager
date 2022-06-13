@@ -52,3 +52,8 @@ So the call chain is:
 3c. Pitchhit returns the list of Updates to the game.
 4. Game calls updategame, if there is a LiveBall returned, it creates a fielding event
 5. Fielding event is also passed into the events cruncher
+
+
+
+# TODO: revise stat tracking to decouple players from the event code.
+# ref https://gameprogrammingpatterns.com/observer.html

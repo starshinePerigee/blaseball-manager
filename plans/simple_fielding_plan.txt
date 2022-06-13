@@ -21,9 +21,9 @@ All players have a location. Bases and the ball also have locations.
 
 second pass:
 
-x1. roll for catch  <Catch()>
-x2. if catch, mark runner out, mark all other runners tagging up <Basepaths.tag_up_all()>
-x3. fielder decides where to throw <Fieldball.fielders_choice()>
+1. roll for catch  <Catch()>
+2. if catch, mark runner out, mark all other runners tagging up <Basepaths.tag_up_all()>
+3. fielder decides where to throw <Fieldball.fielders_choice()>
 4. roll for throw time <Throw()>
 5. advance all runners by throw time <Basepaths.advance_all()>
 6. check if player is out <Basepaths.check_out()>

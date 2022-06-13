@@ -1,4 +1,10 @@
-"""This handles players on the basepaths, including Runners"""
+"""This handles players on the basepaths.
+
+Lots of things can affect players on the basepaths - primarily fielding, but other game actions
+(iwalks, bullshit) can have varying effects, so we need to handle this separately and then
+command it. In a way, this is the model to inplay's controller - an actual fielded ball
+involves a long dialogue between inplay, fielding, and basepaths.
+"""
 
 from blaseball.playball.event import Update
 from blaseball.stats.players import Player
