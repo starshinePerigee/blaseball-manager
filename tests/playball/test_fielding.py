@@ -89,6 +89,13 @@ class TestCatch:
         for catch in missed_catches:
             assert catch.duration == 8
 
+    def test_catch_str_conversion(self, ballgame_1, seed_randoms):
+        # just make sure these don't throw errors
+        live_ball = liveball.LiveBall(10, 45, 80)
+        catch = fielding.Catch(live_ball, ballgame_1.defense()['fielder 1'], 20)
+        assert isinstance(str(catch), str)
+        assert isinstance(repr(catch), str)
+
 
 class TestThrow:
     @pytest.mark.parametrize(
@@ -118,3 +125,68 @@ class TestThrow:
               f"{total_below_98} below 98")
 
         assert min_below_98 <= total_below_98 <= max_below_98
+
+    @pytest.mark.parametrize(
+        "throwing, distance, time",
+        [
+            (1, 0, 0),
+            (0, 100, 1),
+            (1, 100, 1-(100*fielding.THROW_SPEED_FACTOR))
+        ]
+    )
+    def test_throw_duration(self, throwing, distance, time):
+        assert fielding.calc_throw_duration_base(throwing, distance) == pytest.approx(time)
+
+    @pytest.mark.parametrize(
+        "grabbiness, time",
+        [
+            (0, 2),
+            (1, 1),
+            (2, 0)
+        ]
+    )
+    def test_calc_decision_time(self, grabbiness, time):
+        assert fielding.calc_decision_time(grabbiness) == pytest.approx(time)
+
+    def test_throw_integrated(self, patcher, ballgame_1):
+        start_player = ballgame_1.defense()['basepeep 1']
+        end_player = ballgame_1.defense()['basepeep 2']
+
+        patcher.patch('blaseball.playball.fielding.rand',
+                      lambda iteration: iteration/10+0.01,
+                      iterations=10)
+        patcher.patch('blaseball.playball.fielding.roll_throw_odds_modifier',
+                      lambda throwing, distance, iteration: iteration / 2,
+                      iterations=3)
+        patcher.patch('blaseball.playball.fielding.calc_grabbiness_odds',
+                      lambda grabbiness, iteration: iteration / 2,
+                      iterations=3)
+        patcher.patch('blaseball.playball.fielding.calc_throw_duration_base',
+                      lambda throwing, distance: 3)
+        patcher.patch('blaseball.playball.fielding.calc_decision_time',
+                      lambda grabbiness: 1)
+        patcher.patch('blaseball.playball.fielding.roll_error_time',
+                      lambda odds: 7)
+
+        throws = [fielding.Throw(start_player, end_player, 100) for __ in patcher]
+        made_throws = [x for x in throws if not x.error]
+        missed_throws = [x for x in throws if x.error]
+
+        assert len(made_throws) == 23
+        assert len(missed_throws) == 90 - 23
+
+        for catch in made_throws:
+            assert catch.duration == 4
+
+        for catch in missed_throws:
+            assert catch.duration == 11
+
+    def test_throw_strings(self, ballgame_1):
+        start_player = ballgame_1.defense()['basepeep 1']
+        end_player = ballgame_1.defense()['basepeep 2']
+
+        throw = fielding.Throw(start_player, end_player, 100)
+
+        assert isinstance(throw.text, str)
+        assert isinstance(str(throw), str)
+        assert isinstance(repr(throw), str)

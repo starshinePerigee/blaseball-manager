@@ -146,7 +146,7 @@ GRAB_THINK_FACTOR = (MAX_GRAB_THINK_TIME - MIN_GRAB_THINK_TIME) / 2
 
 
 def calc_decision_time(grabbiness:float) -> float:
-    return grabbiness * GRAB_THINK_FACTOR
+    return MAX_GRAB_THINK_TIME - (grabbiness * GRAB_THINK_FACTOR)
 
 
 class Throw(Update):
