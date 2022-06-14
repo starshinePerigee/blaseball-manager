@@ -57,3 +57,87 @@ So the call chain is:
 
 # TODO: revise stat tracking to decouple players from the event code.
 # ref https://gameprogrammingpatterns.com/observer.html
+
+
+# June update:
+
+There's a few big cracks that are starting to form here.
+Stat tracking is bad, but there's a ton of other knock-on effects that we want to happen 
+when game actions happen - the game engine is a brightly spinning core that just gets
+effects everywhere. 
+
+So really this is calling for an observer pattern, where the game engine sends
+notifications out that listeners can react to.
+
+listeners include:
+- stats
+- fatigue tracking
+- injury chances
+- memories?
+- game state
+- UI??
+
+and these listeners are, pretty often, going to want to modify the game state and insert
+events / updates into the game feed. 
+
+
+the game feed is also its own object - when the event queue is emptyit's going to want to iterate
+through game feed subscribers and check in on them.
+
+
+This implies the following architecture:
+- blaseball games, after game downtime, elections(??), are all Happenings
+- A Happening is a thing that happens; it has an EventFeed
+- the EventFeed - a queue of Events, each made up of a series of Updates.
+- a series of EventGenerators, which register on the Happening.
+	- the Happening exists to iterate over EventGenerators, allowing them access to the EventFeed
+	- each EventGenerator can add one or multiple events to the EventFeed - it returns control
+	- on its own.
+- Events need to affect each other, players, the game state, etc - they do this through Messages
+- Messages are information sent to all Observers on the relevant Channel?
+- Messages can trigger addtional actions - including new Events?
+	- but messages are queued and get processed at the end of each specific Event?
+		- this stops things from an incinerated / injured player still taking actions?
+		- but it does block parallel things, like a player being injured in a hit,
+			- trigger bonuses based on conditions, etc.
+	- messages carry arbitrary data - should we just put entire Updates on the message feed?
+		- if that's the case, is EventFeed a Message Feed?
+	- alternatively, if messages can't add new events, they just update an EventGenerator
+	  until the EventGenerator's turn comes around to react?
+
+is the EventFeed is just a message feed for Game Events? are Events / Updates just messages?
+how does this look:
+- Happening as a "heartbeat", sends "feed is open" messages to all the registered eventgenerators
+- as they iterate, they send their own messages, including game state updates
+- heartbeet stops sending ticks when the game is over
+- Event is a Message?
+
+downside:
+- who actually cares about Events as they happen? 
+	- what EventGenerator cares about an entire PitchHit or an entire PlayerIncineration
+		- except the UI and the gamestate?
+		- player management?
+		- a ton of stuff?
+- Events send notifications as they go
+- the Happening / Event / Update structure is meant to structure things;
+  messages are much more specific
+
+do we want to use this architecture for single game updates, like running the basepaths?
+- oh god no lol
+
+
+
+Theoretical pure message based setup:
+
+ballgame (no parent class):
+- sends out tick message with tag encoded
+	- generators recieve tick and begin broadcasting events on that tag
+		- events are recieved by relevant listeners, including:
+		- ballgame
+		- UI
+		- etc
+
+ok one problem is the ballgame is tightly coupled to everything - game state effects so much
+	- if gamestate is broadcast, the other listeners don't need to listen to each other?
+
+this feels alright.
