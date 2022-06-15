@@ -93,6 +93,22 @@ class Runner:
         self.force = True  # runner in a forced state: they do not have an option in terms of where they are going.
         self.safe = False  # is the runner done running?
 
+    def time_to_base(self) -> float:
+        """Calculate long it will take this runner to reach their next base"""
+        if self.safe:
+            distance_remaining = 0
+        elif self.forward:
+            distance_remaining = self.basepath_length - self.remainder
+        else:
+            distance_remaining = self.remainder
+        return distance_remaining / self.speed
+
+    def next_base(self) -> int:
+        return self.base + 1 if self.forward and not self.safe else self.base
+
+    def total_distance(self) -> float:
+        return self.remainder + self.base * self.basepath_length
+
     def tag_up(self):
         """Force this runner to turn to their most recent safe base."""
         self.forward = False
@@ -185,22 +201,6 @@ class Runner:
                     break
                 else:
                     self.forward = False
-
-    def time_to_base(self) -> float:
-        """Calculate long it will take this runner to reach their next base"""
-        if self.safe:
-            distance_remaining = 0
-        elif self.forward:
-            distance_remaining = self.basepath_length - self.remainder
-        else:
-            distance_remaining = self.remainder
-        return distance_remaining / self.speed
-
-    def next_base(self) -> int:
-        return self.base + 1 if self.forward and not self.safe else self.base
-
-    def total_distance(self) -> float:
-        return self.remainder + self.base * self.basepath_length
 
     def coords(self, base_locations: List[Coord]) -> Coord:
         """Return the player's current coordinates"""
