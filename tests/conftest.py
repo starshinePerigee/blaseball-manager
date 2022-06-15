@@ -128,3 +128,14 @@ def pitch_1(ballgame_1, monkeypatch):
     )
 
     return pitch
+
+
+@pytest.fixture(scope='function')
+def runner_on_second(ballgame_1):
+    player = ballgame_1.batter()
+    ballgame_1.bases[2] = player
+    ballgame_1.at_bat_numbers[1] += 1
+    runner = ballgame_1.bases.runners[0]
+    runner.reset(2, player, player)  # pass player since it doesn't matter, since we're clearing the leadoff
+    runner.remainder = 0
+    return runner

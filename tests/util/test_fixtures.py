@@ -48,6 +48,9 @@ class TestFixtures:
             assert TestFixtures.previous_pitch == pitch_1
         TestFixtures.previous_pitch = pitch_1
 
+    def test_runner_on_second(self, runner_on_second, ballgame_1):
+        assert isinstance(runner_on_second, blaseball.playball.basepaths.Runner)
+        assert ballgame_1.bases[2] is runner_on_second.player
 
 def noop_fn(x, iteration):
     return x
