@@ -71,6 +71,7 @@ def roll_net_advance_time(duration, time_to_base, timing, bravery) -> float:
     net_bravery_factor = 1 + MARGIN_REQUIRED_BEFORE_BRAVERY - bravery * MARGIN_REQUIRED_BRAVERY_FACTOR
     # a less-brave player needs more of an assurance before running. This should be 0 at maximum bravery.
 
+    # net advance time is how long you have minus how long you need
     net_advance_time = effective_duration - time_to_base * net_bravery_factor
     return net_advance_time
 
@@ -89,15 +90,24 @@ class Runner:
         self.remainder = 0  # how far down the basepath they've gone, in feet.
         # remainder does not invert if the player starts running backwards - a player 10 feet towards 2nd from first,
         # who is returning to first, has a remainder of 10.
-        self.forward = True  # is the runner trying to return to base
+
+        # these represent runner intents. they do not get set in decide() and advance() but affect it:
+        self.tagging_up = False
+        self.holding = False
+        self.always_run = False
+
+        # these are "dependent variables" - they get set in decide() and advance():
+        self.forward = True  # is the runner currently advancing?
         self.force = True  # runner in a forced state: they do not have an option in terms of where they are going.
         self.safe = False  # is the runner done running?
+        # tagging up = self.force + not self.forward
 
     def time_to_base(self) -> float:
         """Calculate long it will take this runner to reach their next base"""
         if self.safe:
-            distance_remaining = 0
-        elif self.forward:
+            return 0.0
+
+        if self.forward:
             distance_remaining = self.basepath_length - self.remainder
         else:
             distance_remaining = self.remainder
@@ -111,54 +121,98 @@ class Runner:
 
     def tag_up(self):
         """Force this runner to turn to their most recent safe base."""
+        self.tagging_up = True
+
         self.forward = False
+        self.force = True
 
     def hold(self):
-        """Force this runner to stop advancing down the basepaths and stay at a base."""
-        self.remainder = 0.0
-        self.forward = True
-        self.safe = True
+        """Force the player to stay put at the next base they touch.."""
+        self.holding = True
 
-    def reset(self, base: int, pitcher: Player, catcher: Player) -> None:
+        if self.remainder < 1:
+            self.safe = True
+
+    def touch_base(self, base=None):
+        """the player has touched a base while the ball is in play."""
+        if base is not None:
+            self.base = base
+        self.remainder = 0.0
+        self.safe = True
+        self.forward = True
+        self.force = False
+
+    def reset(self, pitcher: Player, catcher: Player, base: int = None) -> None:
         """Reset a runner's state to the default. call between plays."""
-        self.base = base
+        if base is not None:
+            self.base = base
+
         max_awareness = max(catcher['awareness'], pitcher['awareness'])
         self.remainder = calc_leadoff(self.player['bravery'], pitcher['throwing'], max_awareness)
+
+        self.tagging_up = False
+        self.holding = False
+        self.always_run = False
+
         self.forward = True
         self.force = False
         self.safe = False
 
-    def decide(self, duration: float, min_base: int, max_base: int, hit_duration_bonus: float = 0) -> bool:
+    def decide(self, duration: float, min_base: int, max_base: int, hit_duration_bonus: float = 0) -> None:
         """Decide if a player is going to advance or retreat/hold, given a throw expected in duration time.
-        Returns TRUE for "advance forward", and FALSE for "advance backwards" """
+        sets "self.force" and "self.forward" appropriately """
         # TODO: team and game state effects
+        # TODO: convert errors into logging and outs
 
         # the ball was just hit, so in addition to the flight time, there's also a throw coming.
         duration += hit_duration_bonus
 
-        if max_base - min_base < 1:
+        if max_base - min_base < 0:
             raise RuntimeError(f"{self.player['name']} caught in a pickle between {min_base} and {max_base}!")
-        if self.base < min_base:
-            # you are forced forward
+
+        if self.tagging_up:
+            # player is currently tagging up due to the rules of blaseball (caught fly, etc)
+            if self.base == 0:
+                raise RuntimeError(f"{self.player['name']} attempting to tag up with base 0!")
+            elif self.base < min_base:
+                raise RuntimeError(f"{self.player['name']} attempting to tag up to invalid base {min_base}")
+            elif self.base > max_base:
+                raise RuntimeError(f"{self.player['name']} attempting to tag up past max base {max_base}, "
+                                   f"current base {self.base}")
+            self.forward = False
             self.force = True
-            return True
-        elif self.base >= max_base:
-            # there is someone on a base ahead of you
+            return
+
+        if self.base >= max_base or self.base <= min_base - 1:
+            # player is in a forced state
             self.force = True
-            return False
+            if self.base > max_base:
+                raise RuntimeError(f"{self.player['name']} more than two bases ahead! {self.base} vs max {max_base}")
+            elif self.base == max_base:
+                self.forward = False
+            elif self.base < min_base - 1:
+                raise RuntimeError(f"{self.player['name']} more than two bases behind! {self.base} vs min {min_base}")
+            elif self.base == min_base - 1:
+                self.forward = True
+            return
+
         self.force = False
 
-        if self.remainder / self.basepath_length > 0.5:
+        if self.always_run:
+            self.forward = True
+        elif self.remainder / self.basepath_length > 0.5:
             # the closest base is the next base, so go for it always.
-            return True
-
-        time_needed = roll_net_advance_time(
-            duration,
-            self.time_to_base(),
-            self.player['timing'],
-            self.player['bravery']
-        )
-        return time_needed > 0
+            self.forward = True
+        elif self.holding:
+            self.forward = False
+        else:
+            net_time_to_advance = roll_net_advance_time(
+                duration,
+                self.time_to_base(),
+                self.player['timing'],
+                self.player['bravery']
+            )
+            self.forward = net_time_to_advance > 0
 
     def advance(
             self,
@@ -172,35 +226,39 @@ class Runner:
 
         check for runs afterwards."""
         # convert distance into time
-        while duration >= 0.0:
-            if self.decide(duration, min_base, max_base, hit_duration_bonus):
-                # you are running
-                if self.forward:
-                    time_to_next_base = (self.basepath_length - self.remainder) / self.speed
-                else:
-                    time_to_next_base = self.remainder / self.speed
+        if self.holding and self.safe:
+            return
 
-                if time_to_next_base > duration:
-                    if self.forward:
-                        self.remainder += duration * self.speed
-                    else:
-                        self.remainder -= duration * self.speed
-                    break
-                else:
-                    duration -= time_to_next_base
-                    if self.forward:
-                        self.base += 1
-                    else:
-                        self.forward = True
-                    self.remainder = 0.0
+        while duration >= 0.0:
+            self.decide(duration, min_base, max_base, hit_duration_bonus)
+
+            if not self.forward and self.remainder <= 1:
+                # you are on base and want to stay there
+                # (the base is 1 foot wide lol)
+                self.touch_base()
+                break
+
+            # you need to go somewhere - forward or back.
+            self.safe = False
+            if self.forward:
+                # you are running to the next base
+                time_to_next_base = (self.basepath_length - self.remainder) / self.speed
             else:
-                if self.remainder <= 1:  # the base is 1 foot wide lol
-                    if self.base < min_base:
-                        raise RuntimeError(f"Runner {self.player} attempted to tag up to occupied base {self.base}")
-                    self.hold()
-                    break
+                # you are returning to base
+                time_to_next_base = self.remainder / self.speed
+
+            if time_to_next_base > duration:
+                # you need more time than you have to reach the next base, so make progress
+                if self.forward:
+                    self.remainder += duration * self.speed
                 else:
-                    self.forward = False
+                    self.remainder -= duration * self.speed
+                break
+            else:
+                # you can make it to the next base, so get there and cycle
+                duration -= time_to_next_base
+                next_base = self.base + 1 if self.forward else self.base
+                self.touch_base(next_base)
 
     def coords(self, base_locations: List[Coord]) -> Coord:
         """Return the player's current coordinates"""
@@ -310,7 +368,7 @@ class Basepaths(MutableMapping):
             raise KeyError(f"Tried to get runner on invalid base {key} against number of bases {self.number_of_bases}")
         for runner in self.runners:
             if runner.base == key:
-                return runner.player
+                return runner
         return None
 
     def __setitem__(self, key: int, value: Player) -> None:
@@ -332,21 +390,16 @@ class Basepaths(MutableMapping):
                 return
         raise KeyError(f"Attempted to delete nonexistent player on base {key}!")
 
-    def as_list(self) -> List[Union[Player, None]]:
-        return [self[i] for i in range(1, self.number_of_bases + 1)]
-
-    def to_occupied_list(self):
-        return [i is not None for i in list(self)]
+    def to_base_list(self):
+        return [self[i] for i in range(0, self.number_of_bases+1)]
 
     def __add__(self, player: Player):
         self.runners += [Runner(player, self.basepath_length)]
         return self
 
     def __iter__(self):
-        # i think this is abuse - as_list should be using this function instead?
-        # we'll come back to this later.
-        # TODO: make sure you unit test this sucka
-        return iter(self.as_list())
+        for runner in self.runners:
+            yield runner
 
     def __len__(self):
         return len(self.runners)

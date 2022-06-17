@@ -39,6 +39,14 @@ class TestFixtures:
     def test_ballgame_1(self, ballgame_1):
         assert isinstance(ballgame_1, blaseball.playball.ballgame.BallGame)
 
+    def test_runner_on_second(self, runner_on_second):
+        assert isinstance(runner_on_second, blaseball.playball.basepaths.Runner)
+        assert runner_on_second.base == 2
+
+    def test_empty_basepaths(self, empty_basepaths):
+        assert isinstance(empty_basepaths, blaseball.playball.basepaths.Basepaths)
+        assert len(empty_basepaths) == 0
+
     previous_pitch = None
 
     @pytest.mark.parametrize('execution_number', range(5))

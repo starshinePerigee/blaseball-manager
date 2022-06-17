@@ -140,4 +140,7 @@ ballgame (no parent class):
 ok one problem is the ballgame is tightly coupled to everything - game state effects so much
 	- if gamestate is broadcast, the other listeners don't need to listen to each other?
 
-this feels alright.
+this feels alright?
+how do we store/save game data (for replays, etc)
+
+1. if ballgame sends out itself (or a gamestate) as its message, it can go to a recorder

@@ -7,7 +7,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 import pytest
 
 from blaseball.stats import players, teams, stadium, lineup
-from blaseball.playball import ballgame, pitching
+from blaseball.playball import ballgame, pitching, basepaths
 from support.mock_functions import FunctionPatcher
 from data import teamdata
 import numpy
@@ -136,6 +136,11 @@ def runner_on_second(ballgame_1):
     ballgame_1.bases[2] = player
     ballgame_1.at_bat_numbers[1] += 1
     runner = ballgame_1.bases.runners[0]
-    runner.reset(2, player, player)  # pass player since it doesn't matter, since we're clearing the leadoff
+    runner.reset(player, player, base=2)  # pass player since it doesn't matter, since we're clearing the leadoff
     runner.remainder = 0
+    assert isinstance(runner, basepaths.Runner)  # needed for pycharm type hints
     return runner
+
+@pytest.fixture(scope='function')
+def empty_basepaths(ballgame_1):
+    return ballgame_1.bases
