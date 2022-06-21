@@ -7,7 +7,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 import pytest
 
 from blaseball.stats import players, teams, stadium, lineup
-from blaseball.playball import ballgame, pitching, basepaths
+from blaseball.playball import ballgame, pitching, basepaths, inplay
 from support.mock_functions import FunctionPatcher
 from data import teamdata
 import numpy
@@ -148,3 +148,8 @@ def empty_basepaths(ballgame_1):
 @pytest.fixture(scope='function')
 def batters_4(ballgame_1):
     return [ballgame_1.batter(i) for i in range(4)]
+
+@pytest.fixture(scope='function')
+def live_defense_1(ballgame_1):
+    live_d = inplay.LiveDefense(ballgame_1.defense().defense, ballgame_1.bases.base_coords)
+    return live_d

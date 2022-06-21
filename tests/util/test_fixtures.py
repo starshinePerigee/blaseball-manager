@@ -61,6 +61,9 @@ class TestFixtures:
         assert isinstance(batters_4[0], blaseball.stats.players.Player)
         assert ballgame_1.batter() is batters_4[0]
 
+    def test_live_defense_1(self, live_defense_1):
+        assert isinstance(live_defense_1, blaseball.playball.inplay.LiveDefense)
+
 def noop_fn(x, iteration):
     return x
 

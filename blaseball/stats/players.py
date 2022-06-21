@@ -231,7 +231,7 @@ class Player(Mapping):
         elif isinstance(other, dict):
             keys = other.keys()
         else:
-            raise TypeError("Invalid type comparison: Player vs {type(other)} (other: {other})")
+            raise TypeError(f"Invalid type comparison: Player vs {type(other)} (other: {other})")
 
         for stat in keys:
             try:

@@ -7,6 +7,7 @@ This commands BasePaths and interfaces with fielding as needed..
 """
 
 from blaseball.playball.basepaths import Runner, Basepaths, calc_speed
+from blaseball.playball.fielding import Catch, Throw, calc_throw_duration_base
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.liveball import LiveBall
 from blaseball.playball.event import Update
@@ -18,9 +19,8 @@ from numpy.random import normal, rand
 from typing import List, Tuple
 
 
-class Fielder:
-    """This class tracks the current fielder - it changes the player it points to over the course of a live ball.
-    Only one fielder should ever exist at any one time."""
+class LiveDefense:
+    """This class tracks and manages the defense for an entire ball in play."""
     def __init__(self, defense: Defense, base_locations: List[Coord]):
         self.defense = defense
         self.base_locations = base_locations
@@ -28,14 +28,21 @@ class Fielder:
         self.fielder = None
         self.location = None
 
-    def catch(self, ball: LiveBall) -> Catch:
+    def catch_liveball(self, ball: LiveBall, batter: Player) -> Tuple[Update, float, bool]:
+        """"""
         self.location = ball.ground_location()
         fielder_position, distance = self.defense.closest(self.location)
         self.fielder = fielder_position.player
         catch = Catch(ball, self.fielder, distance)
-        return catch
 
-    def throw(self, target_base: int) -> Tuple[Update, float]:
+        if catch.caught:
+            catch_update = CatchOut(self.fielder, batter)
+        else:
+            catch_update = catch
+
+        return catch_update, catch.duration, catch.caught
+
+    def throw_to_base(self, target_base: int) -> Tuple[Update, float]:
         target_location = self.base_locations[target_base]
         position, distance = self.defense.closest(target_location)
         receiver = position.player
@@ -51,26 +58,29 @@ class Fielder:
 
         return throw, throw.duration
 
-    DECISION_FUZZ_STDV = 1
-    PROBABILITY_WINDOW = 1  # how much time you need to be 100% confident of a throw
+    DECISION_FUZZ_STDV = 0.5
+    PROBABILITY_WINDOW = 2  # how much time you need to be 100% confident of a throw
+
+    def calc_throw_time_differential(self, runner: Runner) -> float:
+        """calculate the net time if a perfect throw attempt is made at Runner.
+        Negative time means the runner wins, positive time means the fielder wins (assuming no errors)"""
+        distance = self.location.distance(self.base_locations[runner.next_base()])
+        throw_duration = calc_throw_duration_base(self.fielder['throwing'], distance)
+        time_to_base = runner.time_to_base()
+        return throw_duration - time_to_base
 
     def prioritize_runner(self, runner: Runner) -> float:
-        """Determines a weight for a runner"""
+        """Determines a weight for a runner based on value and probability."""
         # base weight (pun intended):
-        next_base = runner.next_base()
+        base_weight = runner.next_base()
 
-        # modify by odds of throw
-        distance = self.location.distance(self.base_locations[next_base])
-        duration = calc_throw_duration_base(self.fielder['throwing'], distance)
-
-        time_fuzz = normal(0, Fielder.DECISION_FUZZ_STDV * (2 - self.fielder['awareness']))
-        runner_time = runner.time_to_base() + time_fuzz
-
+        # fuzz time estimation
+        time_fuzz = normal(0, LiveDefense.DECISION_FUZZ_STDV * (2 - self.fielder['awareness']))
         # if runner time >>> duration, this evaluates to 0. if duration >>> runner time, this evaluate to 1.
         # if 0 < delta < PROBABILITY_WINDOW this evalutes to somewhere between 0 and 1 continuously
-        net_time = (duration - runner_time) * Fielder.PROBABILITY_WINDOW
+        net_time = (self.calc_throw_time_differential(runner) + time_fuzz) / LiveDefense.PROBABILITY_WINDOW
         odds = max(0.0, min(1.0, net_time))
-        return odds
+        return odds * base_weight
 
     def fielders_choice(self, active_runners: List[Runner]) -> int:
         """Decide which base to throw to based on the list of runners"""
