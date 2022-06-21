@@ -223,21 +223,23 @@ class Player(Mapping):
     def __len__(self) -> int:
         return len(self.stat_row())
 
-    def __eq__(self, other: Union['Player', pd.Series, dict]) -> bool:
+    def __eq__(self, other: Union['Player', pd.Series, dict,]) -> bool:
         if isinstance(other, Player):
             return self == other.stat_row()
+        if isinstance(other, pd.Series):
+            keys = other.index
+        elif isinstance(other, dict):
+            keys = other.keys()
         else:
-            if isinstance(other, pd.Series):
-                keys = other.index
-            else:
-                keys = other.keys()
-            for stat in keys:
-                try:
-                    if self[stat] != other[stat]:
-                        return False
-                except (KeyError, TypeError):
+            raise TypeError("Invalid type comparison: Player vs {type(other)} (other: {other})")
+
+        for stat in keys:
+            try:
+                if self[stat] != other[stat]:
                     return False
-            return True
+            except (KeyError, TypeError):
+                return False
+        return True
 
     @staticmethod
     def _to_stars(stat: float) -> str:

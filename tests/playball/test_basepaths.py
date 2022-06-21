@@ -100,6 +100,23 @@ class TestRunner:
         assert isinstance(runner, basepaths.Runner)
         assert runner.base == 0
 
+    def test_runner_eq(self, batters_4):
+        batter_1 = batters_4[0]
+        batter_2 = batters_4[1]
+        assert batter_1 == batter_1
+        runner_1 = basepaths.Runner(batter_1, 90)
+        assert runner_1 == batter_1
+        assert runner_1 != batter_2
+
+        runner_2 = basepaths.Runner(batter_2, 90)
+        assert runner_2 != runner_1
+
+        with pytest.raises(TypeError):
+            assert batter_1 == runner_1
+
+        with pytest.raises(TypeError):
+            assert runner_2 == "Test1 Bobson"
+
     def test_time_to_base(self, runner_on_second):
         runner_on_second.basepath_length = 100
         runner_on_second.safe = False
@@ -112,9 +129,6 @@ class TestRunner:
 
         runner_on_second.forward = False
         assert runner_on_second.time_to_base() == pytest.approx(3)
-
-        runner_on_second.safe = True
-        assert runner_on_second.time_to_base() == 0.0
 
     def test_next_base(self, runner_on_second):
         assert runner_on_second.next_base() == 3
@@ -319,6 +333,7 @@ class TestBasepathsManipulation:
             del bases[3]
 
     def test_as_list(self, ballgame_1):
+        # don't forget basepaths.runners is FIFO
         bases = ballgame_1.bases
 
         assert list(bases) == []
@@ -331,8 +346,8 @@ class TestBasepathsManipulation:
 
         as_list = list(bases)
         assert len(as_list) == 2
-        assert as_list[0].player is batter_1
-        assert as_list[1].player is batter_2
+        assert as_list[0].player is batter_2
+        assert as_list[1].player is batter_1
 
         base_list = bases.to_base_list()
         assert len(base_list) == 4
@@ -340,22 +355,29 @@ class TestBasepathsManipulation:
         assert base_list[1].player is batter_1
         assert base_list[3].player is batter_2
 
-    def test_iteration(self, ballgame_1):
-        bases = ballgame_1.bases
+    def test_iteration(self, empty_basepaths, batters_4):
+        bases = empty_basepaths
 
-        batter_1 = ballgame_1.batter()
-        bases[1] = batter_1
-        batter_2 = ballgame_1.batter(1)
-        bases[3] = batter_2
+        bases[1] = batters_4[1]
+        bases[3] = batters_4[0]
+        bases += batters_4[2]
 
+        count = 0
         for runner in bases:
             assert isinstance(runner, basepaths.Runner)
+            count += 1
+        assert count == 3
+
+        count = 0
+        for i, runner in enumerate(bases):
+            count = i
+            assert runner == batters_4[i]
+        assert count == 2
 
         players = [x.player for x in bases]
-        assert len(players) == 2
-        assert players[0] is batter_1
-        assert players[1] is batter_2
-
+        assert len(players) == 3
+        assert players[1] is batters_4[1]
+        assert players[0] is batters_4[0]
 
     def test_add_runners_and_len(self, ballgame_1):
         assert len(ballgame_1.bases) == 0
@@ -364,12 +386,34 @@ class TestBasepathsManipulation:
         ballgame_1.bases[2] = ballgame_1.batter(1)
         assert len(ballgame_1.bases) == 2
 
+    def test_add_runners_order(self, empty_basepaths, batters_4):
+        """basepaths.runners is a fifo queue, so make sure order is preserved if you're manually adding runners."""
+        empty_basepaths[1] = batters_4[1]
+        assert empty_basepaths[1].player is batters_4[1]
+        assert empty_basepaths.runners[0].player is batters_4[1]
+
+        # add a player after
+        empty_basepaths[3] = batters_4[3]
+        assert empty_basepaths[3].player is batters_4[3]
+        assert empty_basepaths.runners[0].player is batters_4[3]
+        assert empty_basepaths.runners[1].player is batters_4[1]
+
+        # add player in the middle
+        empty_basepaths[2] = batters_4[2]
+        assert empty_basepaths[2].player is batters_4[2]
+        assert empty_basepaths.runners == batters_4[3:0:-1]
+
+        # add player to beginning
+        empty_basepaths += batters_4[0]
+        assert empty_basepaths[0].player is batters_4[0]
+        assert empty_basepaths.runners == batters_4[::-1]
+
     def test_bool(self, empty_basepaths, player_1):
         assert not empty_basepaths
         empty_basepaths += player_1
         assert empty_basepaths
 
-    def test_strs(self, empty_basepaths, player_1):
+    def test_strings(self, empty_basepaths, player_1):
         assert isinstance(str(empty_basepaths), str)
         assert isinstance(empty_basepaths.nice_string(), str)
         empty_basepaths += player_1
@@ -378,4 +422,200 @@ class TestBasepathsManipulation:
 
 class TestBasepathsRunners:
     # test basepaths ability to manage runners
-    pass
+    def test_advance_all_single_runner(self, empty_basepaths, batters_4):
+        # single runner case - rounding the bases and scoring
+        empty_basepaths[2] = batters_4[0]
+        runner = empty_basepaths[2]
+        runner.always_run = True
+        runner.speed = 10
+
+        empty_basepaths.advance_all(5, 0)
+        assert runner.remainder == pytest.approx(50)
+        assert runner.base == 2
+
+        empty_basepaths.advance_all(5, 0)
+        assert runner.remainder == pytest.approx(10)
+        assert runner.base == 3
+
+        runs, runners = empty_basepaths.advance_all(100, 0)
+        assert len(empty_basepaths) == 0
+        assert runs == 1
+        assert runners[0] is runner.player
+
+    def test_advance_all_hitter_player_first(self, empty_basepaths, batters_4, patcher):
+        # test interaction with a hitter and player on first who does not want to advance
+
+        # perfect decisions:
+        patcher.patch('blaseball.playball.basepaths.roll_net_advance_time',
+                      lambda duration, time_to_base, timing, bravery: duration-time_to_base)
+
+        empty_basepaths[1] = batters_4[0]
+        empty_basepaths += batters_4[1]
+        for runner in empty_basepaths:
+            runner.speed = 10
+
+        empty_basepaths.advance_all(1, 0)  # very low time
+        assert empty_basepaths[1].player is batters_4[0]
+        assert empty_basepaths[1].forward
+        assert empty_basepaths[0].remainder == 10
+
+        # advance them to the next bases
+        empty_basepaths.advance_all(9, 100)
+        assert empty_basepaths[2].player is batters_4[0]
+        assert empty_basepaths[2].remainder == pytest.approx(10)
+
+        # pretend the batter is super fast
+        empty_basepaths[1].remainder = 80
+
+        empty_basepaths.advance_all(2, 0)
+        # leading runner should bail
+        assert empty_basepaths[2].player is batters_4[0]
+        assert empty_basepaths[2].remainder == 0
+        assert empty_basepaths[2].safe
+
+        assert empty_basepaths[1].remainder == pytest.approx(80 - 20)
+        assert not empty_basepaths[1].safe
+        assert not empty_basepaths[1].forward
+
+    # this next test is actually a very complicated situation.
+    # the runner on third is very far down the basepaths, but has to tag up, which will take a long time
+    # the runner on second can tag up super fast, but then they're kind of in limbo
+    # if they think the runner on third is going to get thrown out, they should stay at second -
+    # otherwise the ball will be at third and they're hosed.
+    # if they think the runner on third is safe (ie: will be able to tag up without issue and advance to home)
+    # they should advance to third so they can take the base as soon as the runner on third tags up and turns
+
+    # none of this is implemented, and this is a very rare case.
+    # what we want is the safe option:
+    # runners on second and first tag up, wait on base for the runner on third to tag up,
+    # then decide freely simultaneously if they want to advance
+
+    # but - this also doesn't work, because the way time is calculated per-runner.
+    # if you give 100 seconds, the runner on third will tag up, advance, and score.
+    # the runner on second will be clear to proceed
+    # which in a way, is like the intended behavior - if the runner on first has enough time,
+    # they go for it. the only problem is this fails to count hit_duration_bonus.
+    # which isn't a huge problem, but you should be aware of it.
+
+    tag_up_parameters = {
+        # "advance_time, runner_bases, runner_positions, runs_to_score
+        # 'one second easy': (1, [3, 2, 1], [70, 10, 10], 0),
+        # '100 seconds clear': (100, [], [], 3),
+        # '5 seconds hold at second': (5, [3, 2, 1], [30, 0, 0], 0),
+        #'10 seconds advance all': (10, [3, 2, 1], [20, 80, 80], 0),
+        '13 seconds double up on third weird edge case DANGER': (13, [3, 3, 2], [50, 0, 0], 0)
+    }
+
+    @pytest.mark.parametrize(
+        "advance_time, runner_bases, runner_positions, runs_to_score",
+        tag_up_parameters.values(),
+        ids=list(tag_up_parameters.keys())
+    )
+    def test_tag_up_all_conflict(self, empty_basepaths, batters_4,
+                                 advance_time, runner_bases, runner_positions, runs_to_score):
+        empty_basepaths[3] = batters_4[2]
+        empty_basepaths[2] = batters_4[1]
+        empty_basepaths[1] = batters_4[0]
+
+        for runner in empty_basepaths:
+            runner.speed = 10
+            runner.always_run = True
+            runner.remainder = 20
+        empty_basepaths[3].remainder = 80
+        empty_basepaths.tag_up_all()
+
+        runs_scored, scoring_runners = empty_basepaths.advance_all(advance_time)
+        assert runs_scored == runs_to_score
+        for runner, base, remainder in zip(empty_basepaths, runner_bases, runner_positions):
+            assert runner.base == base
+            assert runner.remainder == pytest.approx(remainder)
+
+    def test_remove_home_runners(self, empty_basepaths, batters_4):
+        empty_basepaths[3] = batters_4[2]
+        empty_basepaths[2] = batters_4[1]
+        empty_basepaths[1] = batters_4[0]
+
+        for runner in empty_basepaths:
+            runner.speed = 10
+            runner.always_run = True
+            runner.remainder = 20
+
+        empty_basepaths.advance_all(20)
+        assert empty_basepaths.runners == [batters_4[0]]
+
+    def test_check_out_condition_forward(self, empty_basepaths, player_1):
+        """Test check out logic"""
+        assert empty_basepaths.check_out(1) is None
+
+        empty_basepaths[2] = player_1
+        runner = empty_basepaths[2]
+        runner.remainder = 20.0
+        runner.force = False
+        runner.forward = True
+
+        assert empty_basepaths.check_out(2) is None
+        assert empty_basepaths.check_out(3) is None
+
+        runner.force = True
+        assert empty_basepaths.check_out(2) is None
+        assert empty_basepaths.check_out(3) is runner
+        assert empty_basepaths.runners == []
+
+    def test_check_out_condition_backwards(self, empty_basepaths, player_1):
+        """Test check out logic"""
+        empty_basepaths[2] = player_1
+        runner = empty_basepaths[2]
+        runner.remainder = 20.0
+        runner.force = False
+        runner.forward = False
+
+        assert empty_basepaths.check_out(2) is None
+        assert empty_basepaths.check_out(3) is None
+
+        runner.remainder = 5.0
+        assert empty_basepaths.check_out(3) is None
+        assert empty_basepaths.check_out(2) is runner
+        assert empty_basepaths.runners == []
+
+    def test_check_out_live(self, empty_basepaths, batters_4):
+        """Test checking out with live basepath situations,
+        by simulating a runners on first and third, 6-4-3-2 triple play"""
+
+        # players on 1st and 3rd, with a hit:
+        empty_basepaths[3] = batters_4[0]  # third base
+        empty_basepaths[1] = batters_4[1]  # first base
+        empty_basepaths += batters_4[2]  # batter
+
+        for runner in empty_basepaths:
+            runner.speed = 10
+            runner.always_run = True
+
+        # advance 2 seconds (20 feet)
+        empty_basepaths.advance_all(2)
+
+        # force out at second
+        assert empty_basepaths.check_out(2) == batters_4[1]
+
+        empty_basepaths.advance_all(2)
+
+        #force out at first
+        assert empty_basepaths.check_out(1) == batters_4[2]
+
+        empty_basepaths.advance_all(2)
+        # runner on third is now 60 feet down, so not taggable yet. if this were live, we'd have a rundown.
+        # but instead we've forced advance, so now we can see them run into the tag
+        assert empty_basepaths.check_out(4) is None
+        empty_basepaths.advance_all(2.5)
+        assert empty_basepaths.check_out(4) == batters_4[0]
+        # what a disaster for the offense haha
+
+    def test_reset_all(self, empty_basepaths, batters_4):
+        empty_basepaths[3] = batters_4[0]  # third base
+        empty_basepaths[1] = batters_4[1]  # first base
+
+        empty_basepaths.tag_up_all()
+
+        empty_basepaths.reset_all(batters_4[2], batters_4[3])  # just need random players in here
+        assert empty_basepaths[3].remainder > 5
+        assert empty_basepaths[3].forward
+        assert not empty_basepaths[3].tagging_up

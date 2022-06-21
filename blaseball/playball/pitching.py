@@ -116,7 +116,7 @@ def calc_calling_modifier(game: BallGame) -> float:
     calling_modifier += calling_mod_from_count(game.balls, game.strikes) * CALLING_WEIGHTS['count']
     calling_modifier += (calling_mod_from_discipline_bias(game.batter()['power'], game.batter()['discipline'])
                          * CALLING_WEIGHTS['discipline_bias'])
-    calling_modifier += calling_mod_from_runners(game.bases.to_occupied_list()) * CALLING_WEIGHTS['bases_loaded']
+    calling_modifier += calling_mod_from_runners(game.bases.boolean_occupied_list()) * CALLING_WEIGHTS['bases_loaded']
     calling_modifier += calling_mod_from_outs(game.outs) * CALLING_WEIGHTS['outs_number']
     calling_modifier += (calling_mod_from_next_hitter(game.batter(), game.batter(1))
                          * CALLING_WEIGHTS['current_v_next_hitter'])

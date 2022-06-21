@@ -39,10 +39,6 @@ class TestFixtures:
     def test_ballgame_1(self, ballgame_1):
         assert isinstance(ballgame_1, blaseball.playball.ballgame.BallGame)
 
-    def test_runner_on_second(self, runner_on_second):
-        assert isinstance(runner_on_second, blaseball.playball.basepaths.Runner)
-        assert runner_on_second.base == 2
-
     def test_empty_basepaths(self, empty_basepaths):
         assert isinstance(empty_basepaths, blaseball.playball.basepaths.Basepaths)
         assert len(empty_basepaths) == 0
@@ -58,7 +54,12 @@ class TestFixtures:
 
     def test_runner_on_second(self, runner_on_second, ballgame_1):
         assert isinstance(runner_on_second, blaseball.playball.basepaths.Runner)
-        assert ballgame_1.bases[2] is runner_on_second.player
+        assert ballgame_1.bases[2] == runner_on_second.player
+
+    def test_batters_4(self, batters_4, ballgame_1):
+        assert isinstance(batters_4, list)
+        assert isinstance(batters_4[0], blaseball.stats.players.Player)
+        assert ballgame_1.batter() is batters_4[0]
 
 def noop_fn(x, iteration):
     return x

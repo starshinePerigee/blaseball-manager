@@ -104,9 +104,6 @@ class Runner:
 
     def time_to_base(self) -> float:
         """Calculate long it will take this runner to reach their next base"""
-        if self.safe:
-            return 0.0
-
         if self.forward:
             distance_remaining = self.basepath_length - self.remainder
         else:
@@ -138,6 +135,7 @@ class Runner:
         if base is not None:
             self.base = base
         self.remainder = 0.0
+        self.tagging_up = False
         self.safe = True
         self.forward = True
         self.force = False
@@ -284,8 +282,13 @@ class Runner:
     def __bool__(self):
         return not self.safe
 
-
-# TODO: there's defs a bug allowing multiple people to pile on a base.
+    def __eq__(self, other):
+        if isinstance(other, Runner):
+            return self is other
+        elif isinstance(other, Player):
+            return self.player is other
+        else:
+            raise TypeError(f"Invalid type comparison: Runner vs {type(other)} (other: {other})")
 
 class Basepaths(MutableMapping):
     """Stores the bases and basepaths, and manipulates runners on base. Each game should have one Basepaths
@@ -305,50 +308,62 @@ class Basepaths(MutableMapping):
                 runner.tag_up()
 
     def advance_all(self, duration: float, hit_duration_bonus: float = 0) -> Tuple[int, List[Player]]:
-        """Moves all runners forward by duration, """
+        """Moves all runners forward by duration, having them decide if to advance as needed.
+        This iterates from the most forward runner backwards.
+        """
         runners_scoring = []
         max_base = self.number_of_bases + 1  # 4 for standard
         for i, runner in enumerate(self.runners):  # we're going to step through a 0-1-3 split
-            min_base = len(self.runners) - i  # 3, 2, 1
-            # max base:  4, 4,
+            # current_runner = len(self.runners) - (i + 1)  # 2, 1, 0
+            min_base = len(self.runners) - i  # the 3rd (index 2) runner has to end up at the 3rd base.
+            # max base:  4,
             runner.advance(duration, min_base, max_base, hit_duration_bonus)
             if runner.base > self.number_of_bases:
-                runner.safe = True  # good luck
-                self.runners.remove(runner)
-                runners_scoring += [runner.player]
+                runners_scoring += [runner]
                 max_base = self.number_of_bases + 1
             else:
                 if runner.safe or not runner.forward:
                     max_base = runner.base - 1
                 else:
                     max_base = runner.base
-        return len(runners_scoring), runners_scoring
+
+        for runner in runners_scoring:
+            runner.safe = True  # good luck
+            self.runners.remove(runner)
+
+        return len(runners_scoring), [runner.player for runner in runners_scoring]
 
     TAG_OUT_DISTANCE = 10
 
-    def check_out(self, base: int) -> Tuple[int, List[Tuple[Runner, bool]]]:
-        """Check to see if a runner is thrown out."""
-        outs = 0
-        runners_out = []
+    def check_out(self, base: int) -> Optional[Runner]:
+        """Check to see if any runner is out if the ball is at a specific base.
+        Note that there's an edge case where two players are valid:
+        - a runner on first with a 2 foot leadoff
+        - the batter hits a line drive straight to the first baseman that reaches the baseman while the runner on first
+          is still in the tag out radius.
+        the runner will not be tagged out, as is realistic.
+        """
         for runner in self.runners:
-            if (runner.forward and runner.base == base - 1) or (not runner.forward and runner.base == base):
-                if runner.forward:
-                    tagable = (self.basepath_length - runner.remainder) <= Basepaths.TAG_OUT_DISTANCE
-                else:
+            out = False
+            if runner.forward:
+                if runner.base + 1 == base:
+                    tagable = self.basepath_length - runner.remainder <= Basepaths.TAG_OUT_DISTANCE
+                    out = tagable or runner.force
+            else:
+                if runner.base == base:
                     tagable = runner.remainder <= Basepaths.TAG_OUT_DISTANCE
+                    out = tagable or runner.force
 
-                if runner.force or tagable:
-                    self.runners.remove(runner)
-                    outs += 1
-                    runners_out += [(runner, tagable)]
+            if out:
+                self.runners.remove(runner)
+                return runner
+        return None
 
-        return outs, runners_out
-
-    def reset(self, pitcher: Player, catcher: Player):
+    def reset_all(self, pitcher: Player, catcher: Player):
         """Moves all runners back to their most recently passed base, then sets them at leadoff"""
         most_recent_base = self.number_of_bases + 1
         for runner in self.runners:
-            runner.reset(min(runner.base, most_recent_base - 1), pitcher, catcher)
+            runner.reset(pitcher, catcher, min(runner.base, most_recent_base - 1), )
             if runner.base <= 0:
                 raise RuntimeError(f"Error: basepaths reset while a player was at home! {len(self)} runners present.")
             most_recent_base = runner.base
@@ -372,13 +387,15 @@ class Basepaths(MutableMapping):
         return None
 
     def __setitem__(self, key: int, value: Player) -> None:
+        """Set the player to base key. Creates a runner for the player and inserts it into the runner list in order."""
         new_runner = Runner(value, self.basepath_length)
         new_runner.base = key
 
         for i, runner in enumerate(self.runners):
+            # remember, runners list is in reverse order (it's from third to first base)
             if runner.base == key:
                 raise KeyError(f"Tried to set a runner to base {key} which was already occupied by {runner}")
-            if runner.base > key:
+            if runner.base < key:
                 self.runners.insert(i, new_runner)
                 return
         self.runners += [new_runner]
@@ -392,6 +409,9 @@ class Basepaths(MutableMapping):
 
     def to_base_list(self):
         return [self[i] for i in range(0, self.number_of_bases+1)]
+
+    def boolean_occupied_list(self):
+        return [self[i] is not None for i in range(1, self.number_of_bases+1)]
 
     def __add__(self, player: Player):
         self.runners += [Runner(player, self.basepath_length)]

@@ -144,3 +144,7 @@ def runner_on_second(ballgame_1):
 @pytest.fixture(scope='function')
 def empty_basepaths(ballgame_1):
     return ballgame_1.bases
+
+@pytest.fixture(scope='function')
+def batters_4(ballgame_1):
+    return [ballgame_1.batter(i) for i in range(4)]
