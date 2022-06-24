@@ -59,15 +59,20 @@ class LiveDefense:
         return throw, throw.duration
 
     DECISION_FUZZ_STDV = 0.5
-    PROBABILITY_WINDOW = 2  # how much time you need to be 100% confident of a throw
+    PROBABILITY_WINDOW = 1.5  # how much time you need to be 100% confident of a throw
+    NOT_BASE_WEIGHT = 1  # the inverse of how much to weight the current base. Higher means players take the safe throw
+    # more often, lower means they throw to third mor often.
 
-    def calc_throw_time_differential(self, runner: Runner) -> float:
-        """calculate the net time if a perfect throw attempt is made at Runner.
-        Negative time means the runner wins, positive time means the fielder wins (assuming no errors)"""
+    def calc_throw_time_ratio(self, runner: Runner) -> float:
+        """calculate how much of a time advantage has if perfect throw attempt is made at Runner.
+        This is a percentage, from 0 to +.
+        ratio less than 1 means the runner wins, ratio greater than 1 means the fielder wins (assuming no errors."""
         distance = self.location.distance(self.base_locations[runner.next_base()])
         throw_duration = calc_throw_duration_base(self.fielder['throwing'], distance)
+        if throw_duration == 0:
+            return 100  # avoid div/0 errors
         time_to_base = runner.time_to_base()
-        return throw_duration - time_to_base
+        return time_to_base / throw_duration
 
     def prioritize_runner(self, runner: Runner) -> float:
         """Determines a weight for a runner based on value and probability."""
@@ -76,16 +81,17 @@ class LiveDefense:
 
         # fuzz time estimation
         time_fuzz = normal(0, LiveDefense.DECISION_FUZZ_STDV * (2 - self.fielder['awareness']))
-        # if runner time >>> duration, this evaluates to 0. if duration >>> runner time, this evaluate to 1.
+        # if runner time >>> duration, this evaluates to high. if duration >>> runner time, this evaluate to 0
+        # (or negative).
         # if 0 < delta < PROBABILITY_WINDOW this evalutes to somewhere between 0 and 1 continuously
-        net_time = (self.calc_throw_time_differential(runner) + time_fuzz) / LiveDefense.PROBABILITY_WINDOW
+        net_time = (self.calc_throw_time_ratio(runner) + time_fuzz) / LiveDefense.PROBABILITY_WINDOW
         odds = max(0.0, min(1.0, net_time))
-        return odds * base_weight
+        return odds * (base_weight + LiveDefense.NOT_BASE_WEIGHT)
 
     def fielders_choice(self, active_runners: List[Runner]) -> int:
         """Decide which base to throw to based on the list of runners"""
         runners = [(self.prioritize_runner(runner), runner) for runner in active_runners]
-        runners.sort(key=lambda x: x[0])
+        runners.sort(key=lambda x: x[0], reverse=True)
         return runners[0][1].next_base()
 
     def __str__(self):

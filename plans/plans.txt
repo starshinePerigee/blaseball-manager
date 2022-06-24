@@ -225,3 +225,25 @@ ideas:
 normal: coach, analysist, scout
 weird: nutritionist, massage therapist, mascot
 weirder: weatherman, mage
+
+
+
+reliquary: unlock all game features
+- weather types
+- elections
+- injuries
+- positions
+- blessing packs
+
+blessings & elections come in "election packs", which are like trading card packs?
+
+
+the reliquary has the SCALES:
+some relics make your life easier (player positions, more control)
+some relics make your life harder (injuries, bad weather)
+as the scales tip, cosmic forces conspire for / against you.
+
+
+fans: vote in elections for you, based on your current popularity. you can ask the fans, and even campaign
+(/ have players campaign / propagandize) to get them to focus on a blessing and get other teams / fans to let you have
+something.

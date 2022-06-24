@@ -150,6 +150,10 @@ def batters_4(ballgame_1):
     return [ballgame_1.batter(i) for i in range(4)]
 
 @pytest.fixture(scope='function')
-def live_defense_1(ballgame_1):
+def live_defense_rf(ballgame_1):
     live_d = inplay.LiveDefense(ballgame_1.defense().defense, ballgame_1.bases.base_coords)
+
+    fielder = live_d.defense['fielder 3'].player
+    live_d.fielder = fielder
+    live_d.location = live_d.defense['fielder 3'].location
     return live_d

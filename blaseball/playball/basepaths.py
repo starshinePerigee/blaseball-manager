@@ -368,6 +368,10 @@ class Basepaths(MutableMapping):
                 raise RuntimeError(f"Error: basepaths reset while a player was at home! {len(self)} runners present.")
             most_recent_base = runner.base
 
+    def walk_batter(self, batter) -> Tuple[int, List[Player]]:
+        """Batter advances on to the basepaths via balls. Can score (lol)"""
+        pass
+
     def nice_string(self):
         string = ""
         for i in range(1, self.number_of_bases + 1):

@@ -13,49 +13,48 @@ class TestLiveDefense:
         live_d = inplay.LiveDefense(ballgame_1.defense().defense, ballgame_1.bases.base_coords)
         assert isinstance(live_d, inplay.LiveDefense)
 
-    def test_catch_liveball_caught(self, live_defense_1, player_1, patcher):
+    def test_catch_liveball_caught(self, live_defense_rf, player_1, patcher):
         patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: True)
         far_left = LiveBall(20, 80, 100)
 
-        catch_update, duration, caught = live_defense_1.catch_liveball(far_left, player_1)
+        catch_update, duration, caught = live_defense_rf.catch_liveball(far_left, player_1)
 
         assert isinstance(catch_update, inplay.CatchOut)
         assert duration > 1
         assert caught
-        assert live_defense_1.fielder == live_defense_1.defense['fielder 3'].player
+        assert live_defense_rf.fielder == live_defense_rf.defense['fielder 3'].player
 
-    def test_catch_liveball_missed(self, live_defense_1, player_1, patcher):
+    def test_catch_liveball_missed(self, live_defense_rf, player_1, patcher):
         patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: False)
         far_left = LiveBall(20, 80, 100)
 
-        catch_update, duration, caught = live_defense_1.catch_liveball(far_left, player_1)
+        catch_update, duration, caught = live_defense_rf.catch_liveball(far_left, player_1)
 
         assert isinstance(catch_update, Catch)
         assert duration > 1
         assert not caught
-        assert live_defense_1.fielder == live_defense_1.defense['fielder 3'].player
+        assert live_defense_rf.fielder == live_defense_rf.defense['fielder 3'].player
 
-    def test_throw_to_first(self, live_defense_1, patcher):
+    def test_throw_to_first(self, live_defense_rf, patcher):
         patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: True)
-        live_defense_1.fielder = live_defense_1.defense['fielder 3'].player
-        basepeep = live_defense_1.defense['basepeep 1'].player
+        basepeep = live_defense_rf.defense['basepeep 1'].player
 
-        throw, duration = live_defense_1.throw_to_base(1)
+        throw, duration = live_defense_rf.throw_to_base(1)
 
         assert isinstance(throw, Throw)
         assert duration > 1
-        assert live_defense_1.fielder == basepeep
+        assert live_defense_rf.fielder == basepeep
 
-    def test_tag_at_first(self, live_defense_1, patcher):
+    def test_tag_at_first(self, live_defense_rf, patcher):
         patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: True)
-        basepeep = live_defense_1.defense['basepeep 1'].playe
-        live_defense_1.fielder = basepeep
+        basepeep = live_defense_rf.defense['basepeep 1'].player
+        live_defense_rf.fielder = basepeep
 
-        tag, duration = live_defense_1.throw_to_base(1)
+        tag, duration = live_defense_rf.throw_to_base(1)
 
         assert isinstance(tag, Update)
         assert duration < 5
-        assert live_defense_1.fielder == basepeep
+        assert live_defense_rf.fielder == basepeep
 
     @staticmethod
     def print_runner_priorities(priority_list, base, title, accuracy):
@@ -71,6 +70,29 @@ class TestLiveDefense:
               f"{total_zeros} zeros, {total_ones} total ones, {100 - total_ones - total_zeros} fuzz area, "
               f"{accuracy}% accuracy")
 
+    def test_calc_throw_time_ratio_1(self, runner_on_second, live_defense_rf, patcher):
+        runner_on_second.speed = 10
+        patcher.patch('blaseball.playball.inplay.calc_throw_duration_base', lambda throwing, distance: 5)
+
+        runner_on_second.remainder = 80  # 1 / 5
+        assert live_defense_rf.calc_throw_time_ratio(runner_on_second) == pytest.approx(1/5)
+
+        runner_on_second.remainder = 70
+        assert live_defense_rf.calc_throw_time_ratio(runner_on_second) == pytest.approx(2/5)
+
+        runner_on_second.remainder = 40
+        assert live_defense_rf.calc_throw_time_ratio(runner_on_second) == pytest.approx(1)
+
+        runner_on_second.remainder = 10
+        assert live_defense_rf.calc_throw_time_ratio(runner_on_second) == pytest.approx(8/5)
+
+    def test_calc_throw_time_ratio_2(self, runner_on_second, live_defense_rf):
+        runner_on_second.remainder = 80
+        assert 0 < live_defense_rf.calc_throw_time_ratio(runner_on_second) < 0.3
+
+        runner_on_second.remainder = 30
+        assert 1 < live_defense_rf.calc_throw_time_ratio(runner_on_second)
+
     @pytest.mark.parametrize(
         "awareness, min_accuracy, max_accuracy",
         [
@@ -80,43 +102,63 @@ class TestLiveDefense:
             (2, 95, 100)
         ]
     )
-    def test_prioritize_runner_fielder_awareness(self, patcher, live_defense_1, runner_on_second,
+    def test_prioritize_runner_fielder_awareness(self, patcher, live_defense_rf, runner_on_second,
                                                  awareness, min_accuracy, max_accuracy):
         # you have the following variables: throw distance, runner distance to base, fielder awareness.
         print(" ~Fielder Runner Prioritization~")
         patcher.patch_normal('blaseball.playball.inplay.normal')
-        fielder = live_defense_1.defense['fielder 3'].player
-        live_defense_1.fielder = fielder
-        fielder['awareness'] = awareness
-        live_defense_1.location = live_defense_1.defense['fielder 3'].location
+        live_defense_rf.fielder['awareness'] = awareness
         runner_on_second.remainder = 70  # runner beats the throw by 0.37 seconds
 
-        all_weights = [live_defense_1.prioritize_runner(runner_on_second) for __ in patcher]
+        all_weights = [live_defense_rf.prioritize_runner(runner_on_second) for __ in patcher]
 
         # runner_on_second beats the throw by 0.027 seconds
-        accuracy = sum([1 for x in all_weights if x < 1.5])
+        throw_threshold = (inplay.LiveDefense.NOT_BASE_WEIGHT + 3) * 0.5
+        accuracy = sum([1 for x in all_weights if x < throw_threshold])
         TestLiveDefense.print_runner_priorities(all_weights, 2,
                                                 f"{awareness:0.0f} awe vs runner on 2nd + 50", accuracy)
         assert min_accuracy <= accuracy <= max_accuracy
 
-    def test_print_prioritize_runner_remainder(self, live_defense_1, runner_on_second, patcher):
+    def test_print_prioritize_runner_remainder(self, live_defense_rf, runner_on_second, patcher):
         print(" ~Runner State Prioritization~")
         patcher.patch_normal('blaseball.playball.inplay.normal')
-        fielder = live_defense_1.defense['fielder 3'].player
-        live_defense_1.fielder = fielder
-        live_defense_1.location = live_defense_1.defense['fielder 3'].location
+        # reminder: awareness is 1
 
         for distance in range(10, 100, 10):
             runner_on_second.remainder = 90 - distance
-            all_weights = [live_defense_1.prioritize_runner(runner_on_second) for __ in patcher]
-            if live_defense_1.calc_throw_time_differential(runner_on_second) > 0:
-                # runner is far from the base, so we're just starting
-                accuracy = sum([1 for x in all_weights if x >= 1.5])
+            all_weights = [live_defense_rf.prioritize_runner(runner_on_second) for __ in patcher]
+            throw_threshold = (inplay.LiveDefense.NOT_BASE_WEIGHT + 3) * 0.5
+            if live_defense_rf.calc_throw_time_ratio(runner_on_second) > 1:
+                # fielder is favored, runner is close to start
+                accuracy = sum([1 for x in all_weights if x >= throw_threshold])
                 TestLiveDefense.print_runner_priorities(all_weights, 2, f"remainder {distance}", accuracy)
             else:
-                # runner has crossed the midpoint?
-                accuracy = sum([1 for x in all_weights if x < 1.5])
+                # runner has crossed the midpoint
+                accuracy = sum([1 for x in all_weights if x < throw_threshold])
                 TestLiveDefense.print_runner_priorities(all_weights, 2, f"remainder {distance}", accuracy)
 
-    def test_fielders_choice(self):
-        pass
+    def test_fielders_choice(self, empty_basepaths, batters_4, live_defense_rf, patcher):
+        live_defense_rf.location = live_defense_rf.defense['basepeep 1'].location
+
+        for base in range(0, 4):
+            empty_basepaths[base] = batters_4[base]
+            empty_basepaths[base].remainder = 10
+            empty_basepaths[base].speed = 10
+        active_runners = [runner for runner in empty_basepaths.runners if runner]
+
+        # we have plenty of time, so we should throw home
+        patcher.patch('blaseball.playball.inplay.normal', lambda loc, scale: 0)
+
+        assert live_defense_rf.fielders_choice(active_runners) == 4
+
+        for runner in empty_basepaths:
+            runner.remainder = 80
+        empty_basepaths[0].remainder = 40
+        live_defense_rf.location = live_defense_rf.defense['fielder 1'].location
+
+        # with no time, favor closest
+        assert live_defense_rf.fielders_choice(active_runners) == 1
+
+    def test_strings(self, live_defense_rf):
+        assert isinstance(str(live_defense_rf), str)
+        assert isinstance(repr(live_defense_rf), str)
