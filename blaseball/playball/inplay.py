@@ -103,6 +103,7 @@ class LiveDefense:
 
 class CatchOut(Update):
     def __init__(self, fielder: Player, batter: Player):
+        # todo: desribe catch location
         super().__init__(f"{batter['name']} hit a flyout to {fielder['name']}")
 
 
@@ -131,25 +132,25 @@ class FieldBall:
         self.outs = 0
         self.updates = []
 
-        fielder = Fielder(defense, basepaths.base_coords)
-        catch = fielder.catch(live_ball)
-        self.updates += [catch]
-        if catch.caught:
-            self.updates += [CatchOut(fielder.fielder, batter)]
+        live_defense = LiveDefense(defense, basepaths.base_coords)
+        catch_update, catch_duration, caught = live_defense.catch_liveball(live_ball, batter)
+        self.updates += [catch_update]
+        if caught:
             self.outs += 1
             basepaths.tag_up_all()
         else:
             basepaths += batter
 
         distance_to_home = live_ball.ground_location().distance(Coord(0, 0))
-        throw_time = calc_throw_duration_base(fielder.fielder['throwing'], distance_to_home) - 1  # cut it a little short
-        runs, scoring_runners = basepaths.advance_all(catch.duration, throw_time)
+        throw_time = calc_throw_duration_base(live_defense.fielder['throwing'], distance_to_home) - 1
+        # the minus one is cut it a little short to encourage people make mistakes, it's a magic spice number
+        runs, scoring_runners = basepaths.advance_all(catch_duration, throw_time)
         self.runs += runs
         self.updates += [RunScored(runner) for runner in scoring_runners]
 
         while basepaths:
             active_runners = [runner for runner in basepaths.runners if runner]
-            target = fielder.fielders_choice(active_runners)
+            target = live_defense.fielders_choice(active_runners)
 
             # a rundown occurs when:
             # fielder is on a base
@@ -157,18 +158,19 @@ class FieldBall:
             # with a player in between
             # who is not out
 
-            updates, throw_duration = fielder.throw(target)
-            self.updates += [updates]
-
-            outs, players_out = basepaths.check_out(target)
-            self.outs += outs
-            self.updates += [FieldingOut(fielder.fielder, runner, not tagable) for runner, tagable in players_out]
+            throw_update, throw_duration = live_defense.throw_to_base(target)
+            self.updates += [throw_update]
 
             new_runs, runners_scoring = basepaths.advance_all(throw_duration)
             self.runs += new_runs
             self.updates += [RunScored(runner) for runner in runners_scoring]
 
-        if len(self.updates) < 2:
+            player_out, tagged_out = basepaths.check_out(target)
+            if player_out:
+                self.outs += 1
+                self.updates += [FieldingOut(live_defense.fielder, player_out, not tagged_out)]
+
+        if not caught:
             self.updates += [self.filler_text(basepaths.runners[-1])]
 
     def filler_text(self, runner: Runner) -> Update:
@@ -185,25 +187,24 @@ if __name__ == "__main__":
     from blaseball.util import quickteams
     g = quickteams.ballgame
 
-    # TODO - quick demo
+    infield_fly = LiveBall(30, 70, 90)
 
-#     infield_fly = LiveBall(30, 70, 90)
-#
-#
-#     def field_ball(ball, batter):
-#         fb = FieldBall(g.batter(batter), g.defense().defense, ball, g.bases)
-#
-#         for update in fb.updates:
-#             print(update.text)
-#         print(g.bases.nice_string())
-#         print("")
-#
-#     field_ball(infield_fly, 0)
-#     field_ball(infield_fly, 1)
-#     field_ball(infield_fly, 2)
-#
-#     close_ground = LiveBall(-30, 15, 90)
-#
-#     field_ball(close_ground, 3)
-#     field_ball(close_ground, 4)
-#     field_ball(close_ground, 5)
+
+    def field_ball(ball, batter):
+        fb = FieldBall(g.batter(batter), g.defense().defense, ball, g.bases)
+
+        for update in fb.updates:
+            if update.text is not None:
+                print(update.text)
+        print(g.bases.nice_string())
+        print("")
+
+    field_ball(infield_fly, 0)
+    field_ball(infield_fly, 1)
+    field_ball(infield_fly, 2)
+
+    close_ground = LiveBall(-30, 15, 90)
+
+    field_ball(close_ground, 3)
+    field_ball(close_ground, 4)
+    field_ball(close_ground, 5)

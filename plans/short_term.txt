@@ -1,0 +1,14 @@
+finish tests
+
+figure out ballgame vs gamestate:
+- how to handle circular imports
+- which classes persist vs. which are destroy and remake / which are passed around?
+
+write gamestate
+convert classes to use gamestate
+write messenger
+write top level game (using messenger + gamestate)
+refactor to use Logging (loguru?)
+write stats handlers
+refactor to use stats handlers in classes
+write balance tests

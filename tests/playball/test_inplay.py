@@ -162,3 +162,72 @@ class TestLiveDefense:
     def test_strings(self, live_defense_rf):
         assert isinstance(str(live_defense_rf), str)
         assert isinstance(repr(live_defense_rf), str)
+
+
+class TestFieldBall:
+    def test_infield_fly_caught_empty_bases(self, ballgame_1, patcher):
+        fly_ball_to_third = LiveBall(30, 70, 90)
+
+        patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: True)
+
+        field_ball = inplay.FieldBall(
+            ballgame_1.batter(),
+            ballgame_1.defense().defense,
+            fly_ball_to_third,
+            ballgame_1.bases
+        )
+
+        print(" ~Catch Out~")
+        for update in field_ball.updates:
+            print(update)
+
+        assert isinstance(field_ball.updates[0], inplay.CatchOut)
+        assert field_ball.outs == 1
+
+    def test_infield_fly_caught_triple_play(self, ballgame_1, batters_4, patcher):
+        ballgame_1.bases[1] = batters_4[1]
+        ballgame_1.bases[2] = batters_4[2]
+        for runner in ballgame_1.bases:
+            runner.speed = 1  # slow lol
+            runner.remainder = 50
+        patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: True)
+
+        fly_ball_to_first = LiveBall(30, 0.01, 60)
+
+        field_ball = inplay.FieldBall(
+            ballgame_1.batter(),
+            ballgame_1.defense().defense,
+            fly_ball_to_first,
+            ballgame_1.bases
+        )
+
+        print(" ~Triple Play~")
+        for update in field_ball.updates:
+            print(update)
+
+        assert field_ball.outs == 3
+        assert sum([isinstance(u, inplay.FieldingOut) for u in field_ball.updates]) >= 2
+        assert sum([isinstance(u, inplay.CatchOut) for u in field_ball.updates]) >= 1
+
+    def test_infield_bases_loaded_home_run(self, ballgame_1, batters_4, patcher):
+        for i in range(1, 4):
+            ballgame_1.bases[i] = batters_4[i]
+
+        patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: False)
+        patcher.patch('blaseball.playball.fielding.roll_error_time', lambda odds: 100)  # absolutely pants defense
+
+        fly_ball_to_third = LiveBall(30, 70, 90)
+
+        field_ball = inplay.FieldBall(
+            ballgame_1.batter(),
+            ballgame_1.defense().defense,
+            fly_ball_to_third,
+            ballgame_1.bases
+        )
+
+        print(" ~Infield Grand Slam~")
+        for update in field_ball.updates:
+            print(update)
+
+        assert field_ball.outs == 0
+        assert field_ball.runs == 4

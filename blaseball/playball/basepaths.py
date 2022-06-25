@@ -335,7 +335,7 @@ class Basepaths(MutableMapping):
 
     TAG_OUT_DISTANCE = 10
 
-    def check_out(self, base: int) -> Optional[Runner]:
+    def check_out(self, base: int) -> Tuple[Optional[Runner], bool]:
         """Check to see if any runner is out if the ball is at a specific base.
         Note that there's an edge case where two players are valid:
         - a runner on first with a 2 foot leadoff
@@ -345,6 +345,7 @@ class Basepaths(MutableMapping):
         """
         for runner in self.runners:
             out = False
+            tagable = False
             if runner.forward:
                 if runner.base + 1 == base:
                     tagable = self.basepath_length - runner.remainder <= Basepaths.TAG_OUT_DISTANCE
@@ -356,8 +357,8 @@ class Basepaths(MutableMapping):
 
             if out:
                 self.runners.remove(runner)
-                return runner
-        return None
+                return runner, tagable
+        return None, False
 
     def reset_all(self, pitcher: Player, catcher: Player):
         """Moves all runners back to their most recently passed base, then sets them at leadoff"""

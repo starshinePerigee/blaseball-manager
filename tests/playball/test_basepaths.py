@@ -553,12 +553,14 @@ class TestBasepathsRunners:
         runner.force = False
         runner.forward = True
 
-        assert empty_basepaths.check_out(2) is None
-        assert empty_basepaths.check_out(3) is None
+        assert empty_basepaths.check_out(2)[0] is None
+        assert empty_basepaths.check_out(3)[0] is None
 
         runner.force = True
-        assert empty_basepaths.check_out(2) is None
-        assert empty_basepaths.check_out(3) is runner
+        assert empty_basepaths.check_out(2)[0] is None
+        runner_out, tagable = empty_basepaths.check_out(3)
+        assert runner_out is runner
+        assert not tagable
         assert empty_basepaths.runners == []
 
     def test_check_out_condition_backwards(self, empty_basepaths, player_1):
@@ -569,12 +571,14 @@ class TestBasepathsRunners:
         runner.force = False
         runner.forward = False
 
-        assert empty_basepaths.check_out(2) is None
-        assert empty_basepaths.check_out(3) is None
+        assert empty_basepaths.check_out(2)[0] is None
+        assert empty_basepaths.check_out(3)[0] is None
 
         runner.remainder = 5.0
-        assert empty_basepaths.check_out(3) is None
-        assert empty_basepaths.check_out(2) is runner
+        assert empty_basepaths.check_out(3)[0] is None
+        runner_out, tagable = empty_basepaths.check_out(2)
+        assert runner_out is runner
+        assert tagable
         assert empty_basepaths.runners == []
 
     def test_check_out_live(self, empty_basepaths, batters_4):
