@@ -157,3 +157,4 @@ def live_defense_rf(ballgame_1):
     live_d.fielder = fielder
     live_d.location = live_d.defense['fielder 3'].location
     return live_d
+

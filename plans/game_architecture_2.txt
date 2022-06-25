@@ -1,0 +1,46 @@
+assume we're using a messenger as previously established.
+
+There are a few questions:
+1. how are we handling the circular import issue:
+- do we need a GameState
+- is there an optimization issue with creating a million gamestates
+
+2. where is game logic
+
+
+3. how are we structuring Messenger
+- one singleton messenger?
+- multiple messengers? create a messenger for a game? or just a tag for a game?
+-- multiple messengers - one per game - makes more sense; you can link two messengers with a repeater
+--- repeater can be your thread boundary?
+- single big managers for things like stats
+- manager should eventually become thread safe
+
+
+option A:
+
+AllGames is the top level manager class:
+- creates ballgames
+- sends out tick events
+- interfaces with UI for timing
+- manages cross-game communication (re: threads)
+
+BallGame is your manager class
+- initializes objects
+- subscribes objects together
+- receives ticks from AllGames and sends out ticks on its local platform
+- local ticks carry a GameState
+- listens for outs, runs, etc.
+- tracks innings, batting orders, etc.
+
+PitchManager is a listener to game timing
+- takes a GameState and steps through it
+
+Recorder is another listener
+- saves and packages gamestates by At-Bat?
+
+no playball classes need access to BallGame
+
+
+
+(if you want to do a "view highlights only" it executes the game (like skip)

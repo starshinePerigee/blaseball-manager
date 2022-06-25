@@ -1,5 +1,3 @@
-finish tests
-
 figure out ballgame vs gamestate:
 - how to handle circular imports
 - which classes persist vs. which are destroy and remake / which are passed around?
