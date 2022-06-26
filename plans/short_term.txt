@@ -1,11 +1,12 @@
-write gamestate tests
 
 write top level game (using messenger + gamestate)
+
 refactor to use Logging (loguru?) + error handling
 - error handling on messenger sends as the firewall
 
 write stats handlers
 refactor to use stats handlers in classes
+fix docs
 write balance tests
 
 

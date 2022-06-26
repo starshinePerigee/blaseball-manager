@@ -63,6 +63,7 @@ class GameState:
         return self.teams[self.offense_i()]
 
     def batter(self, next_in_order=0) -> Player:
+        """Returns the player who is at-bat (if next_in_order is 0) or is n positions away from being at bat"""
         at_bat_number = self.at_bat_numbers[self.offense_i()]
         at_bat_number += next_in_order
         at_bat_number = at_bat_number % len(self.offense().batting_order)
@@ -76,4 +77,4 @@ class GameState:
         return self.teams[self.defense_i()]
 
     def boolean_base_list(self) -> List[bool]:
-        return [self.bases[i] for i in range(1, self.stadium.NUMBER_OF_BASES + 1)]
+        return [self.bases[i] is not None for i in range(1, self.stadium.NUMBER_OF_BASES + 1)]
