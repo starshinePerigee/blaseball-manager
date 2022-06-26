@@ -3,7 +3,7 @@ Controls a pitch through the entire pitch process - beginning with an intent, th
 to the pitch.
 """
 
-from blaseball.playball.gamestate import GameState
+from blaseball.playball.gamestate import GameState, GameRules
 from blaseball.playball.event import Update
 from blaseball.stats.players import Player
 
@@ -30,15 +30,15 @@ def decide_pitch_effect(game: GameState):
 FIRST_PITCH_BIAS = -0.2  # extra bias
 
 
-def calling_mod_from_count(balls, strikes) -> float:
+def calling_mod_from_count(balls, strikes, balls_count, strikes_count) -> float:
     # evaluate current count:
-    ball_ratio = balls / (GameState.BALL_COUNT - 1)
-    strike_ratio = strikes / (GameState.STRIKE_COUNT - 1)
+    ball_ratio = balls / (balls_count - 1)
+    strike_ratio = strikes / (strikes_count - 1)
     if ball_ratio == 0 and strike_ratio == 0:
         count_effect = FIRST_PITCH_BIAS
     else:
         count_effect = strike_ratio - ball_ratio
-    if balls == GameState.BALL_COUNT - 1:
+    if balls == balls_count - 1:
         count_effect += -0.2  # bonus hyper modifier
     return count_effect
 
@@ -87,9 +87,9 @@ def calling_mod_from_runners(runners: List[bool]) -> float:
     return bases_loaded_effect
 
 
-def calling_mod_from_outs(outs: int) -> float:
+def calling_mod_from_outs(outs: int, outs_count: int) -> float:
     # calculate effect from current number of outs
-    median_out = (GameState.OUTS_COUNT - 1) / 2  # 1 for three outs, 1.5 for four
+    median_out = (outs_count - 1) / 2  # 1 for three outs, 1.5 for four
     return outs - median_out
 
 
@@ -113,11 +113,13 @@ def calc_calling_modifier(game: GameState) -> float:
     or negative (towards the strike zone)
     """
     calling_modifier = 0
-    calling_modifier += calling_mod_from_count(game.balls, game.strikes) * CALLING_WEIGHTS['count']
+    calling_modifier += (calling_mod_from_count(game.balls, game.strikes,
+                                                game.rules.ball_count, game.rules.strike_count)
+                         * CALLING_WEIGHTS['count'])
     calling_modifier += (calling_mod_from_discipline_bias(game.batter()['power'], game.batter()['discipline'])
                          * CALLING_WEIGHTS['discipline_bias'])
-    calling_modifier += calling_mod_from_runners(game.bases.boolean_occupied_list()) * CALLING_WEIGHTS['bases_loaded']
-    calling_modifier += calling_mod_from_outs(game.outs) * CALLING_WEIGHTS['outs_number']
+    calling_modifier += calling_mod_from_runners(game.boolean_base_list()) * CALLING_WEIGHTS['bases_loaded']
+    calling_modifier += calling_mod_from_outs(game.outs, game.rules.outs_count) * CALLING_WEIGHTS['outs_number']
     calling_modifier += (calling_mod_from_next_hitter(game.batter(), game.batter(1))
                          * CALLING_WEIGHTS['current_v_next_hitter'])
     return calling_modifier
@@ -246,7 +248,7 @@ class Pitch(Update):
             loc_text = "to the wide outside"
         elif self.location > 0.8:
             loc_text = "right on the edge"
-        elif self.location  > 0.4:
+        elif self.location > 0.4:
             loc_text = "to the near outside"
         elif self.location > -0.4:
             loc_text = "straight down the middle"
@@ -315,7 +317,7 @@ if __name__ == "__main__":
     from blaseball.stats import stats
 
     from blaseball.util import quickteams
-    g = quickteams.gamestate
+    g = quickteams.game_state
 
     test_pitcher = g.defense()['pitcher']
     print(f"Pitcher: {test_pitcher}")

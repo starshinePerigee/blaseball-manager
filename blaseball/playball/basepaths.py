@@ -300,7 +300,7 @@ class Basepaths(MutableMapping):
         self.number_of_bases = stadium.NUMBER_OF_BASES  # does not count home
         self.basepath_length = stadium.BASEPATH_LENGTH
 
-        self.base_coords = stadium.BASE_LOCATIONS + [stadium.HOME_PLATE]  # 0 - 3 and then 0 again
+        self.base_coords = stadium.base_coords  # 0 - 3 and then 0 again
 
     def tag_up_all(self) -> None:
         for runner in self.runners:
@@ -371,7 +371,13 @@ class Basepaths(MutableMapping):
 
     def walk_batter(self, batter) -> Tuple[int, List[Player]]:
         """Batter advances on to the basepaths via balls. Can score (lol)"""
+        # TODO
         pass
+
+    def load_dict(self, base_dict: dict) -> None:
+        self.runners = []
+        for base, runner in base_dict.items():
+            self[base] = runner
 
     def nice_string(self):
         string = ""
@@ -415,8 +421,9 @@ class Basepaths(MutableMapping):
     def to_base_list(self):
         return [self[i] for i in range(0, self.number_of_bases+1)]
 
-    def boolean_occupied_list(self):
-        return [self[i] is not None for i in range(1, self.number_of_bases+1)]
+    # I think this migrates to GameState
+    # def boolean_occupied_list(self):
+    #     return [self[i] is not None for i in range(1, self.number_of_bases+1)]
 
     def __add__(self, player: Player):
         self.runners += [Runner(player, self.basepath_length)]

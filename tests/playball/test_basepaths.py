@@ -292,11 +292,12 @@ class TestRunner:
 class TestBasepathsManipulation:
     # Test creating and manipulating basepaths as a data structure
     def test_init_basepaths(self, gamestate_1):
-        assert isinstance(gamestate_1.bases, basepaths.Basepaths)
+        bases = basepaths.Basepaths(gamestate_1.stadium)
+        assert isinstance(bases, basepaths.Basepaths)
 
     def test_get_set(self, gamestate_1):
-        bases = gamestate_1.bases
-        
+        bases = basepaths.Basepaths(gamestate_1.stadium)
+
         assert bases[1] is None
 
         batter_1 = gamestate_1.batter()
@@ -315,7 +316,7 @@ class TestBasepathsManipulation:
         assert bases[2] is None
 
     def test_del(self, gamestate_1):
-        bases = gamestate_1.bases
+        bases = basepaths.Basepaths(gamestate_1.stadium)
         batter_1 = gamestate_1.batter()
         bases[1] = batter_1
         batter_2 = gamestate_1.batter(1)
@@ -334,7 +335,7 @@ class TestBasepathsManipulation:
 
     def test_as_list(self, gamestate_1):
         # don't forget basepaths.runners is FIFO
-        bases = gamestate_1.bases
+        bases = basepaths.Basepaths(gamestate_1.stadium)
 
         assert list(bases) == []
         assert bases.to_base_list() == [None] * 4
@@ -379,12 +380,12 @@ class TestBasepathsManipulation:
         assert players[1] is batters_4[1]
         assert players[0] is batters_4[0]
 
-    def test_add_runners_and_len(self, gamestate_1):
-        assert len(gamestate_1.bases) == 0
-        gamestate_1.bases += gamestate_1.batter()
-        assert len(gamestate_1.bases) == 1
-        gamestate_1.bases[2] = gamestate_1.batter(1)
-        assert len(gamestate_1.bases) == 2
+    def test_add_runners_and_len(self, gamestate_1, empty_basepaths):
+        assert len(empty_basepaths) == 0
+        empty_basepaths += gamestate_1.batter()
+        assert len(empty_basepaths) == 1
+        empty_basepaths[2] = gamestate_1.batter(1)
+        assert len(empty_basepaths) == 2
 
     def test_add_runners_order(self, empty_basepaths, batters_4):
         """basepaths.runners is a fifo queue, so make sure order is preserved if you're manually adding runners."""

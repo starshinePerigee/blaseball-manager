@@ -86,7 +86,7 @@ def gamestate_1(league_2, stadium_cut_lf):
     away_lineup = lineup.Lineup("Away Lineup")
     away_lineup.generate(league_2[1])
 
-    test_ballgame = gamestate.GameState(home_lineup, away_lineup, stadium_cut_lf)
+    test_ballgame = gamestate.GameState(home_lineup, away_lineup, stadium_cut_lf, gamestate.GameRules())
     return test_ballgame
 
 
@@ -133,9 +133,11 @@ def pitch_1(gamestate_1, monkeypatch):
 @pytest.fixture(scope='function')
 def runner_on_second(gamestate_1):
     player = gamestate_1.batter()
+    bases = basepaths.Basepaths(gamestate_1.stadium)
+    bases[2] = player
     gamestate_1.bases[2] = player
     gamestate_1.at_bat_numbers[1] += 1
-    runner = gamestate_1.bases.runners[0]
+    runner = bases.runners[0]
     runner.reset(player, player, base=2)  # pass player since it doesn't matter, since we're clearing the leadoff
     runner.remainder = 0
     assert isinstance(runner, basepaths.Runner)  # needed for pycharm type hints
@@ -143,7 +145,7 @@ def runner_on_second(gamestate_1):
 
 @pytest.fixture(scope='function')
 def empty_basepaths(gamestate_1):
-    return gamestate_1.bases
+    return basepaths.Basepaths(gamestate_1.stadium)
 
 @pytest.fixture(scope='function')
 def batters_4(gamestate_1):
@@ -151,7 +153,7 @@ def batters_4(gamestate_1):
 
 @pytest.fixture(scope='function')
 def live_defense_rf(gamestate_1):
-    live_d = inplay.LiveDefense(gamestate_1.defense().defense, gamestate_1.bases.base_coords)
+    live_d = inplay.LiveDefense(gamestate_1.defense().defense, gamestate_1.stadium.base_coords)
 
     fielder = live_d.defense['fielder 3'].player
     live_d.fielder = fielder

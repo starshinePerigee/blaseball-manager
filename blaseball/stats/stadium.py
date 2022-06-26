@@ -37,6 +37,8 @@ class Stadium:
             self.points += [Coord(distance, 90 * i / (len(distances)-1), True)]
         self.polygon = Polygon(self.points)
 
+        self.base_coords = Stadium.BASE_LOCATIONS + [Stadium.HOME_PLATE]
+
         self.walls = Stadium.WALLS_BONUS
 
     def check_home_run(self, location: Coord) -> Tuple[bool, bool]:

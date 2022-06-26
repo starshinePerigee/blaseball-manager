@@ -1,9 +1,4 @@
-write messenger tests
-
-write gamestate
-convert classes to use gamestate
-
-- which classes persist vs. which are destroy and remake / which are passed around?
+write gamestate tests
 
 write top level game (using messenger + gamestate)
 refactor to use Logging (loguru?) + error handling
@@ -12,3 +7,6 @@ refactor to use Logging (loguru?) + error handling
 write stats handlers
 refactor to use stats handlers in classes
 write balance tests
+
+
+to consider: which classes persist vs. which are destroy and remake / which are passed around?

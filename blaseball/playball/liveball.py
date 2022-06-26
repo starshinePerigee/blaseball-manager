@@ -145,9 +145,10 @@ class HitBall(Update):
 
 if __name__ == "__main__":
     from blaseball.stats import stats
+    from blaseball.playball.pitching import Pitch
 
     from blaseball.util import quickteams
-    g = quickteams.gamestate
+    g = quickteams.game_state
 
     test_pitcher = g.defense()['pitcher']
     test_catcher = g.defense()['catcher']
@@ -170,7 +171,7 @@ if __name__ == "__main__":
             p.location = 0
             s = Swing(g, p, test_batter)
             if s.hit:
-                h = HitBall(g, s.hi, test_batter)
+                h = HitBall(g, s.hit_quality, p.reduction, test_batter)
                 all_hits += [h]
                 if h.live.distance() > furthest_distance:
                     furthest_distance = h.live.distance()

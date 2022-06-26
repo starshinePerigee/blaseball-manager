@@ -25,24 +25,24 @@ class TestHitting:
     )
     def test_calc_desperation(self, count, limit, absolute):
         # first pitch should be a strike: mlb first pitch strike rate is 58%
-        desperation = hitting.calc_desperation(count[0], count[1])
+        desperation = hitting.calc_desperation(count[0], count[1], 4, 3)
         if absolute:
             assert limit[0] < desperation < limit[1]
         else:
-            limit = hitting.calc_desperation(limit[0], limit[1])
+            limit = hitting.calc_desperation(limit[0], limit[1], 4, 3)
             assert desperation > limit
             assert TestHitting.DESPERATION_LOWER_BOUND < limit < TestHitting.DESPERATION_UPPER_BOUND
         assert TestHitting.DESPERATION_LOWER_BOUND < desperation < TestHitting.DESPERATION_UPPER_BOUND
 
     def test_calc_desperation_strikes(self):
-        assert hitting.calc_desperation(0, 2) == pytest.approx(hitting.calc_desperation(0, 1))
+        assert hitting.calc_desperation(0, 2, 4, 3) == pytest.approx(hitting.calc_desperation(0, 1, 4, 3))
 
     def test_print_calc_desperation(self):
         print(" ~Desperation~")
-        print(f"0-0: {hitting.calc_desperation(0, 0)}")
-        print(f"Count max positive: {hitting.calc_desperation(0, 2)}")
-        print(f"Count max negative: {hitting.calc_desperation(3, 0)}")
-        print(f"3-2: {hitting.calc_desperation(3, 2)}")
+        print(f"0-0: {hitting.calc_desperation(0, 0, 4, 3)}")
+        print(f"Count max positive: {hitting.calc_desperation(0, 2, 4, 3)}")
+        print(f"Count max negative: {hitting.calc_desperation(3, 0, 4, 3)}")
+        print(f"3-2: {hitting.calc_desperation(3, 2, 4, 3)}")
 
     @pytest.mark.parametrize(
         "greater, lesser",
@@ -199,7 +199,8 @@ class TestHitIntegrated:
         # remainder of pitch stats don't matter (we're mocking them out basically)
 
         # remove desperation
-        patcher.patch('blaseball.playball.hitting.calc_desperation', lambda balls, strikes: 1.0)
+        patcher.patch('blaseball.playball.hitting.calc_desperation',
+                      lambda balls, strikes, ball_count, strike_count: 1.0)
 
         # half the time, read chance is 0%, the other half the read chance is 100% - 50% average
         def set_read_chance(obscurity, batter_discipline, iteration):

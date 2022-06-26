@@ -22,13 +22,13 @@ def decide_hit_effect(game: GameState):
     pass
 
 
-def calc_desperation(balls, strikes) -> float:
+def calc_desperation(balls, strikes, ball_count, strike_count) -> float:
     """Desperation is a measure of how much a player wants to swing vs take.
     It is a unitless number from 0 to 1.14, with 1 being "average"
     Note that there is no difference between one and two strikes."""
     total_balls = balls + BONUS_BALLS
-    ball_ratio = total_balls / (GameState.BALL_COUNT + BONUS_BALLS - 1)
-    strike_ratio = strikes / (GameState.STRIKE_COUNT - 1)
+    ball_ratio = total_balls / (ball_count + BONUS_BALLS - 1)
+    strike_ratio = strikes / (strike_count - 1)
     balls_over = ball_ratio - strike_ratio
     if balls_over < 0:
         balls_over = 0
@@ -78,7 +78,7 @@ class Swing(Update):
     def __init__(self, game: GameState, pitch: Pitch, batter: Player):
         super().__init__()
 
-        self.desperation = calc_desperation(game.balls, game.strikes)
+        self.desperation = calc_desperation(game.balls, game.strikes, game.rules.ball_count, game.rules.strike_count)
         self.read_chance = calc_read_chance(pitch.obscurity, batter['discipline'])
         self.swing_chance = calc_swing_chance(self.read_chance, self.desperation, pitch.strike)
         self.did_swing = roll_for_swing_decision(self.swing_chance)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     from blaseball.stats import stats
 
     from blaseball.util import quickteams
-    g = quickteams.gamestate
+    g = quickteams.game_state
 
     test_pitcher = g.defense()['pitcher']
     test_catcher = g.defense()['catcher']

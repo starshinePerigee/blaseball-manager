@@ -16,26 +16,26 @@ class TestCallingModifiers:
 
     def test_calling_modifier_count(self):
         # first pitch should be a strike: mlb first pitch strike rate is 58%
-        base_calling_modifier = pitching.calling_mod_from_count(0, 0)
+        base_calling_modifier = pitching.calling_mod_from_count(0, 0, 4, 3)
         assert -5 < base_calling_modifier < 0
 
-        assert pitching.calling_mod_from_count(0, 1) > 0
-        assert pitching.calling_mod_from_count(0, 1) > base_calling_modifier
-        assert pitching.calling_mod_from_count(0, 2) > pitching.calling_mod_from_count(0, 1)
+        assert pitching.calling_mod_from_count(0, 1, 4, 3) > 0
+        assert pitching.calling_mod_from_count(0, 1, 4, 3) > base_calling_modifier
+        assert pitching.calling_mod_from_count(0, 2, 4, 3) > pitching.calling_mod_from_count(0, 1, 4, 3)
 
-        assert pitching.calling_mod_from_count(1, 0) < base_calling_modifier
-        assert pitching.calling_mod_from_count(2, 0) < pitching.calling_mod_from_count(1, 0)
-        assert pitching.calling_mod_from_count(3, 0) < pitching.calling_mod_from_count(2, 0)
+        assert pitching.calling_mod_from_count(1, 0, 4, 3) < base_calling_modifier
+        assert pitching.calling_mod_from_count(2, 0, 4, 3) < pitching.calling_mod_from_count(1, 0, 4, 3)
+        assert pitching.calling_mod_from_count(3, 0, 4, 3) < pitching.calling_mod_from_count(2, 0, 4, 3)
 
-        assert pitching.calling_mod_from_count(3, 0) < pitching.calling_mod_from_count(3, 1)
+        assert pitching.calling_mod_from_count(3, 0, 4, 3) < pitching.calling_mod_from_count(3, 1, 4, 3)
 
-        assert -5 < pitching.calling_mod_from_count(3, 2) < 5
+        assert -5 < pitching.calling_mod_from_count(3, 2, 4, 3) < 5
 
         print(" ~CM count~")
         print(f"First pitch: {base_calling_modifier}")
-        print(f"Count max positive: {pitching.calling_mod_from_count(0, 2)}")
-        print(f"Count max negative: {pitching.calling_mod_from_count(3, 0)}")
-        print(f"Final pitch modfiier: {pitching.calling_mod_from_count(3, 2)}")
+        print(f"Count max positive: {pitching.calling_mod_from_count(0, 2, 4, 3)}")
+        print(f"Count max negative: {pitching.calling_mod_from_count(3, 0, 4, 3)}")
+        print(f"Final pitch modfiier: {pitching.calling_mod_from_count(3, 2, 4, 3)}")
 
     def test_calling_modifier_discipline_bias(self):
         assert pitching.calling_mod_from_discipline_bias(1, 1) == 0
@@ -65,13 +65,13 @@ class TestCallingModifiers:
         print(f"bases loaded effect: {pitching.calling_mod_from_runners([True, True, True])}")
 
     def test_calling_modifier_outs(self):
-        assert pitching.calling_mod_from_outs(1) == 0
-        assert pitching.calling_mod_from_outs(2) > 0
-        assert pitching.calling_mod_from_outs(0) < 0
+        assert pitching.calling_mod_from_outs(1, 3) == 0
+        assert pitching.calling_mod_from_outs(2, 3) > 0
+        assert pitching.calling_mod_from_outs(0, 3) < 0
 
         print(" ~CM outs~")
-        print(f"No outs effect: {pitching.calling_mod_from_outs(0)}")
-        print(f"Two outs effect: {pitching.calling_mod_from_outs(2)}")
+        print(f"No outs effect: {pitching.calling_mod_from_outs(0, 3)}")
+        print(f"Two outs effect: {pitching.calling_mod_from_outs(2, 3)}")
 
     def test_caling_modifier_next_hitter(self, lineup_1):
         current = lineup_1['batter 1']
@@ -100,7 +100,7 @@ class TestCallingModifiers:
         on_deck.set_all_stats(1)
 
         first_pitch_mod = pitching.calc_calling_modifier(gamestate_1)
-        base_first_pitch_mod = pitching.calling_mod_from_count(0, 0) * pitching.CALLING_WEIGHTS['count']
+        base_first_pitch_mod = pitching.calling_mod_from_count(0, 0, 4, 3) * pitching.CALLING_WEIGHTS['count']
         assert first_pitch_mod == pytest.approx(base_first_pitch_mod, abs=1)
         print(f"First pitch modifier: {first_pitch_mod}")
 
@@ -119,7 +119,7 @@ class TestCallingModifiers:
         gamestate_1.outs = 0
         on_deck.set_all_stats(1)
         current.set_all_stats(0)
-        del gamestate_1.bases[3]
+        gamestate_1.bases[3] = None
         gamestate_1.bases[1] = gamestate_1.batter(5)
         gamestate_1.strikes = 0
         gamestate_1.balls = 3

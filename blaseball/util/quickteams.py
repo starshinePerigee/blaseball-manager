@@ -25,6 +25,6 @@ away_lineup.generate(league[1])
 
 stadium = stadium.Stadium(stadium.ANGELS_STADIUM)
 
-ballgame = gamestate.GameState(home_lineup, away_lineup, stadium)
+game_state = gamestate.GameState(home_lineup, away_lineup, stadium, gamestate.GameRules())
 
 print("Setup complete.")
