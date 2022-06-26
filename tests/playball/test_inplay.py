@@ -212,6 +212,7 @@ class TestFieldBall:
     def test_infield_bases_loaded_home_run(self, ballgame_1, batters_4, patcher):
         for i in range(1, 4):
             ballgame_1.bases[i] = batters_4[i]
+            ballgame_1.bases[i].always_run = True
 
         patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: False)
         patcher.patch('blaseball.playball.fielding.roll_error_time', lambda odds: 100)  # absolutely pants defense

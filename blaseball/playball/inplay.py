@@ -170,7 +170,7 @@ class FieldBall:
                 self.outs += 1
                 self.updates += [FieldingOut(live_defense.fielder, player_out, not tagged_out)]
 
-        if not caught:
+        if not caught and self.runs == 0:
             self.updates += [self.filler_text(basepaths.runners[-1])]
 
     def filler_text(self, runner: Runner) -> Update:

@@ -23,7 +23,7 @@ AllGames is the top level manager class:
 - creates ballgames
 - sends out tick events
 - interfaces with UI for timing
-- manages cross-game communication (re: threads)
+- manages cross-game communication (re: processes)
 
 BallGame is your manager class
 - initializes objects
@@ -44,3 +44,6 @@ no playball classes need access to BallGame
 
 
 (if you want to do a "view highlights only" it executes the game (like skip)
+
+
+ok so threading is actually not what we want - we need multiprocessing. let's put this off for a bit.

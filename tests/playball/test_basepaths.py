@@ -545,7 +545,7 @@ class TestBasepathsRunners:
 
     def test_check_out_condition_forward(self, empty_basepaths, player_1):
         """Test check out logic"""
-        assert empty_basepaths.check_out(1) is None
+        assert empty_basepaths.check_out(1)[0] is None
 
         empty_basepaths[2] = player_1
         runner = empty_basepaths[2]
@@ -598,19 +598,19 @@ class TestBasepathsRunners:
         empty_basepaths.advance_all(2)
 
         # force out at second
-        assert empty_basepaths.check_out(2) == batters_4[1]
+        assert empty_basepaths.check_out(2)[0] == batters_4[1]
 
         empty_basepaths.advance_all(2)
 
         #force out at first
-        assert empty_basepaths.check_out(1) == batters_4[2]
+        assert empty_basepaths.check_out(1)[0] == batters_4[2]
 
         empty_basepaths.advance_all(2)
         # runner on third is now 60 feet down, so not taggable yet. if this were live, we'd have a rundown.
         # but instead we've forced advance, so now we can see them run into the tag
-        assert empty_basepaths.check_out(4) is None
+        assert empty_basepaths.check_out(4)[0] is None
         empty_basepaths.advance_all(2.5)
-        assert empty_basepaths.check_out(4) == batters_4[0]
+        assert empty_basepaths.check_out(4)[0] == batters_4[0]
         # what a disaster for the offense haha
 
     def test_reset_all(self, empty_basepaths, batters_4):
