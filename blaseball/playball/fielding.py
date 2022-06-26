@@ -198,6 +198,6 @@ class Throw(Update):
 
 if __name__ == "__main__":
     from blaseball.util import quickteams
-    g = quickteams.ballgame
+    g = quickteams.gamestate
 
     # TODO - quick demo

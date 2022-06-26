@@ -11,7 +11,7 @@ Events are things that happen during the game. This is generic, but in a nutshel
 
 from typing import List, Callable, Union, TYPE_CHECKING
 if TYPE_CHECKING:
-    from blaseball.playball.ballgame import BallGame
+    from blaseball.playball.gamestate import GameState
 
 
 class Update:

@@ -3,7 +3,7 @@
 This module creates a few placeholders so we can copy less code."""
 
 from blaseball.stats import players, teams, lineup, stadium
-from blaseball.playball import ballgame
+from blaseball.playball import gamestate
 from data import teamdata
 
 from random import shuffle
@@ -25,6 +25,6 @@ away_lineup.generate(league[1])
 
 stadium = stadium.Stadium(stadium.ANGELS_STADIUM)
 
-ballgame = ballgame.BallGame(home_lineup, away_lineup, stadium)
+ballgame = gamestate.GameState(home_lineup, away_lineup, stadium)
 
 print("Setup complete.")

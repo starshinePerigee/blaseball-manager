@@ -8,7 +8,7 @@ This commands BasePaths and interfaces with fielding as needed..
 
 from blaseball.playball.basepaths import Runner, Basepaths, calc_speed
 from blaseball.playball.fielding import Catch, Throw, calc_throw_duration_base
-from blaseball.playball.ballgame import BallGame
+from blaseball.playball.gamestate import GameState
 from blaseball.playball.liveball import LiveBall
 from blaseball.playball.event import Update
 from blaseball.stats.players import Player
@@ -185,7 +185,7 @@ class FieldBall:
 
 if __name__ == "__main__":
     from blaseball.util import quickteams
-    g = quickteams.ballgame
+    g = quickteams.gamestate
 
     infield_fly = LiveBall(30, 70, 90)
 

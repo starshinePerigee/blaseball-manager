@@ -3,7 +3,7 @@ Controls a pitch through the entire pitch process - beginning with an intent, th
 to the pitch.
 """
 
-from blaseball.playball.ballgame import BallGame
+from blaseball.playball.gamestate import GameState
 from blaseball.playball.event import Update
 from blaseball.stats.players import Player
 
@@ -23,7 +23,7 @@ ACCURACY_STDV_INTERCEPT = ONE_STDV_AT_ZERO_ACCURACY
 # Catcher calling functions:
 
 
-def decide_pitch_effect(game: BallGame):
+def decide_pitch_effect(game: GameState):
     pass
 
 
@@ -32,13 +32,13 @@ FIRST_PITCH_BIAS = -0.2  # extra bias
 
 def calling_mod_from_count(balls, strikes) -> float:
     # evaluate current count:
-    ball_ratio = balls / (BallGame.BALL_COUNT - 1)
-    strike_ratio = strikes / (BallGame.STRIKE_COUNT - 1)
+    ball_ratio = balls / (GameState.BALL_COUNT - 1)
+    strike_ratio = strikes / (GameState.STRIKE_COUNT - 1)
     if ball_ratio == 0 and strike_ratio == 0:
         count_effect = FIRST_PITCH_BIAS
     else:
         count_effect = strike_ratio - ball_ratio
-    if balls == BallGame.BALL_COUNT - 1:
+    if balls == GameState.BALL_COUNT - 1:
         count_effect += -0.2  # bonus hyper modifier
     return count_effect
 
@@ -89,7 +89,7 @@ def calling_mod_from_runners(runners: List[bool]) -> float:
 
 def calling_mod_from_outs(outs: int) -> float:
     # calculate effect from current number of outs
-    median_out = (BallGame.OUTS_COUNT - 1) / 2  # 1 for three outs, 1.5 for four
+    median_out = (GameState.OUTS_COUNT - 1) / 2  # 1 for three outs, 1.5 for four
     return outs - median_out
 
 
@@ -106,7 +106,7 @@ CALLING_WEIGHTS = {
 }
 
 
-def calc_calling_modifier(game: BallGame) -> float:
+def calc_calling_modifier(game: GameState) -> float:
     """
     Determine the ideal shift towards or away from the plate including catcher effects.
     This is a unitless number and can be positive (away from the strike zone)
@@ -145,7 +145,7 @@ def calc_target_location(pitcher_accuracy, strike_percent) -> float:
     return called_location
 
 
-def decide_call(game: BallGame, catcher: Player, pitcher: Player) -> float:
+def decide_call(game: GameState, catcher: Player, pitcher: Player) -> float:
     """Determines a pitcher's intent, before they throw the ball, based on pitcher, catcher, and game state.
 
     Returns a 0 - 2ish value for ball position, where 0 is dead center of strike zone, 1 is edge of strike zone,
@@ -225,7 +225,7 @@ class Pitch(Update):
     difficulty: how hard the pitch is to hit, from 0 +
     reduction: how much successful hits are reduced
     """
-    def __init__(self, game: BallGame, pitcher: Player, catcher: Player):
+    def __init__(self, game: GameState, pitcher: Player, catcher: Player):
         catcher = catcher
         pitcher = pitcher
 
@@ -315,7 +315,7 @@ if __name__ == "__main__":
     from blaseball.stats import stats
 
     from blaseball.util import quickteams
-    g = quickteams.ballgame
+    g = quickteams.gamestate
 
     test_pitcher = g.defense()['pitcher']
     print(f"Pitcher: {test_pitcher}")

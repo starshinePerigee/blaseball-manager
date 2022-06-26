@@ -8,7 +8,7 @@ from blaseball.playball.pitching import Pitch
 from blaseball.playball.hitting import Swing
 from blaseball.playball.liveball import HitBall, LiveBall
 from blaseball.playball.fielding import FieldBall
-from blaseball.playball.ballgame import BallGame
+from blaseball.playball.gamestate import GameState
 from blaseball.playball.event import Event
 
 from typing import List
@@ -21,7 +21,7 @@ class PitchHit(Event):
 
 
     """
-    def __init__(self, game: BallGame):
+    def __init__(self, game: GameState):
         super().__init__(f"{game.defense()['pitcher']} pitch to {game.batter()}")
 
         # TODO: This is going to need a lot of work to make nice and pretty, describe the pitch, etc.
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     from blaseball.stats import stats
 
     from blaseball.util import quickteams
-    g = quickteams.ballgame
+    g = quickteams.gamestate
 
     g.balls = 1
 

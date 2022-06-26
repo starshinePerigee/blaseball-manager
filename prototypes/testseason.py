@@ -2,7 +2,7 @@ from random import shuffle
 from time import perf_counter
 
 from blaseball.stats import players, teams, lineup
-from blaseball.playball import ballgame
+from blaseball.playball import gamestate
 from data import teamdata
 
 t_zero = perf_counter()
@@ -35,7 +35,7 @@ for day in range(1, 100):
         t_away = team_names[game+int(len(team_names) / 2)]
         l_away = lineups[t_away][game % 5]
 
-        g = ballgame.BallGame(l_home, l_away)
+        g = gamestate.GameState(l_home, l_away)
         while not g.complete:
             g.next()
 

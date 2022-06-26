@@ -9,8 +9,8 @@ from statistics import mean
 
 
 class TestLiveDefense:
-    def test_init(self, ballgame_1):
-        live_d = inplay.LiveDefense(ballgame_1.defense().defense, ballgame_1.bases.base_coords)
+    def test_init(self, gamestate_1):
+        live_d = inplay.LiveDefense(gamestate_1.defense().defense, gamestate_1.bases.base_coords)
         assert isinstance(live_d, inplay.LiveDefense)
 
     def test_catch_liveball_caught(self, live_defense_rf, player_1, patcher):
@@ -165,16 +165,16 @@ class TestLiveDefense:
 
 
 class TestFieldBall:
-    def test_infield_fly_caught_empty_bases(self, ballgame_1, patcher):
+    def test_infield_fly_caught_empty_bases(self, gamestate_1, patcher):
         fly_ball_to_third = LiveBall(30, 70, 90)
 
         patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: True)
 
         field_ball = inplay.FieldBall(
-            ballgame_1.batter(),
-            ballgame_1.defense().defense,
+            gamestate_1.batter(),
+            gamestate_1.defense().defense,
             fly_ball_to_third,
-            ballgame_1.bases
+            gamestate_1.bases
         )
 
         print(" ~Catch Out~")
@@ -184,10 +184,10 @@ class TestFieldBall:
         assert isinstance(field_ball.updates[0], inplay.CatchOut)
         assert field_ball.outs == 1
 
-    def test_infield_fly_caught_triple_play(self, ballgame_1, batters_4, patcher):
-        ballgame_1.bases[1] = batters_4[1]
-        ballgame_1.bases[2] = batters_4[2]
-        for runner in ballgame_1.bases:
+    def test_infield_fly_caught_triple_play(self, gamestate_1, batters_4, patcher):
+        gamestate_1.bases[1] = batters_4[1]
+        gamestate_1.bases[2] = batters_4[2]
+        for runner in gamestate_1.bases:
             runner.speed = 1  # slow lol
             runner.remainder = 50
         patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: True)
@@ -195,10 +195,10 @@ class TestFieldBall:
         fly_ball_to_first = LiveBall(30, 0.01, 60)
 
         field_ball = inplay.FieldBall(
-            ballgame_1.batter(),
-            ballgame_1.defense().defense,
+            gamestate_1.batter(),
+            gamestate_1.defense().defense,
             fly_ball_to_first,
-            ballgame_1.bases
+            gamestate_1.bases
         )
 
         print(" ~Triple Play~")
@@ -209,10 +209,10 @@ class TestFieldBall:
         assert sum([isinstance(u, inplay.FieldingOut) for u in field_ball.updates]) >= 2
         assert sum([isinstance(u, inplay.CatchOut) for u in field_ball.updates]) >= 1
 
-    def test_infield_bases_loaded_home_run(self, ballgame_1, batters_4, patcher):
+    def test_infield_bases_loaded_home_run(self, gamestate_1, batters_4, patcher):
         for i in range(1, 4):
-            ballgame_1.bases[i] = batters_4[i]
-            ballgame_1.bases[i].always_run = True
+            gamestate_1.bases[i] = batters_4[i]
+            gamestate_1.bases[i].always_run = True
 
         patcher.patch('blaseball.playball.fielding.roll_to_catch', lambda odds: False)
         patcher.patch('blaseball.playball.fielding.roll_error_time', lambda odds: 100)  # absolutely pants defense
@@ -220,10 +220,10 @@ class TestFieldBall:
         fly_ball_to_third = LiveBall(30, 70, 90)
 
         field_ball = inplay.FieldBall(
-            ballgame_1.batter(),
-            ballgame_1.defense().defense,
+            gamestate_1.batter(),
+            gamestate_1.defense().defense,
             fly_ball_to_third,
-            ballgame_1.bases
+            gamestate_1.bases
         )
 
         print(" ~Infield Grand Slam~")

@@ -2,7 +2,7 @@
 Controls a player's pre-hit decisions as well as their actual swing attempt.
 """
 
-from blaseball.playball.ballgame import BallGame
+from blaseball.playball.gamestate import GameState
 from blaseball.playball.pitching import Pitch
 from blaseball.stats.players import Player
 from blaseball.playball.event import Update
@@ -18,7 +18,7 @@ DESPERATION_MIDPOINT = 0.85  # balls under for 100% desperation
 DESPERATION_FLOOR = 0.2  # lowest amount of desperation possible
 
 
-def decide_hit_effect(game: BallGame):
+def decide_hit_effect(game: GameState):
     pass
 
 
@@ -27,8 +27,8 @@ def calc_desperation(balls, strikes) -> float:
     It is a unitless number from 0 to 1.14, with 1 being "average"
     Note that there is no difference between one and two strikes."""
     total_balls = balls + BONUS_BALLS
-    ball_ratio = total_balls / (BallGame.BALL_COUNT + BONUS_BALLS - 1)
-    strike_ratio = strikes / (BallGame.STRIKE_COUNT - 1)
+    ball_ratio = total_balls / (GameState.BALL_COUNT + BONUS_BALLS - 1)
+    strike_ratio = strikes / (GameState.STRIKE_COUNT - 1)
     balls_over = ball_ratio - strike_ratio
     if balls_over < 0:
         balls_over = 0
@@ -75,7 +75,7 @@ def roll_hit_quality(net_contact) -> float:
 
 class Swing(Update):
     """A player's swing, from decision up to hit quality"""
-    def __init__(self, game: BallGame, pitch: Pitch, batter: Player):
+    def __init__(self, game: GameState, pitch: Pitch, batter: Player):
         super().__init__()
 
         self.desperation = calc_desperation(game.balls, game.strikes)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     from blaseball.stats import stats
 
     from blaseball.util import quickteams
-    g = quickteams.ballgame
+    g = quickteams.gamestate
 
     test_pitcher = g.defense()['pitcher']
     test_catcher = g.defense()['catcher']

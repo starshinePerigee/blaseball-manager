@@ -4,7 +4,7 @@ Governs the flight of a ball after it is hit, errored out, etc.
 
 from blaseball.playball.event import Update
 from blaseball.playball.hitting import Swing
-from blaseball.playball.ballgame import BallGame
+from blaseball.playball.gamestate import GameState
 from blaseball.stats.players import Player
 from blaseball.util.geometry import Coord
 
@@ -115,7 +115,7 @@ def roll_exit_velocity(quality, reduction, batter_power) -> float:
 
 class HitBall(Update):
     """A hit ball is an update which turns a swing into a live ball, which it carries with it."""
-    def __init__(self, game: BallGame, quality: float, reduction: float, batter: Player):
+    def __init__(self, game: GameState, quality: float, reduction: float, batter: Player):
         super().__init__()
 
         launch_angle = roll_launch_angle(quality, batter['power'])
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     from blaseball.stats import stats
 
     from blaseball.util import quickteams
-    g = quickteams.ballgame
+    g = quickteams.gamestate
 
     test_pitcher = g.defense()['pitcher']
     test_catcher = g.defense()['catcher']

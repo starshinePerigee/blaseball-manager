@@ -7,7 +7,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 import pytest
 
 from blaseball.stats import players, teams, stadium, lineup
-from blaseball.playball import ballgame, pitching, basepaths, inplay
+from blaseball.playball import gamestate, pitching, basepaths, inplay
 from support.mock_functions import FunctionPatcher
 from data import teamdata
 import numpy
@@ -80,25 +80,25 @@ def defense_1(lineup_1):
 
 
 @pytest.fixture(scope='function')
-def ballgame_1(league_2, stadium_cut_lf):
+def gamestate_1(league_2, stadium_cut_lf):
     home_lineup = lineup.Lineup("Home Lineup")
     home_lineup.generate(league_2[0])
     away_lineup = lineup.Lineup("Away Lineup")
     away_lineup.generate(league_2[1])
 
-    test_ballgame = ballgame.BallGame(home_lineup, away_lineup, stadium_cut_lf)
+    test_ballgame = gamestate.GameState(home_lineup, away_lineup, stadium_cut_lf)
     return test_ballgame
 
 
 @pytest.fixture(scope='function')
-def pitch_1(ballgame_1, monkeypatch):
+def pitch_1(gamestate_1, monkeypatch):
     """A nice pitch right through the zone."""
-    catcher = ballgame_1.defense()['catcher']
+    catcher = gamestate_1.defense()['catcher']
     catcher.set_all_stats(1)
-    pitcher = ballgame_1.defense()['pitcher']
+    pitcher = gamestate_1.defense()['pitcher']
     pitcher.set_all_stats(1)
 
-    ballgame_1.outs = 1
+    gamestate_1.outs = 1
 
     monkeypatch.setattr('blaseball.playball.pitching.normal', lambda loc, scale=1: loc)
     monkeypatch.setattr('blaseball.playball.pitching.rand', lambda: 0.5)
@@ -114,7 +114,7 @@ def pitch_1(ballgame_1, monkeypatch):
         lambda current, on_deck: 0
     )
 
-    pitch = pitching.Pitch(ballgame_1, pitcher, catcher)
+    pitch = pitching.Pitch(gamestate_1, pitcher, catcher)
 
     monkeypatch.setattr('blaseball.playball.pitching.normal', numpy.random.normal)
     monkeypatch.setattr('blaseball.playball.pitching.rand', numpy.random.rand)
@@ -131,27 +131,27 @@ def pitch_1(ballgame_1, monkeypatch):
 
 
 @pytest.fixture(scope='function')
-def runner_on_second(ballgame_1):
-    player = ballgame_1.batter()
-    ballgame_1.bases[2] = player
-    ballgame_1.at_bat_numbers[1] += 1
-    runner = ballgame_1.bases.runners[0]
+def runner_on_second(gamestate_1):
+    player = gamestate_1.batter()
+    gamestate_1.bases[2] = player
+    gamestate_1.at_bat_numbers[1] += 1
+    runner = gamestate_1.bases.runners[0]
     runner.reset(player, player, base=2)  # pass player since it doesn't matter, since we're clearing the leadoff
     runner.remainder = 0
     assert isinstance(runner, basepaths.Runner)  # needed for pycharm type hints
     return runner
 
 @pytest.fixture(scope='function')
-def empty_basepaths(ballgame_1):
-    return ballgame_1.bases
+def empty_basepaths(gamestate_1):
+    return gamestate_1.bases
 
 @pytest.fixture(scope='function')
-def batters_4(ballgame_1):
-    return [ballgame_1.batter(i) for i in range(4)]
+def batters_4(gamestate_1):
+    return [gamestate_1.batter(i) for i in range(4)]
 
 @pytest.fixture(scope='function')
-def live_defense_rf(ballgame_1):
-    live_d = inplay.LiveDefense(ballgame_1.defense().defense, ballgame_1.bases.base_coords)
+def live_defense_rf(gamestate_1):
+    live_d = inplay.LiveDefense(gamestate_1.defense().defense, gamestate_1.bases.base_coords)
 
     fielder = live_d.defense['fielder 3'].player
     live_d.fielder = fielder

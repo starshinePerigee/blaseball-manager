@@ -17,7 +17,7 @@ from blaseball.stats.lineup import Lineup
 from blaseball.stats.stadium import Stadium
 
 
-class BallGame:
+class GameState:
     """
     This is a single game of blaseball.
 
@@ -214,7 +214,7 @@ if __name__ == "__main__":
 
     sleep(1)
 
-    g = BallGame(l1, l2, True)
+    g = GameState(l1, l2, True)
     while not g.complete:
         g.next()
 

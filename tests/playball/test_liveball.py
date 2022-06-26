@@ -189,17 +189,17 @@ class TestHitBall:
             (45, 200, None)
         ]
     )
-    def test_hit_ball_integrated(self, ballgame_1, patcher, field_angle, distance, text):
+    def test_hit_ball_integrated(self, gamestate_1, patcher, field_angle, distance, text):
         patcher.patch("blaseball.playball.liveball.LiveBall.distance",
                       lambda x: distance)
         patcher.patch("blaseball.playball.liveball.roll_field_angle",
                       lambda batter_pull: field_angle)
 
-        hit_ball = liveball.HitBall(ballgame_1, 0, 0, ballgame_1.batter())
+        hit_ball = liveball.HitBall(gamestate_1, 0, 0, gamestate_1.batter())
         assert hit_ball.text == text
         assert hit_ball.live.distance() == distance
 
-    def test_hit_ball_stats(self, patcher, ballgame_1):
+    def test_hit_ball_stats(self, patcher, gamestate_1):
         # two averaging stats: average hit distance, and average exit velocity.
         # plus "total home runs"
         def distance_iterator(iteration):  # noqa
@@ -220,9 +220,9 @@ class TestHitBall:
         # fix launch angle to avoid ground rebounds
         patcher.patch("blaseball.playball.liveball.roll_launch_angle", lambda quality, batter_power: 20)
 
-        batter = ballgame_1.batter()
+        batter = gamestate_1.batter()
 
-        all_hit_balls = [liveball.HitBall(ballgame_1, 0, 0, batter) for __ in patcher]
+        all_hit_balls = [liveball.HitBall(gamestate_1, 0, 0, batter) for __ in patcher]
         all_evs = [hb.live.speed for hb in all_hit_balls]
 
         assert batter['average hit distance'] == pytest.approx(570)

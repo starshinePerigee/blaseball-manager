@@ -90,40 +90,40 @@ class TestCallingModifiers:
         print(f"Next hitter min effect: {zero_v_one}")
         print(f"Next hitter max effect: {one_v_zero}")
 
-    def test_calc_calling_modifier(self, ballgame_1):
+    def test_calc_calling_modifier(self, gamestate_1):
         # set baseline values:
         print(" ~total calling modifier~")
-        ballgame_1.outs = 1
-        current = ballgame_1.batter()
-        on_deck = ballgame_1.batter(1)
+        gamestate_1.outs = 1
+        current = gamestate_1.batter()
+        on_deck = gamestate_1.batter(1)
         current.set_all_stats(1)
         on_deck.set_all_stats(1)
 
-        first_pitch_mod = pitching.calc_calling_modifier(ballgame_1)
+        first_pitch_mod = pitching.calc_calling_modifier(gamestate_1)
         base_first_pitch_mod = pitching.calling_mod_from_count(0, 0) * pitching.CALLING_WEIGHTS['count']
         assert first_pitch_mod == pytest.approx(base_first_pitch_mod, abs=1)
         print(f"First pitch modifier: {first_pitch_mod}")
 
         # max walks case
-        ballgame_1.outs = 2
+        gamestate_1.outs = 2
         on_deck.set_all_stats(0)
-        ballgame_1.bases[3] = ballgame_1.batter(3)
-        ballgame_1.bases[2] = ballgame_1.batter(4)
-        ballgame_1.strikes = 2
-        ballgame_1.balls = 0
-        max_walks = pitching.calc_calling_modifier(ballgame_1)
+        gamestate_1.bases[3] = gamestate_1.batter(3)
+        gamestate_1.bases[2] = gamestate_1.batter(4)
+        gamestate_1.strikes = 2
+        gamestate_1.balls = 0
+        max_walks = pitching.calc_calling_modifier(gamestate_1)
         assert max_walks > 20
         print(f"Maximum walk bias: {max_walks}")
 
         # max strikes case
-        ballgame_1.outs = 0
+        gamestate_1.outs = 0
         on_deck.set_all_stats(1)
         current.set_all_stats(0)
-        del ballgame_1.bases[3]
-        ballgame_1.bases[1] = ballgame_1.batter(5)
-        ballgame_1.strikes = 0
-        ballgame_1.balls = 3
-        max_strikes = pitching.calc_calling_modifier(ballgame_1)
+        del gamestate_1.bases[3]
+        gamestate_1.bases[1] = gamestate_1.batter(5)
+        gamestate_1.strikes = 0
+        gamestate_1.balls = 3
+        max_strikes = pitching.calc_calling_modifier(gamestate_1)
         assert max_strikes < -20
         print(f"Maximum strike bias: {max_strikes}")
 
@@ -156,33 +156,33 @@ class TestCalling:
         assert pitching.calc_target_location(0.5, 0.8) < pitching.calc_target_location(1, 0.8)
         assert pitching.calc_target_location(0.5, 0.2) > pitching.calc_target_location(1, 0.2)
 
-    def test_decide_call(self, ballgame_1):
-        catcher = ballgame_1.defense()['catcher']
-        pitcher = ballgame_1.defense()['pitcher']
+    def test_decide_call(self, gamestate_1):
+        catcher = gamestate_1.defense()['catcher']
+        pitcher = gamestate_1.defense()['pitcher']
 
         catcher.set_all_stats(1)
         pitcher.set_all_stats(1)
 
-        ballgame_1.outs = 1
+        gamestate_1.outs = 1
 
         # should be an approximate strike
-        assert pitching.decide_call(ballgame_1, catcher, pitcher) < 1
+        assert pitching.decide_call(gamestate_1, catcher, pitcher) < 1
 
-        ballgame_1.balls = 3
+        gamestate_1.balls = 3
         pitcher['accuracy'] = 0.5
         # 3 balls on the count, aim dead center
-        assert pitching.decide_call(ballgame_1, catcher, pitcher) == pytest.approx(0)
+        assert pitching.decide_call(gamestate_1, catcher, pitcher) == pytest.approx(0)
 
-        ballgame_1.balls = 0
-        ballgame_1.strikes = 2
+        gamestate_1.balls = 0
+        gamestate_1.strikes = 2
         pitcher['accuracy'] = 1
-        both_good = pitching.decide_call(ballgame_1, catcher, pitcher)
+        both_good = pitching.decide_call(gamestate_1, catcher, pitcher)
         pitcher['accuracy'] = 0.5
-        bad_pitcher = pitching.decide_call(ballgame_1, catcher, pitcher)
+        bad_pitcher = pitching.decide_call(gamestate_1, catcher, pitcher)
         catcher['calling'] = 0.5
-        both_bad = pitching.decide_call(ballgame_1, catcher, pitcher)
+        both_bad = pitching.decide_call(gamestate_1, catcher, pitcher)
         pitcher['accuracy'] = 1
-        bad_catcher = pitching.decide_call(ballgame_1, catcher, pitcher)
+        bad_catcher = pitching.decide_call(gamestate_1, catcher, pitcher)
 
         assert both_good > 1
         # a bad catcher reduces overall effect, a good catcher also reduces overall effect
@@ -266,10 +266,10 @@ class TestPitching:
 
 
 class TestPitchIntegrated:
-    def test_pitch(self, ballgame_1, monkeypatch, patcher):
-        ballgame_1.outs = 1
-        catcher = ballgame_1.defense()['catcher']
-        pitcher = ballgame_1.defense()['pitcher']
+    def test_pitch(self, gamestate_1, monkeypatch, patcher):
+        gamestate_1.outs = 1
+        catcher = gamestate_1.defense()['catcher']
+        pitcher = gamestate_1.defense()['pitcher']
         print(" ~overall pitching~")
 
         called_locations = []
@@ -297,7 +297,7 @@ class TestPitchIntegrated:
                 lambda pitcher_trickery: pitcher_trickery * pitching.REDUCTION_FROM_TRICKERY
             )
 
-            pitches = [pitching.Pitch(ballgame_1, pitcher, catcher) for __ in patcher]
+            pitches = [pitching.Pitch(gamestate_1, pitcher, catcher) for __ in patcher]
 
             assert catcher['total pitches called'] == 100
             assert pitcher['total pitches thrown'] == 100

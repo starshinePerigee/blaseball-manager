@@ -36,8 +36,8 @@ class TestFixtures:
     def test_defesne_1(self, defense_1):
         assert isinstance(defense_1, blaseball.stats.lineup.Defense)
 
-    def test_ballgame_1(self, ballgame_1):
-        assert isinstance(ballgame_1, blaseball.playball.ballgame.BallGame)
+    def test_ballgame_1(self, gamestate_1):
+        assert isinstance(gamestate_1, blaseball.playball.gamestate.GameState)
 
     def test_empty_basepaths(self, empty_basepaths):
         assert isinstance(empty_basepaths, blaseball.playball.basepaths.Basepaths)
@@ -52,14 +52,14 @@ class TestFixtures:
             assert TestFixtures.previous_pitch == pitch_1
         TestFixtures.previous_pitch = pitch_1
 
-    def test_runner_on_second(self, runner_on_second, ballgame_1):
+    def test_runner_on_second(self, runner_on_second, gamestate_1):
         assert isinstance(runner_on_second, blaseball.playball.basepaths.Runner)
-        assert ballgame_1.bases[2] == runner_on_second.player
+        assert gamestate_1.bases[2] == runner_on_second.player
 
-    def test_batters_4(self, batters_4, ballgame_1):
+    def test_batters_4(self, batters_4, gamestate_1):
         assert isinstance(batters_4, list)
         assert isinstance(batters_4[0], blaseball.stats.players.Player)
-        assert ballgame_1.batter() is batters_4[0]
+        assert gamestate_1.batter() is batters_4[0]
 
     def test_live_defense_1(self, live_defense_rf):
         assert isinstance(live_defense_rf, blaseball.playball.inplay.LiveDefense)

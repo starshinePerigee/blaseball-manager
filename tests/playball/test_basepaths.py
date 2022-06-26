@@ -95,8 +95,8 @@ class TestRunnerFunctions:
 
 
 class TestRunner:
-    def test_init_runner(self, ballgame_1):
-        runner = basepaths.Runner(ballgame_1.batter(), 90)
+    def test_init_runner(self, gamestate_1):
+        runner = basepaths.Runner(gamestate_1.batter(), 90)
         assert isinstance(runner, basepaths.Runner)
         assert runner.base == 0
 
@@ -291,15 +291,15 @@ class TestRunner:
 
 class TestBasepathsManipulation:
     # Test creating and manipulating basepaths as a data structure
-    def test_init_basepaths(self, ballgame_1):
-        assert isinstance(ballgame_1.bases, basepaths.Basepaths)
+    def test_init_basepaths(self, gamestate_1):
+        assert isinstance(gamestate_1.bases, basepaths.Basepaths)
 
-    def test_get_set(self, ballgame_1):
-        bases = ballgame_1.bases
+    def test_get_set(self, gamestate_1):
+        bases = gamestate_1.bases
         
         assert bases[1] is None
 
-        batter_1 = ballgame_1.batter()
+        batter_1 = gamestate_1.batter()
         bases[1] = batter_1
         assert isinstance(bases[1], basepaths.Runner)
         assert bases[1].player is batter_1
@@ -307,18 +307,18 @@ class TestBasepathsManipulation:
         assert bases[2] is None
         assert bases[3] is None
 
-        batter_2 = ballgame_1.batter(1)
+        batter_2 = gamestate_1.batter(1)
         bases[3] = batter_2
         assert bases[1].player is batter_1
         assert bases[3].player is batter_2
         assert bases[0] is None
         assert bases[2] is None
 
-    def test_del(self, ballgame_1):
-        bases = ballgame_1.bases
-        batter_1 = ballgame_1.batter()
+    def test_del(self, gamestate_1):
+        bases = gamestate_1.bases
+        batter_1 = gamestate_1.batter()
         bases[1] = batter_1
-        batter_2 = ballgame_1.batter(1)
+        batter_2 = gamestate_1.batter(1)
         bases[3] = batter_2
 
         assert bases[1].player is batter_1
@@ -332,16 +332,16 @@ class TestBasepathsManipulation:
         with pytest.raises(KeyError):
             del bases[3]
 
-    def test_as_list(self, ballgame_1):
+    def test_as_list(self, gamestate_1):
         # don't forget basepaths.runners is FIFO
-        bases = ballgame_1.bases
+        bases = gamestate_1.bases
 
         assert list(bases) == []
         assert bases.to_base_list() == [None] * 4
 
-        batter_1 = ballgame_1.batter()
+        batter_1 = gamestate_1.batter()
         bases[1] = batter_1
-        batter_2 = ballgame_1.batter(1)
+        batter_2 = gamestate_1.batter(1)
         bases[3] = batter_2
 
         as_list = list(bases)
@@ -379,12 +379,12 @@ class TestBasepathsManipulation:
         assert players[1] is batters_4[1]
         assert players[0] is batters_4[0]
 
-    def test_add_runners_and_len(self, ballgame_1):
-        assert len(ballgame_1.bases) == 0
-        ballgame_1.bases += ballgame_1.batter()
-        assert len(ballgame_1.bases) == 1
-        ballgame_1.bases[2] = ballgame_1.batter(1)
-        assert len(ballgame_1.bases) == 2
+    def test_add_runners_and_len(self, gamestate_1):
+        assert len(gamestate_1.bases) == 0
+        gamestate_1.bases += gamestate_1.batter()
+        assert len(gamestate_1.bases) == 1
+        gamestate_1.bases[2] = gamestate_1.batter(1)
+        assert len(gamestate_1.bases) == 2
 
     def test_add_runners_order(self, empty_basepaths, batters_4):
         """basepaths.runners is a fifo queue, so make sure order is preserved if you're manually adding runners."""

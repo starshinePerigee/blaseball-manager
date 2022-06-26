@@ -169,20 +169,20 @@ class TestHitIntegrated:
         hit_parameters.values(),
         ids=list(hit_parameters.keys())
     )
-    def test_swing_results(self, patcher, ballgame_1, pitch_1, location, swing, quality, strike, ball, foul, hit):
+    def test_swing_results(self, patcher, gamestate_1, pitch_1, location, swing, quality, strike, ball, foul, hit):
         pitch_1.location = location
         pitch_1.strike = pitching.check_strike(location, 1)
         patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: swing)
         patcher.patch('blaseball.playball.hitting.roll_hit_quality', lambda net_contact: quality)
 
-        swing = hitting.Swing(ballgame_1, pitch_1, ballgame_1.batter())
+        swing = hitting.Swing(gamestate_1, pitch_1, gamestate_1.batter())
 
         assert swing.strike == strike
         assert swing.ball == ball
         assert swing.foul == foul
         assert swing.hit == hit
 
-    def test_swing_stats_tracking(self, ballgame_1, patcher):
+    def test_swing_stats_tracking(self, gamestate_1, patcher):
         # be aware that we're mocking for legibility - the rates seen in this test have no resemblance
         # to expected or desired rates.
 
@@ -216,12 +216,12 @@ class TestHitIntegrated:
             return -3.5 + iteration
         patcher.patch('blaseball.playball.hitting.roll_hit_quality', set_hit_quality, iterations=6)
 
-        batter = ballgame_1.batter()
+        batter = gamestate_1.batter()
 
         all_swings = []
         for __ in patcher:
-            pitch = pitching.Pitch(ballgame_1, ballgame_1.defense()['pitcher'], ballgame_1.defense()['catcher'])
-            swing = hitting.Swing(ballgame_1, pitch, batter)
+            pitch = pitching.Pitch(gamestate_1, gamestate_1.defense()['pitcher'], gamestate_1.defense()['catcher'])
+            swing = hitting.Swing(gamestate_1, pitch, batter)
             all_swings += [swing]
 
         print(f"Total pitches simulated: {len(all_swings)}")
