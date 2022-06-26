@@ -2,6 +2,8 @@
 This is how we're going to pass messages between classes.
 """
 
+from collections import defaultdict
+
 from typing import Callable, Union, List, Type
 
 
@@ -13,28 +15,31 @@ class Messenger:
 
     This broadcasts once to every subscribed listener with at least one common tag.
     """
+    running_id = 1
 
     def __init__(self):
-        self.listeners = {}
+        self.listeners = defaultdict(list)
+        self.id = Messenger.running_id
+        Messenger.running_id += 1
 
-    def subscribe(self, tags: Union[str, List[str]], function: Callable) -> None:
+    def subscribe(self, function: Callable, tags: Union[str, List[str]] = "") -> None:
+        """Subscribe function to tags. Whenever messenger is sent, this function will be called """
         if not isinstance(tags, list):
             tags = [tags]
 
         for tag in tags:
-            if tag in self.listeners:
-                self.listeners[tag] += [function]
-            else:
-                self.listeners[tag] = [function]
+            self.listeners[tag] += [function]
 
-    def unsubscribe(self, tags: Union[str, List[str]], function: Callable):
+    def unsubscribe(self, function: Callable, tags: Union[str, List[str]] = "") -> None:
+        """Unsubscribe the function from the tags."""
         if not isinstance(tags, list):
             tags = [tags]
 
         for tag in tags:
-            del(self.listeners[tag][function])
+            self.listeners[tag].remove(function)
 
-    def send(self, tags: Union[str, List[str]], argument=None) -> None:
+    def send(self, argument=None, tags: Union[str, List[str]] = "") -> None:
+        """Send a message."""
         sent = set()
 
         if not isinstance(tags, list):
@@ -47,6 +52,13 @@ class Messenger:
                     if recipient not in sent:
                         recipient(argument)
                         sent.add(recipient)
+
+    def __str__(self):
+        total_listeners = sum([len(self.listeners[key]) for key in self.listeners])
+        return f"Messenger {self.id} with {len(self.listeners)} tags and {total_listeners} total listeners."
+
+    def __repr__(self):
+        return f"<Messenger ID {self.id}>"
 
 
 class Listener:

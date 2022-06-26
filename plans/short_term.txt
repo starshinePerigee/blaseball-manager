@@ -1,12 +1,14 @@
-figure out ballgame vs gamestate:
-- how to handle circular imports
-- which classes persist vs. which are destroy and remake / which are passed around?
+write messenger tests
 
 write gamestate
 convert classes to use gamestate
-write messenger
+
+- which classes persist vs. which are destroy and remake / which are passed around?
+
 write top level game (using messenger + gamestate)
-refactor to use Logging (loguru?)
+refactor to use Logging (loguru?) + error handling
+- error handling on messenger sends as the firewall
+
 write stats handlers
 refactor to use stats handlers in classes
 write balance tests
