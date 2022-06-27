@@ -372,8 +372,24 @@ class Basepaths(MutableMapping):
 
     def walk_batter(self, batter) -> Tuple[int, List[Player]]:
         """Batter advances on to the basepaths via balls. Can score (lol)"""
-        # TODO
-        pass
+        self.__add__(batter)  # use __add__ instead of += to avoid an unnecessary pycharm error
+        max_base = len(self.runners)
+        for i, runner in enumerate(self.runners):
+            if runner.base < max_base - i:
+                runner.base = max_base - i
+
+        if self.runners[0].base > self.number_of_bases:
+            # someone got walked home
+            players_scoring = []
+            for runner in self.runners:
+                if runner.base > self.number_of_bases:
+                    runner.safe = True  # good luck
+                    players_scoring += [runner.player]
+                    self.runners.remove(runner)
+            # return an int and a list of players to maintain parity with advance_all
+            return len(players_scoring), players_scoring
+        else:
+            return 0, []
 
     def nice_string(self):
         string = ""

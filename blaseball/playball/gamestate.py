@@ -128,6 +128,7 @@ class GameTags(Enum):
     swing = 'swing was swung <Swing>'
     hit_ball = 'ball is hit <HitBall>'
     bases_update = 'basepath update <BaseSummary>'
+    player_walked = 'player walked to first <Player>'
     home_run = 'home run was hit <int>'
     runs_scored = 'runs were scored <int>'
     strike = 'strike was thrown <None>'

@@ -53,3 +53,22 @@ class TestPitchManager:
         base_summary = count_store_all[1]
         assert isinstance(base_summary, BaseSummary)
         assert base_summary.bases == [None, None, None, None]
+
+    def test_player_walked(self, messenger_1, pitch_manager_1, count_store_all, gamestate_1, batters_4):
+        gamestate_1.bases[3] = batters_4[0]
+        gamestate_1.bases[1] = batters_4[1]
+        messenger_1.send(gamestate_1.bases, GameTags.bases_update)
+
+        messenger_1.send(batters_4[2], GameTags.player_walked)
+
+        assert len(count_store_all) == 3
+        summary_hopefully = count_store_all[1]
+        assert isinstance(summary_hopefully, BaseSummary)
+        assert summary_hopefully[1] == batters_4[2]
+
+        messenger_1.send(batters_4[3], GameTags.player_walked)
+        assert len(count_store_all) == 6
+        assert count_store_all[2] == 1
+        summary_hopefully = count_store_all[1]
+        assert isinstance(summary_hopefully, BaseSummary)
+        assert summary_hopefully[1] == batters_4[3]

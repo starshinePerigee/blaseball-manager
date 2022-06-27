@@ -3,6 +3,7 @@ This is a Listener that responds to BallGame GameState ticks.
 """
 
 from blaseball.util.messenger import Messenger
+from blaseball.playball.event import Update
 from blaseball.playball.pitching import Pitch
 from blaseball.playball.hitting import Swing
 from blaseball.playball.liveball import HitBall
@@ -10,6 +11,7 @@ from blaseball.playball.inplay import FieldBall
 from blaseball.playball.basepaths import Basepaths
 from blaseball.playball.gamestate import GameState, BaseSummary
 from blaseball.playball.gamestate import GameTags as Tags
+from blaseball.stats.players import Player
 
 
 class PitchManager:
@@ -21,6 +23,8 @@ class PitchManager:
 
         self.messenger = messenger
         self.messenger.subscribe(self.pitchhit, Tags.state_ticks)
+        self.messenger.subscribe(self.update_basepaths, Tags.bases_update)
+        self.messenger.subscribe(self.player_walk, Tags.player_walked)
 
     def pitchhit(self, game: GameState):
         pitch = Pitch(
@@ -36,7 +40,14 @@ class PitchManager:
         self.messenger.send(swing, [Tags.swing, Tags.game_updates])
         # BallGame is responsible for handling non-hits
 
-        if swing.hit:
+        if not swing.hit:
+            if swing.strike:
+                self.messenger.send(Tags.strike)
+            elif swing.foul:
+                self.messenger.send(Tags.foul)
+            elif swing.ball:
+                self.messenger.send(Tags.ball)
+        else:
             hit_ball = HitBall(game, swing.hit_quality, pitch.reduction, batter)
             self.messenger.send(hit_ball, [Tags.hit_ball, Tags.game_updates])
 
@@ -57,6 +68,17 @@ class PitchManager:
                     self.messenger.send(field_ball.outs, [Tags.outs])
 
                 self.messenger.send(BaseSummary(basepaths=self.basepaths), [Tags.bases_update])
+
+    def update_basepaths(self, summary: BaseSummary):
+        self.basepaths.load_from_summary(summary)
+
+    def player_walk(self, player: Player):
+        runs_scored, players_scoring = self.basepaths.walk_batter(player)
+        if runs_scored:
+            walk_string = f"{players_scoring[0]['name']} walked in for a run!"
+            self.messenger.send(Update(walk_string))
+            self.messenger.send(runs_scored, Tags.runs_scored)
+        self.messenger.send(BaseSummary(basepaths=self.basepaths), Tags.bases_update)
 
 
 if __name__ == "__main__":

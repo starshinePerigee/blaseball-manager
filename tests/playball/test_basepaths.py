@@ -643,3 +643,22 @@ class TestBasepathsRunners:
         assert empty_basepaths[3].remainder > 5
         assert empty_basepaths[3].forward
         assert not empty_basepaths[3].tagging_up
+
+    def test_walk_batter(self, empty_basepaths, batters_4):
+        empty_basepaths[3] = batters_4[0]
+        runs, players = empty_basepaths.walk_batter(batters_4[1])
+        assert empty_basepaths[1] == batters_4[1]
+        assert runs == 0
+        assert players == []
+        runs, players = empty_basepaths.walk_batter(batters_4[2])
+        assert empty_basepaths[1] == batters_4[2]
+        assert empty_basepaths[2] == batters_4[1]
+        assert runs == 0
+        assert players == []
+
+        #bases are now loaded
+        runs, players = empty_basepaths.walk_batter(batters_4[3])
+        assert runs == 1
+        assert players == [batters_4[0]]
+        for i in range(1, 4):
+            assert empty_basepaths[i].player == batters_4[4-i]
