@@ -1,6 +1,7 @@
 import pytest
 
 from blaseball.playball import basepaths
+from blaseball.playball.gamestate import BaseSummary
 
 from statistics import mean
 
@@ -413,6 +414,24 @@ class TestBasepathsManipulation:
         assert not empty_basepaths
         empty_basepaths += player_1
         assert empty_basepaths
+
+    def test_load_from_summary(self, empty_basepaths, batters_4):
+        empty_basepaths[1] = batters_4[0]
+        summary = BaseSummary(3)
+        empty_basepaths.load_from_summary(summary)
+        assert empty_basepaths.to_base_list() == [None, None, None, None]
+        summary[2] = batters_4[2]
+        empty_basepaths.load_from_summary(summary)
+        assert empty_basepaths[1] is None
+        assert empty_basepaths[2].player == batters_4[2]
+        assert empty_basepaths.runners[0].player == batters_4[2]
+
+        summary[1] = batters_4[1]
+        summary[3] = batters_4[3]
+        empty_basepaths.load_from_summary(summary)
+        assert len(empty_basepaths) == 3
+        for i in range(1, 4):
+            assert empty_basepaths[i].player == batters_4[i]
 
     def test_strings(self, empty_basepaths, player_1):
         assert isinstance(str(empty_basepaths), str)

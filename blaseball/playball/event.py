@@ -20,10 +20,13 @@ class Update:
         self.text = text
 
     def __str__(self):
-        return self.text
+        if self.text is not None:
+            return self.text
+        else:
+            return "[empty Update]"
 
     def __repr__(self):
-        return f"<Update: {self.text}"
+        return f"<Update: {self.text}>"
 
 
 class Event:

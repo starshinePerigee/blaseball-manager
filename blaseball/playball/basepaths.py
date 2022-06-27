@@ -9,6 +9,7 @@ Note that the way this works is runners track their own progression around the b
 managed by the Basepaths class.
 """
 
+from blaseball.playball.gamestate import BaseSummary
 from blaseball.stats.players import Player
 from blaseball.stats.stadium import Stadium
 from blaseball.util.geometry import Coord
@@ -374,11 +375,6 @@ class Basepaths(MutableMapping):
         # TODO
         pass
 
-    def load_dict(self, base_dict: dict) -> None:
-        self.runners = []
-        for base, runner in base_dict.items():
-            self[base] = runner
-
     def nice_string(self):
         string = ""
         for i in range(1, self.number_of_bases + 1):
@@ -389,7 +385,17 @@ class Basepaths(MutableMapping):
             string += "\r\n"
         return string
 
-    def __getitem__(self, key: int) -> Optional[Player]:
+    def to_base_list(self) -> list:
+        """return a list of Runners, with None in the place of a base"""
+        return [self[i] for i in range(0, self.number_of_bases+1)]
+
+    def load_from_summary(self, summary: BaseSummary):
+        self.runners = []
+        for i, player in enumerate(summary):  # TODO: reverse this first, so we don't have to insert at the top each time
+            if player is not None:
+                self[i] = player
+
+    def __getitem__(self, key: int) -> Optional[Runner]:
         if key < 0 or key > self.number_of_bases:
             raise KeyError(f"Tried to get runner on invalid base {key} against number of bases {self.number_of_bases}")
         for runner in self.runners:
@@ -417,13 +423,6 @@ class Basepaths(MutableMapping):
                 del(self.runners[i])
                 return
         raise KeyError(f"Attempted to delete nonexistent player on base {key}!")
-
-    def to_base_list(self):
-        return [self[i] for i in range(0, self.number_of_bases+1)]
-
-    # I think this migrates to GameState
-    # def boolean_occupied_list(self):
-    #     return [self[i] is not None for i in range(1, self.number_of_bases+1)]
 
     def __add__(self, player: Player):
         self.runners += [Runner(player, self.basepath_length)]

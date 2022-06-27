@@ -59,6 +59,9 @@ class LiveBall:
             string += f" origin ({self.origin.x:.2f}, {self.origin.y:.2f})"
         return string
 
+    def __repr__(self):
+        return f"LiveBall({self.launch_angle}, {self.field_angle}, {self.speed})"
+
 
 BASE_LAUNCH_ANGLE = 10  # median launch angle for a 0* batter
 LAUNCH_ANGLE_POWER_FACTOR = 5  # bonus launch angle for a 5* batter
@@ -141,6 +144,12 @@ class HitBall(Update):
 
         if self.homerun:
             batter['total home runs'] += 1
+
+    def __str__(self):
+        return f"HitBall with live {self.live}"
+
+    def __repr__(self):
+        return f"<HitBall with live {repr(self.live)}>"
 
 
 if __name__ == "__main__":

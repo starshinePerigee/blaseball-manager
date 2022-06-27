@@ -11,3 +11,5 @@ write balance tests
 
 
 to consider: which classes persist vs. which are destroy and remake / which are passed around?
+
+convert stats list from strings to enum or pull from class directly?

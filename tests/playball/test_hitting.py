@@ -182,6 +182,9 @@ class TestHitIntegrated:
         assert swing.foul == foul
         assert swing.hit == hit
 
+
+class TestHitStats:
+    # this goes in its own class because playerbase fixtures are class-scoped
     def test_swing_stats_tracking(self, gamestate_1, patcher):
         # be aware that we're mocking for legibility - the rates seen in this test have no resemblance
         # to expected or desired rates.

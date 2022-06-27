@@ -3,6 +3,7 @@ This is how we're going to pass messages between classes.
 """
 
 from collections import defaultdict
+from enum import Enum
 
 from typing import Callable, Union, List, Type
 
@@ -22,7 +23,7 @@ class Messenger:
         self.id = Messenger.running_id
         Messenger.running_id += 1
 
-    def subscribe(self, function: Callable, tags: Union[str, List[str]] = "") -> None:
+    def subscribe(self, function: Callable, tags: Union[Enum, List[Enum]] = "") -> None:
         """Subscribe function to tags. Whenever messenger is sent, this function will be called """
         if not isinstance(tags, list):
             tags = [tags]
@@ -30,7 +31,7 @@ class Messenger:
         for tag in tags:
             self.listeners[tag] += [function]
 
-    def unsubscribe(self, function: Callable, tags: Union[str, List[str]] = "") -> None:
+    def unsubscribe(self, function: Callable, tags: Union[Enum, List[Enum]] = "") -> None:
         """Unsubscribe the function from the tags."""
         if not isinstance(tags, list):
             tags = [tags]
@@ -38,7 +39,7 @@ class Messenger:
         for tag in tags:
             self.listeners[tag].remove(function)
 
-    def send(self, argument=None, tags: Union[str, List[str]] = "") -> None:
+    def send(self, argument=None, tags: Union[Enum, List[Enum]] = "") -> None:
         """Send a message."""
         sent = set()
 
@@ -63,8 +64,8 @@ class Messenger:
 
 class Listener:
     """An abstract base class for any of several utilities that exist to limpet on to a messenger."""
-    def __init__(self, messenger: Messenger, tags: Union[str, List[str]]):
-        messenger.subscribe(tags, self.respond)
+    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]]):
+        messenger.subscribe(self.respond, tags)
 
     def respond(self, argument):
         pass
@@ -77,7 +78,7 @@ class Printer(Listener):
 
 
 class CircuitBreaker(Listener):
-    def __init__(self, messenger: Messenger, tags: Union[str, List[str]], types:Union[Type, List[Type]]):
+    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]], types:Union[Type, List[Type]]):
         if not isinstance(types, list):
             types = [types]
         self.types = types
@@ -87,3 +88,27 @@ class CircuitBreaker(Listener):
         arg_type = type(argument)
         if arg_type not in self.types:
             raise TypeError(f"Circuitbreaker detected invalid type: {arg_type}, expected {self.types}")
+
+
+class CountStore(Listener):
+    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]], items_to_store=-1):
+        """Count the number of items passing through this message with tags, and optionally save them.
+        If items_to_store is 0, no items will be saved. if items_to_store is -1, all items will be saved."""
+        super().__init__(messenger, tags)
+        self.items_to_store = items_to_store
+        self.count = 0
+        self.items = []
+
+    def respond(self, argument):
+        self.count += 1
+        if self.items_to_store != 0:
+            self.items.insert(0, argument)
+            if self.items_to_store > 0:
+                if len(self.items) > self.items_to_store:
+                    del(self.items[-1])
+
+    def __getitem__(self, item):
+        return self.items[item]
+
+    def __len__(self):
+        return len(self.items)

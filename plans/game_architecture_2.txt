@@ -41,6 +41,12 @@ Recorder is another listener
 
 no playball classes need access to BallGame
 
+each BallGame has its own messenger, and AllGames contains the global listeners and subscribes them to the manager
+as it goes.
+
+
+Event isn't necessary - Events can be built by a game recorder, which bundles together at-bats.
+
 
 
 (if you want to do a "view highlights only" it executes the game (like skip)

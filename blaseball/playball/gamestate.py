@@ -5,13 +5,15 @@ to the various ballgame listeners.
 """
 
 from dataclasses import dataclass
+from enum import Enum
 from decimal import Decimal
+from collections.abc import Collection
 
 from blaseball.stats.players import Player
 from blaseball.stats.lineup import Lineup
 from blaseball.stats.stadium import Stadium
 
-from typing import List
+from typing import List, Union
 
 
 @dataclass
@@ -21,6 +23,45 @@ class GameRules:
     strike_count: int = 3
     outs_count: int = 3
     innings: int = 9
+
+
+class BaseSummary(Collection):
+    """A simple class meant to transmit / update bases without throwing BasePaths around.
+    It's basically a constant-length list
+    index 0 is home plate"""
+    def __init__(self, total_bases=None, basepaths=None):
+
+        if basepaths is not None:
+            self.number_of_bases = basepaths.number_of_bases
+            self.bases = [runner.player if runner is not None else None for runner in basepaths.to_base_list()]
+        elif total_bases is not None:
+            self.number_of_bases = total_bases
+            self.bases = [None] * (total_bases + 1)
+        else:
+            raise RuntimeError("Must initialize BaseSummary with either base count or Basepaths!")
+
+    def __len__(self):
+        return sum([1 for base in self.bases if base is not None])
+
+    def __contains__(self, key):
+        return key in self.bases
+
+    def __iter__(self):
+        for base in self.bases:
+            yield base
+
+    def __getitem__(self, key: Union[int, slice]):
+        return self.bases[key]
+
+    def __delitem__(self, key: Union[int, slice]):
+        if isinstance(key, int):
+            self.bases[key] = None
+        else:
+            for i in range(key.start, key.stop, key.step):
+                self.bases[i] = None
+
+    def __setitem__(self, key: int, value: Player):
+        self.bases[key] = value  # noqa - not sure what this is on about.
 
 
 class GameState:
@@ -52,7 +93,7 @@ class GameState:
         self.at_bat_numbers = [0, 0]  # home, away
         self.scores = [Decimal('0.0')] * 2  # home, away
 
-        self.bases = {i: None for i in range(0, stadium.NUMBER_OF_BASES + 1)}
+        self.bases = BaseSummary(total_bases=stadium.NUMBER_OF_BASES)
 
     def offense_i(self) -> int:
         """Returns the index of the offense for this class' sequence structures"""
@@ -78,3 +119,18 @@ class GameState:
 
     def boolean_base_list(self) -> List[bool]:
         return [self.bases[i] is not None for i in range(1, self.stadium.NUMBER_OF_BASES + 1)]
+
+
+class GameTags(Enum):
+    state_ticks = 'state ticks <GameState>'
+    game_updates = 'game updates <Update>'
+    pitch = 'pitch was thrown <Pitch>'
+    swing = 'swing was swung <Swing>'
+    hit_ball = 'ball is hit <HitBall>'
+    bases_update = 'basepath update <BaseSummary>'
+    home_run = 'home run was hit <int>'
+    runs_scored = 'runs were scored <int>'
+    strike = 'strike was thrown <None>'
+    ball = 'ball was thrown <None>'
+    foul = 'foul was hit <None>'
+    outs = 'players out for any cause <int>'

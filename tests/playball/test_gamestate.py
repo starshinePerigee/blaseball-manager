@@ -1,5 +1,53 @@
-from blaseball.playball.gamestate import GameState, GameRules
+from blaseball.playball.gamestate import GameState, GameRules, BaseSummary
 from blaseball.stats.lineup import Lineup
+
+
+class TestBaseSummary:
+    def test_init_empty(self, player_1):
+        summary = BaseSummary(total_bases=4)
+        assert len(summary) == 0
+        assert summary[4] is None
+
+        summary[1] = player_1
+        assert summary[1] == player_1
+
+    def test_init_basepaths(self, empty_basepaths, batters_4):
+        empty_basepaths[3] = batters_4[3]
+        empty_basepaths[2] = batters_4[2]
+        empty_basepaths[1] = batters_4[1]
+
+        summary = BaseSummary(basepaths=empty_basepaths)
+        assert len(summary) == 3
+        for i in range(1, 4):
+            assert summary[i] == batters_4[i]
+
+        del(summary[2])
+        assert len(summary) == 2
+        assert summary[2] is None
+
+    def test_init_from_full_basepaths(self, empty_basepaths, batters_4):
+        for i in range(1, 4):
+            empty_basepaths[i] = batters_4[i]
+        summary = BaseSummary(basepaths=empty_basepaths)
+
+        assert summary.bases[1:] == batters_4[1:]
+
+    def test_enumerate(self, batters_4):
+        summary = BaseSummary(total_bases=4) # 5 including home
+        for i, batter in enumerate(batters_4):
+            summary[i+1] = batter
+
+        for i, base in enumerate(summary[1:5]):
+            assert base == batters_4[i]
+
+    def test_strings(self, batters_4):
+        summary = BaseSummary(3)
+        for i in range(3):
+            summary[i] = batters_4[i]
+
+        assert isinstance(str(summary), str)
+        assert isinstance(repr(summary), str)
+
 
 class TestGameState:
     def test_offense_defense(self, league_2, stadium_a):

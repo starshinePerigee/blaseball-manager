@@ -65,6 +65,32 @@ class TestFixtures:
         assert isinstance(live_defense_rf, blaseball.playball.inplay.LiveDefense)
         assert live_defense_rf.location.y > 100
 
+    def test_messenger_1(self, messenger_1):
+        assert isinstance(messenger_1, blaseball.util.messenger.Messenger)
+
+    def test_count_store_all(self, count_store_all, messenger_1):
+        assert isinstance(count_store_all, blaseball.util.messenger.CountStore)
+
+        tags = blaseball.playball.gamestate.GameTags
+        messenger_1.send(1, tags.outs)
+        messenger_1.send(2, tags.foul)
+        messenger_1.send(3, tags.game_updates)
+
+        assert count_store_all.count == 3
+        assert count_store_all.items == [3, 2, 1]
+
+    def test_pitch_manager(self, pitch_manager_1, gamestate_1, messenger_1):
+        assert isinstance(pitch_manager_1, blaseball.playball.pitchmanager.PitchManager)
+
+        count_store_pitch = blaseball.util.messenger.CountStore(
+            messenger_1,
+            blaseball.playball.gamestate.GameTags.pitch
+        )
+
+        messenger_1.send(gamestate_1, blaseball.playball.gamestate.GameTags.state_ticks)
+        assert isinstance(count_store_pitch[0], blaseball.playball.pitching.Pitch)
+
+
 def noop_fn(x, iteration):
     return x
 
