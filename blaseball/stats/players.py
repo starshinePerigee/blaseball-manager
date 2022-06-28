@@ -195,12 +195,12 @@ class Player(Mapping):
         if item == 'cid':
             return self._cid
         elif isinstance(item, Stat):
-            return self.stat_row()[item.name]
+            return self.pb.df.at[self._cid, item.name]
         else:
-            return self.stat_row()[item]
+            return self.pb.df.at[self._cid, item]
 
     def __setitem__(self, item: Hashable, value: object) -> None:
-        self.pb.df.loc[self._cid][item] = value
+        self.pb.df.at[self._cid, item] = value
 
     def add_average(self, item: Union[List, str], value: Union[List, Union[int, float]]) -> None:
         """Updates a stat which is a running average, such as batting average. Pass one or more stats and values in

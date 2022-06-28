@@ -62,6 +62,8 @@ class Messenger:
                             recipient(argument)
                         sent.add(recipient)
 
+    # TODO: add "send queue" for optional timing management
+
     def __str__(self):
         total_listeners = sum([len(self.listeners[key]) for key in self.listeners])
         return f"Messenger {self.id} with {len(self.listeners)} tags and {total_listeners} total listeners."
