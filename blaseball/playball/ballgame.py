@@ -36,6 +36,8 @@ class BallGame:
         self.messenger.subscribe(self.player_walked, GameTags.player_walked)
         self.messenger.subscribe(self.update_basepaths, GameTags.bases_update)
         self.messenger.subscribe(self.add_outs, GameTags.outs)
+        self.messenger.subscribe(self.next_half_inning, GameTags.new_half)
+        self.messenger.subscribe(self.next_inning, GameTags.new_inning)
 
     def start_game(self):
         """Call this externally once everything has had a chance to subscribe to this messenger."""
@@ -45,13 +47,18 @@ class BallGame:
 
     def score_runs(self, runs: int):
         self.state.scores[self.state.offense_i()] += runs
+        if runs == 1:
+            plural_text = "run"
+        else:
+            plural_text = "runs"
+        self.messenger.send(Update(f"{runs} {plural_text} scored!"), GameTags.game_updates)
         self.messenger.send(Update(self.state.score_string()), GameTags.game_updates)
 
     def add_ball(self):
         """Add a ball to the count, issue walk if needed"""
         self.state.balls += 1
         if self.state.balls >= self.state.rules.ball_count:
-            self.messenger.send(Update(f"{self.state.count_string()}! {self.state.batter()['name']} issued a walk."),
+            self.messenger.send(Update(f"{self.state.count_string()}. {self.state.batter()['name']} draws a walk."),
                                 GameTags.game_updates)
             self.messenger.send(self.state.batter(), GameTags.player_walked)
             self.increment_batter()
@@ -120,33 +127,32 @@ class BallGame:
 
     def end_half(self):
         """Call for the end of a half inning and entire inning/game as needed"""
+        # TODO: shame
         if self.state.inning_half:
             # we're in the top of the inning
             self.state.inning_half -= 1
             self.messenger.send(self.state.inning_half, GameTags.new_half)
-        else:
-            if self.state.inning_half:
-                self.next_half_inning()
-            else:
-                self.next_inning()
-
-    def next_half_inning(self):
-        """Start the half inning."""
-        self.state.outs = 0
-        self.state.inning_half -= 1
-        self.messenger.send(self.state.inning_half, GameTags.new_half)
-        # TODO: shame
-
-    def next_inning(self):
-        """Start the next inning"""
-        self.messenger.send(GameManagmentUpdate(f"Inning {self.state.inning} is now an outing."), GameTags.game_updates)
-        self.state.inning_half = 1
-        self.state.inning += 1
-        if self.state.inning > self.state.rules.innings and self.state.scores[0] != self.state.scores[1]:
+        elif self.state.inning > self.state.rules.innings and self.state.scores[0] != self.state.scores[1]:
             self.end_game()
         else:
+            self.messenger.send(GameManagmentUpdate(f"Inning {self.state.inning} is now an outing."),
+                                GameTags.game_updates)
+            self.state.inning_half = 1
+            self.state.inning += 1
             self.messenger.send(self.state.inning_half, GameTags.new_half)
             self.messenger.send(self.state.inning, GameTags.new_inning)
+
+    def next_half_inning(self, inning_half):
+        """Start the half inning."""
+        self.state.outs = 0
+        self.state.bases = BaseSummary(self.state.stadium.NUMBER_OF_BASES)
+        self.messenger.send(self.state.bases, GameTags.bases_update)
+        self.messenger.send(Update(f"{self.state.half_str().title()} of inning {self.state.inning}, "
+                                   f"{self.state.batter()['team']} batting."), GameTags.game_updates)
+
+    def next_inning(self, inning):
+        """Start the next inning"""
+        self.messenger.send(Update(f"{self.state.defense()['pitcher']} pitching."), GameTags.game_updates)
 
     def end_game(self):
         self.live_game = False
@@ -200,7 +206,7 @@ if __name__ == "__main__":
     print(quickteams.league[1])
     print(g.away_team.string_summary())
 
-    sleep(3)
+    sleep(1)
 
     class UpdatePrinter(Listener):
         def respond(self, argument):
@@ -213,8 +219,8 @@ if __name__ == "__main__":
 
     null_manager = Messenger()
     bg = BallGame(null_manager, g.home_team, g.away_team, g.stadium, g.rules)
-    p = UpdatePrinter(bg.messenger, GameTags.game_updates)
     np = NewlinePrinter(bg.messenger, [GameTags.new_batter, GameTags.new_inning, GameTags.new_half])
+    p = UpdatePrinter(bg.messenger, GameTags.game_updates)
     pm = PitchManager(bg.state, bg.messenger)
 
     bg.start_game()

@@ -170,8 +170,11 @@ class FieldBall:
                 self.outs += 1
                 self.updates += [FieldingOut(live_defense.fielder, player_out, not tagged_out)]
 
-        if not caught and self.runs == 0:
-            self.updates += [self.filler_text(basepaths.runners[-1])]
+        if not caught and len(self.updates) < 2:
+            if len(basepaths.runners) > 0:
+                self.updates += [self.filler_text(basepaths.runners[-1])]
+            else:
+                self.updates += [Update("Whoops, batter vanished into a secret base???")]
 
     def filler_text(self, runner: Runner) -> Update:
         BASE_LENGTH = {

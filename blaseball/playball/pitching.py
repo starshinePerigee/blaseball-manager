@@ -243,9 +243,9 @@ class Pitch(Update):
 
     def description_string(self, pitcher: Player):
         if self.location > 1.6:
-            loc_text = "to the far outside"
-        elif self.location > 1.2:
             loc_text = "to the wide outside"
+        elif self.location > 1.2:
+            loc_text = "to the far outside"
         elif self.location > 0.8:
             loc_text = "right on the edge"
         elif self.location > 0.4:

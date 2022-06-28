@@ -14,7 +14,8 @@ class TestLiveBall:
         # "angle, speed, min_feet, max_feet"
         # remember good hit EV is 80 - 120
         '45 degree line drive': (45, 100, 200, 400),
-        '2 degree high power': (2, 100, 20, 100)
+        '2 degree high power': (2, 100, 20, 100),
+        '-10 degree line drive equivalent': (-10, 100, 100, 200)
     }
 
     @pytest.mark.parametrize(

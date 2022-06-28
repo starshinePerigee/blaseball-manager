@@ -88,6 +88,7 @@ class Catch(Update):
                 self.text = f"{self.player_name} caught it for a fly out."
                 self.caught = True
             else:
+                self.text = f"{self.player_name} fields it on the bounce."
                 self.caught = False
         else:
             self.caught = False
