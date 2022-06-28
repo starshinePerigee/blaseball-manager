@@ -1,5 +1,4 @@
-
-write top level game (using messenger + gamestate)
+finish ballgame tests
 
 refactor to use Logging (loguru?) + error handling
 - error handling on messenger sends as the firewall
@@ -10,6 +9,7 @@ fix docs
 write balance tests
 
 
-to consider: which classes persist vs. which are destroy and remake / which are passed around?
-
-convert stats list from strings to enum or pull from class directly?
+to consider:
+- which classes persist vs. which are destroy and remake / which are passed around?
+- basepaths is being managed in two places and that sucks
+- convert stats list from strings to enum or pull from class directly?

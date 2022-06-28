@@ -36,7 +36,7 @@ class TestFixtures:
     def test_defesne_1(self, defense_1):
         assert isinstance(defense_1, blaseball.stats.lineup.Defense)
 
-    def test_ballgame_1(self, gamestate_1):
+    def test_gamestate_1(self, gamestate_1):
         assert isinstance(gamestate_1, blaseball.playball.gamestate.GameState)
 
     def test_empty_basepaths(self, empty_basepaths):
@@ -89,6 +89,12 @@ class TestFixtures:
 
         messenger_1.send(gamestate_1, blaseball.playball.gamestate.GameTags.state_ticks)
         assert isinstance(count_store_pitch[0], blaseball.playball.pitching.Pitch)
+
+    def test_ballgame_1(self, messenger_1, ballgame_1, count_store_all):
+        assert isinstance(ballgame_1, blaseball.playball.ballgame.BallGame)
+        ballgame_1.send_tick()
+        assert len(count_store_all) == 1
+        assert isinstance(count_store_all[0], blaseball.playball.gamestate.GameState)
 
 
 def noop_fn(x, iteration):

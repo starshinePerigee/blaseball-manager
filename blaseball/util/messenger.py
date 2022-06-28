@@ -43,6 +43,11 @@ class Messenger:
         """Send a message."""
         sent = set()
 
+        if tags == "":
+            if len(self.listeners) > 1 or "" not in self.listeners:
+                raise KeyError(f"Tag required for messenger with tagged subscribers. "
+                               f"Received argument: {argument} of type {type(argument)}")
+
         if not isinstance(tags, list):
             tags = [tags]
 
@@ -51,7 +56,10 @@ class Messenger:
                 recipients = self.listeners[tag]
                 for recipient in recipients:
                     if recipient not in sent:
-                        recipient(argument)
+                        if argument is None:
+                            recipient()
+                        else:
+                            recipient(argument)
                         sent.add(recipient)
 
     def __str__(self):

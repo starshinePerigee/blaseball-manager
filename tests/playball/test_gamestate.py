@@ -88,3 +88,14 @@ class TestGameState:
         assert gamestate_1.boolean_base_list() == [True, False, False]
         gamestate_1.bases[3] = batters_4[3]
         assert gamestate_1.boolean_base_list() == [True, False, True]
+
+    def test_increment_batting_order(self, gamestate_1):
+        gamestate_1.at_bat_numbers = [4, 7]  # home, away
+        rollover = gamestate_1.increment_batting_order()
+        assert not rollover
+        assert gamestate_1.at_bat_numbers == [4, 8]
+        rollover = gamestate_1.increment_batting_order()
+        assert rollover
+        assert gamestate_1.at_bat_numbers == [4, 0]
+        gamestate_1.increment_batting_order(3)
+        assert gamestate_1.at_bat_numbers == [4, 3]

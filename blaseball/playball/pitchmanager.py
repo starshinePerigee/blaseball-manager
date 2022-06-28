@@ -37,22 +37,22 @@ class PitchManager:
         batter = game.batter()
 
         swing = Swing(game, pitch, batter)
-        self.messenger.send(swing, [Tags.swing, Tags.game_updates])
+        self.messenger.send(swing, [Tags.swing])
         # BallGame is responsible for handling non-hits
 
         if not swing.hit:
             if swing.strike:
-                self.messenger.send(Tags.strike)
+                self.messenger.send(swing.did_swing, Tags.strike)
             elif swing.foul:
-                self.messenger.send(Tags.foul)
+                self.messenger.send(tags=Tags.foul)
             elif swing.ball:
-                self.messenger.send(Tags.ball)
+                self.messenger.send(tags=Tags.ball)
         else:
             hit_ball = HitBall(game, swing.hit_quality, pitch.reduction, batter)
             self.messenger.send(hit_ball, [Tags.hit_ball, Tags.game_updates])
 
             if hit_ball.homerun:
-                self.messenger.send(len(game.bases), [Tags.home_run, Tags.runs_scored])
+                self.messenger.send(len(game.bases) + 1, [Tags.home_run, Tags.runs_scored])
                 self.messenger.send(BaseSummary(game.stadium.NUMBER_OF_BASES), Tags.bases_update)
             else:
                 self.basepaths.load_from_summary(game.bases)
@@ -76,7 +76,7 @@ class PitchManager:
         runs_scored, players_scoring = self.basepaths.walk_batter(player)
         if runs_scored:
             walk_string = f"{players_scoring[0]['name']} walked in for a run!"
-            self.messenger.send(Update(walk_string))
+            self.messenger.send(Update(walk_string), Tags.game_updates)
             self.messenger.send(runs_scored, Tags.runs_scored)
         self.messenger.send(BaseSummary(basepaths=self.basepaths), Tags.bases_update)
 

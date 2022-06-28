@@ -7,7 +7,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 import pytest
 
 from blaseball.stats import players, teams, stadium, lineup
-from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager
+from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame
 from blaseball.util import messenger
 from support.mock_functions import FunctionPatcher
 from data import teamdata
@@ -178,3 +178,16 @@ def pitch_manager_1(league_2, stadium_cut_lf, messenger_1):
 @pytest.fixture(scope='class')
 def count_store_all(messenger_1):
     return messenger.CountStore(messenger_1, list(gamestate.GameTags))
+
+@pytest.fixture(scope='class')
+def ballgame_1(league_2, stadium_cut_lf, messenger_1):
+    null_messenger = messenger.Messenger()
+
+    home_lineup = lineup.Lineup("Home Lineup")
+    home_lineup.generate(league_2[0])
+    away_lineup = lineup.Lineup("Away Lineup")
+    away_lineup.generate(league_2[1])
+
+    test_ballgame = ballgame.BallGame(null_messenger, home_lineup, away_lineup, stadium_cut_lf, gamestate.GameRules())
+    test_ballgame.messenger = messenger_1
+    return test_ballgame

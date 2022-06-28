@@ -93,6 +93,8 @@ class GameState:
         self.at_bat_numbers = [0, 0]  # home, away
         self.scores = [Decimal('0.0')] * 2  # home, away
 
+        self.at_bat_count = 0
+
         self.bases = BaseSummary(total_bases=stadium.NUMBER_OF_BASES)
 
     def offense_i(self) -> int:
@@ -110,6 +112,17 @@ class GameState:
         at_bat_number = at_bat_number % len(self.offense().batting_order)
         return self.offense()['batting_order'][at_bat_number]
 
+    def increment_batting_order(self, increment=1) -> bool:
+        """Increment the batting order, return True if it rolled over"""
+        at_bat_length = len(self.teams[self.offense_i()]['batting_order'])
+        new_bat_number = self.at_bat_numbers[self.offense_i()] + increment
+        if new_bat_number >= at_bat_length:
+            self.at_bat_numbers[self.offense_i()] = new_bat_number % at_bat_length
+            return True
+        else:
+            self.at_bat_numbers[self.offense_i()] = new_bat_number
+            return False
+
     def defense_i(self) -> int:
         """Returns the index of the defense for this class' sequence structures"""
         return (self.inning_half + 1) % 2
@@ -120,9 +133,35 @@ class GameState:
     def boolean_base_list(self) -> List[bool]:
         return [self.bases[i] is not None for i in range(1, self.stadium.NUMBER_OF_BASES + 1)]
 
+    def half_str(self):
+        if self.inning_half:
+            return "top"
+        else:
+            return "bottom"
+
+    def count_string(self):
+        return f"{self.balls} - {self.strikes}"
+
+    def score_string(self):
+        score_h = self.scores[0]
+        if score_h % 1 == 0:
+            score_h = f"{score_h:.0f}"
+        score_a = self.scores[1]
+        if score_a % 1 == 0:
+            score_a = f"{score_a:.0f}"
+        team_h = self.home_team['pitcher']['team']
+        team_a = self.away_team['pitcher']['team']
+        return f"{team_h}: {score_h} - {team_a}: {score_a}"
+
 
 class GameTags(Enum):
     state_ticks = 'state ticks <GameState>'
+    new_batter = 'new player up to bat <Player>'
+    new_inning = 'new inning reached <int>'
+    new_half = 'new inning half reached <int>'
+    game_over = 'game is complete <Update>'
+    game_start = 'first message of a new game. <Update>'
+
     game_updates = 'game updates <Update>'
     pitch = 'pitch was thrown <Pitch>'
     swing = 'swing was swung <Swing>'
@@ -130,8 +169,9 @@ class GameTags(Enum):
     bases_update = 'basepath update <BaseSummary>'
     player_walked = 'player walked to first <Player>'
     home_run = 'home run was hit <int>'
+    cycle_batting_order = 'every batter hit <Lineup>'
     runs_scored = 'runs were scored <int>'
-    strike = 'strike was thrown <None>'
+    strike = 'strike was thrown <bool: strike swinging?>'
     ball = 'ball was thrown <None>'
     foul = 'foul was hit <None>'
     outs = 'players out for any cause <int>'

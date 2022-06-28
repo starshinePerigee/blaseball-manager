@@ -53,3 +53,26 @@ Event isn't necessary - Events can be built by a game recorder, which bundles to
 
 
 ok so threading is actually not what we want - we need multiprocessing. let's put this off for a bit.
+
+
+the big issue:
+you're going to have a lot of different listeners flying around. A lot of these are tied to out of ballgame things,
+such as player stats, player modifiers, etc. etc. etc.
+
+Things that are Always Listening need to be manually joined on to each BallGame's Messenger.
+
+The hard option is manually connect them every time.
+the weird option is have a single global messenger, but use that to braodcast "new game" announcements?
+the medium option is to keep a repository of "every ballgame" recievers, and join from that container each time
+the easy option is really just have a single global messenger?
+
+
+the hard option sucks, because there's going to be a million different places and having to remember them defeats the
+entire point of a Messenger.
+
+The easy option means we'd need to have some way of distinguishing between in-game and cross-game comms. You could add
+filtering, or use two messengers, but that's kind of annoying also?
+
+the medium option and the weird option kind of sound like the same dang thing, except with a dedicated global structure
+in one (and by global it could be part of the AllGames singleton?) and requires the other object keep track of who all
+what needs to get added how; whereas a messenger for game starts means each sub-item can manage their own selves.

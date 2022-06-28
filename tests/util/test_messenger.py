@@ -70,6 +70,21 @@ class TestMessenger:
         assert b1.count == 19
         assert b2.count == 9
 
+    def test_null(self):
+        m1 = Messenger()
+        l1 = Receiver()
+        m1.subscribe(l1.increment)
+
+        m1.send(4)
+        assert l1.count == 4
+
+    def test_null_error(self):
+        m = Messenger()
+        l1 = Receiver(m)
+
+        with pytest.raises(KeyError):
+            m.send(4)
+
     def test_unsubscribe(self):
         m = Messenger()
         r = Receiver(m)
