@@ -1,15 +1,27 @@
 finish ballgame tests
 
 refactor to use Logging (loguru?) + error handling
-- error handling on messenger sends as the firewall
+- error handling on messenger sends as the firewall (wrap messenger sends in try blocks)
 
+convert speed from abstract to MPH
 write stats handlers
 refactor to use stats handlers in classes
+add additional fielding descriptions
+fix pitch descriptors (mph and type)
+write hit descriptors
+add/fix spacers and stat dumps
 fix docs
 write balance tests
+review converting some module methods to staticmethods?
 
 
 to consider:
 - which classes persist vs. which are destroy and remake / which are passed around?
 - basepaths is being managed in two places and that sucks
 - convert stats list from strings to enum or pull from class directly?
+
+
+refactor private methods/members into private
+
+
+leaving this here: https://pypi.org/project/inflect/

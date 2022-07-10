@@ -33,7 +33,6 @@ class BallGame:
         self.messenger.subscribe(self.add_foul, GameTags.foul)
         self.messenger.subscribe(self.add_strike, GameTags.strike)
         self.messenger.subscribe(self.player_hit_ball, GameTags.hit_ball)
-        self.messenger.subscribe(self.player_walked, GameTags.player_walked)
         self.messenger.subscribe(self.update_basepaths, GameTags.bases_update)
         self.messenger.subscribe(self.add_outs, GameTags.outs)
         self.messenger.subscribe(self.next_half_inning, GameTags.new_half)
@@ -88,9 +87,6 @@ class BallGame:
             self.messenger.send(1, GameTags.outs)
 
     def player_hit_ball(self, ball):
-        self.increment_batter()
-
-    def player_walked(self, player):
         self.increment_batter()
 
     def start_at_bat(self):

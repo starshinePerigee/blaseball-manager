@@ -141,6 +141,8 @@ ok one problem is the ballgame is tightly coupled to everything - game state eff
 	- if gamestate is broadcast, the other listeners don't need to listen to each other?
 
 this feels alright?
-how do we store/save game data (for replays, etc)
+how do we store/save game data (for replays, etc)? a listener class?
 
-1. if ballgame sends out itself (or a gamestate) as its message, it can go to a recorder
+	Note: the average unit of time should be an at-bat; all the pitches for an at-bat are rolled together. weather events can be rolled per pitch, or not.
+	
+also note that with the circular import issue, a gamestate might be a useful class. 

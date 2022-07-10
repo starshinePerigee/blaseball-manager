@@ -1,6 +1,6 @@
 from enum import Enum
 
-from blaseball.util.messenger import Messenger, CircuitBreaker, CountStore
+from blaseball.util.messenger import Messenger, CircuitBreaker, CountStore, ReceivedArgument
 
 import pytest
 
@@ -110,6 +110,16 @@ class TestMessenger:
         assert isinstance(repr(m), str)
 
 
+def fake_messenger_send(argument=None, tags=""):
+    if not isinstance(tags, list):
+        tags = [tags]
+
+    return fake_receive(argument)
+
+def fake_receive(argument=None):
+    return ReceivedArgument(argument)
+
+
 class TestListeners:
     def test_circuitbreaker(self):
         m = Messenger()
@@ -120,6 +130,21 @@ class TestListeners:
 
         with pytest.raises(TypeError):
             m.send(1, TestTags.count)
+
+    @pytest.mark.parametrize(
+        "tags",
+        [
+            [None],
+            [TestTags.count],
+            [TestTags.count_2, TestTags.count_3]
+        ]
+    )
+    def test_received_argument(self, tags):
+        test_argument = fake_messenger_send("test", tags)
+        assert test_argument.great_grand_caller.function == "test_received_argument"
+        assert test_argument.tags == tags
+        assert isinstance(str(test_argument), str)
+        assert test_argument.argument == "test"
 
     def test_countstore(self):
         m = Messenger()
@@ -133,9 +158,9 @@ class TestListeners:
         for count_store in [count_store_unlimited, count_store_3, count_store_none]:
             assert count_store.count == 10
 
-        assert count_store_unlimited.items == [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+        assert [item.argument for item in count_store_unlimited.items] == [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
         assert count_store_unlimited[-1] == 0
         assert len(count_store_unlimited) == 10
         assert count_store_none.items == []
-        assert count_store_3.items == [9, 8, 7]
+        assert [item.argument for item in count_store_3.items] == [9, 8, 7]
         assert len(count_store_3) == 3

@@ -2,8 +2,9 @@
 This is how we're going to pass messages between classes.
 """
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from enum import Enum
+import inspect
 
 from typing import Callable, Union, List, Type
 
@@ -81,6 +82,28 @@ class Listener:
         pass
 
 
+class ReceivedArgument:
+    """I can't belive i'm doing this but it's basically a namedtuple with a str method"""
+    def __init__(self, argument=None):
+        callers = inspect.stack()[2:4]  # respond(), messenger.send(), caller
+        self.argument = argument
+        self.tags = callers[0].frame.f_locals['tags']
+        self.great_grand_caller = callers[1]
+
+    def _tag_string(self):
+        if self.tags[0] is None:
+            return ""
+        else:
+            return "+".join([tag.name for tag in self.tags])
+
+    def __str__(self):
+        return (f"{self._tag_string():30} {self.great_grand_caller.function:20} "
+                f"{str(self.argument):80} {type(self.argument)}")
+
+    def __repr__(self):
+        return f"ReceivedArgument({self.argument})"
+
+
 class Printer(Listener):
     """Messenger demo class, helps with debugging a messenger stream."""
     def respond(self, argument):
@@ -109,16 +132,21 @@ class CountStore(Listener):
         self.count = 0
         self.items = []
 
-    def respond(self, argument):
+    def respond(self, argument=None):
         self.count += 1
         if self.items_to_store != 0:
-            self.items.insert(0, argument)
+            self.items.insert(0, ReceivedArgument(argument))
             if self.items_to_store > 0:
                 if len(self.items) > self.items_to_store:
                     del(self.items[-1])
 
     def __getitem__(self, item):
-        return self.items[item]
+        return self.items[item].argument
 
     def __len__(self):
         return len(self.items)
+
+    def print_all(self):
+        for i, item in enumerate(self.items):
+            item_number = self.count - i
+            print(f"{'[' + str(item_number) + ']':>6} {item}")
