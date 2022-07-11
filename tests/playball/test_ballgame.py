@@ -1,6 +1,6 @@
 import pytest
 
-from blaseball.playball.gamestate import GameState
+from blaseball.playball.gamestate import GameState, GameTags
 
 
 class TestBallGame:
@@ -14,15 +14,16 @@ class TestBallGame:
         assert ": 3 -" in count_store_all[0].text
         assert count_store_all[0].text[-3:] == ": 2"
 
-    def test_add_ball(self, ballgame_1, count_store_all):
+    def test_add_ball(self, ballgame_1, pitch_manager_1, count_store_all):
         ballgame_1.add_ball()
         assert ballgame_1.state.balls == 1
         assert "1 - 0" in count_store_all[0].text
         ballgame_1.state.balls = 3
         ballgame_1.add_ball()
-        assert ballgame_1.state.balls == 0
-        assert ballgame_1.state.bases[0] == ballgame_1.state.offense()['batter 1']
+        assert ballgame_1.state.bases[1] == ballgame_1.state.offense()['batter 1']
+        assert ballgame_1.state.balls == 4
         assert ballgame_1.state.at_bat_numbers == [0, 1]
+        assert ballgame_1.needs_new_batter[ballgame_1.state.offense_i()]
 
     def test_add_foul(self, ballgame_1, count_store_all):
         ballgame_1.state.strikes = 1
@@ -62,7 +63,7 @@ class TestBallGame:
         ballgame_1.send_tick()
         assert ballgame_1.state.offense()['batter 8'] == count_store_all[0].batter()
 
-    def test_next_batter_after_hit(self, ballgame_1, pitch_manager_1, count_store_all, seed_randoms, patcher):
+    def test_next_batter_after_hit(self, ballgame_1, count_store_all, pitch_manager_1, seed_randoms, patcher):
         # guarantee no-swing
         patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: False)
         ballgame_1.send_tick()  # send tick to clear need new batter state
@@ -74,11 +75,50 @@ class TestBallGame:
         patcher.patch('blaseball.stats.stadium.Stadium.check_home_run', lambda self, location: (False, False))  # noqa
         ballgame_1.send_tick()
 
-        count_store_all.print_all()
         assert ballgame_1.needs_new_batter[ballgame_1.state.offense_i()]
+        assert count_store_all.tag_inventory()[GameTags.new_batter] == 1
 
-    def test_end_half_inning(self):
-        pass
+    def test_end_half_inning(self, ballgame_1, count_store_all, pitch_manager_1, seed_randoms, patcher):
+        # guarantee no-swing, all strikes
+        patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: False)
+        patcher.patch('blaseball.playball.pitching.roll_location', lambda target_location, pitcher_accuracy: 0.0)
+        ballgame_1.send_tick()  # game start includes a new batter, which resets strikes and outs, so we need a first
+        # tick so we can set these later.
 
-    def test_end_full_inning(self):
-        pass
+        ballgame_1.state.strikes = 2
+        ballgame_1.state.outs = 2
+        ballgame_1.send_tick()
+        ballgame_1.send_tick()
+
+        assert ballgame_1.state.offense() is ballgame_1.state.home_team
+        assert ballgame_1.state.batter() == ballgame_1.state.home_team['batter 1']
+        assert ballgame_1.state.strikes == 1
+        assert ballgame_1.state.outs == 0
+        assert ballgame_1.state.inning_half == 0
+        assert count_store_all.tag_inventory()[GameTags.new_half] == 1
+
+    def test_end_full_inning(self, ballgame_1, count_store_all, pitch_manager_1, seed_randoms, patcher):
+        # guarantee no-swing, all strikes
+        patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: False)
+        patcher.patch('blaseball.playball.pitching.roll_location', lambda target_location, pitcher_accuracy: 0.0)
+        ballgame_1.send_tick()
+
+        # step through a half inning
+        ballgame_1.state.strikes = 2
+        ballgame_1.state.outs = 2
+        ballgame_1.send_tick()
+        ballgame_1.send_tick()
+        ballgame_1.state.strikes = 2
+        ballgame_1.state.outs = 2
+
+        count_store_all.clear()
+        ballgame_1.send_tick()
+        ballgame_1.send_tick()
+
+        assert ballgame_1.state.offense() is ballgame_1.state.away_team
+        assert ballgame_1.state.strikes == 1
+        assert ballgame_1.state.outs == 0
+        assert ballgame_1.state.inning_half == 1
+        assert count_store_all.tag_inventory()[GameTags.new_half] == 1
+        assert count_store_all.tag_inventory()[GameTags.new_inning] == 1
+

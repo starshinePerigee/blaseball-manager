@@ -164,3 +164,31 @@ class TestListeners:
         assert count_store_none.items == []
         assert [item.argument for item in count_store_3.items] == [9, 8, 7]
         assert len(count_store_3) == 3
+
+    def test_countstore_clear(self):
+        m = Messenger()
+        count_store_3 = CountStore(m, TestTags.count, 3)
+
+        for i in range(2):
+            m.send(i, TestTags.count)
+
+        count_store_3.clear()
+
+        assert len(count_store_3) == 0
+        assert count_store_3.items == []
+
+    def test_countstore_tag_inventory(self):
+        m = Messenger()
+        count_store = CountStore(m, TestTags.count, -1)
+        m.subscribe(count_store.respond, TestTags.count_2)
+        m.subscribe(count_store.respond, TestTags.count_3)
+
+        for i in range(4):
+            m.send(1, TestTags.count)
+
+        m.send(2, TestTags.count_2)
+
+        inventory = count_store.tag_inventory()
+        assert inventory[TestTags.count] == 4
+        assert inventory[TestTags.count_2] == 1
+        assert inventory[TestTags.count_3] == 0

@@ -20,14 +20,26 @@ class BallGame:
     """The manager for a game of blaseball. This maintains its own internal gamestate, and sends out gameticks
     in response to all_game's "tick" on its messenger
     """
-    def __init__(self, all_game_messenger: Messenger, home: Lineup, away: Lineup, stadium: Stadium, rules: GameRules):
+    def __init__(
+            self,
+            all_game_messenger: Messenger,
+            home: Lineup,
+            away: Lineup,
+            stadium: Stadium,
+            rules: GameRules,
+            game_messenger: Messenger = None  # this game's internal messenger (used for testing)
+    ):
         self.state = GameState(home, away, stadium, rules)
         self.needs_new_batter = [True, True]
         self.live_game = True
 
         # all_game_messenger.subscribe(self.send_tick, None)  # TODO
 
-        self.messenger = Messenger()
+        if game_messenger is None:
+            self.messenger = Messenger()
+        else:
+            self.messenger = game_messenger
+
         self.messenger.subscribe(self.score_runs, GameTags.runs_scored)
         self.messenger.subscribe(self.add_ball, GameTags.ball)
         self.messenger.subscribe(self.add_foul, GameTags.foul)

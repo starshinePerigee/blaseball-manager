@@ -15,7 +15,8 @@ class TestLiveBall:
         # remember good hit EV is 80 - 120
         '45 degree line drive': (45, 100, 200, 400),
         '2 degree high power': (2, 100, 20, 100),
-        '-10 degree line drive equivalent': (-10, 100, 100, 200)
+        '10 degrees': (10, 50, 40, 100),
+        '-10 degree line drive equivalent': (-10, 100, 40, 100)
     }
 
     @pytest.mark.parametrize(
@@ -185,7 +186,7 @@ class TestHitBall:
     @pytest.mark.parametrize(
         "field_angle, distance, text",
         [
-            (0, 500, "Home run!!"),
+            (0, 500, "Home run!"),
             (1, 405, "Off the outfield wall!"),
             (45, 200, None)
         ]

@@ -1,4 +1,3 @@
-finish ballgame tests
 
 refactor to use Logging (loguru?) + error handling
 - error handling on messenger sends as the firewall (wrap messenger sends in try blocks)

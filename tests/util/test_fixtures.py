@@ -77,7 +77,7 @@ class TestFixtures:
         messenger_1.send(3, tags.game_updates)
 
         assert count_store_all.count == 3
-        assert count_store_all.items == [3, 2, 1]
+        assert [item.argument for item in count_store_all.items] == [3, 2, 1]
 
     def test_pitch_manager(self, pitch_manager_1, gamestate_1, messenger_1):
         assert isinstance(pitch_manager_1, blaseball.playball.pitchmanager.PitchManager)
@@ -93,7 +93,7 @@ class TestFixtures:
     def test_ballgame_1(self, messenger_1, ballgame_1, count_store_all):
         assert isinstance(ballgame_1, blaseball.playball.ballgame.BallGame)
         ballgame_1.send_tick()
-        assert len(count_store_all) == 1
+        assert len(count_store_all) > 1
         assert isinstance(count_store_all[0], blaseball.playball.gamestate.GameState)
 
 

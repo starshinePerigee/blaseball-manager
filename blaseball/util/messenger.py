@@ -97,6 +97,9 @@ class ReceivedArgument:
             return "+".join([tag.name for tag in self.tags])
 
     def __str__(self):
+        return (f"[{self._tag_string()}] {self.great_grand_caller.function}: {self.argument}")
+
+    def as_padded_string(self):
         return (f"{self._tag_string():30} {self.great_grand_caller.function:20} "
                 f"{str(self.argument):80} {type(self.argument)}")
 
@@ -140,6 +143,17 @@ class CountStore(Listener):
                 if len(self.items) > self.items_to_store:
                     del(self.items[-1])
 
+    def tag_inventory(self):
+        all_tags = defaultdict(int)
+        for item in self.items:
+            for tag in item.tags:
+                all_tags[tag] += 1
+        return all_tags
+
+    def clear(self):
+        self.items = []
+        self.count = 0
+
     def __getitem__(self, item):
         return self.items[item].argument
 
@@ -147,6 +161,5 @@ class CountStore(Listener):
         return len(self.items)
 
     def print_all(self):
-        for i, item in enumerate(self.items):
-            item_number = self.count - i
-            print(f"{'[' + str(item_number) + ']':>6} {item}")
+        for i, item in enumerate(self.items[::-1]):
+            print(f"{'[' + str(i) + ']':>6} {item.as_padded_string()}")
