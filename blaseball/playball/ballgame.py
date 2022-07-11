@@ -2,6 +2,8 @@
 """
 
 from decimal import Decimal
+from loguru import logger
+from typing import Union
 
 from blaseball.playball.event import Update
 from blaseball.playball.gamestate import GameState, GameTags, GameRules, BaseSummary
@@ -32,6 +34,9 @@ class BallGame:
         self.state = GameState(home, away, stadium, rules)
         self.needs_new_batter = [True, True]
         self.live_game = True
+        self.tick_count = 0
+        self.batter_mercy_count = 0
+        self.pitcher_mercy_count = 0
 
         # all_game_messenger.subscribe(self.send_tick, None)  # TODO
 
@@ -50,13 +55,15 @@ class BallGame:
         self.messenger.subscribe(self.next_half_inning, GameTags.new_half)
         self.messenger.subscribe(self.next_inning, GameTags.new_inning)
 
+        logger.success(f"Beginning ballgame {away.name} at {home.name}")
+
     def start_game(self):
         """Call this externally once everything has had a chance to subscribe to this messenger."""
         start_game_text = (f"{self.state.teams[0]['pitcher']['team']} vs. "
                            f"{self.state.teams[1]['pitcher']['team']}!")
         self.messenger.send(GameManagmentUpdate(start_game_text), [GameTags.game_updates, GameTags.game_start])
 
-    def score_runs(self, runs: int):
+    def score_runs(self, runs: Union[int, Decimal]):
         self.state.scores[self.state.offense_i()] += runs
         if runs == 1:
             plural_text = "run"
@@ -112,16 +119,42 @@ class BallGame:
     def increment_batter(self):
         """queue up the next batter."""
         self.needs_new_batter[self.state.offense_i()] = True
+        self.batter_mercy_count = 0
 
         rollover = self.state.increment_batting_order()
         if rollover:
             self.messenger.send(tags=GameTags.cycle_batting_order)
+
+        self.pitcher_mercy_count += 1
+        if self.pitcher_mercy_count >= 64:
+            self.pitcher_mercy()
+
+    def batter_mercy(self):
+        """If a pitcher throws 64 pitches against a single batter, something is wrong, so mark them out for a run."""
+        logger.warning(f"Batter mercy: {self.state.batter()} vs {self.state.defense()['pitcher']}")
+        self.messenger.send(Update(f"Batter {self.state.batter()} is out on the mercy rule!"),
+                            GameTags.game_updates)
+        self.messenger.send(Decimal("0.9"), GameTags.runs_scored)
+        self.messenger.send(1, GameTags.outs)
+        self.increment_batter()
+
+    def pitcher_mercy(self):
+        """If a pitcher fails to retire 64 batters, the inning is over."""
+        logger.warning(f"Pitcher mercy: {self.state.defense()['pitcher']} vs {self.state.offense()['team']}")
+        self.messenger.send(Update(f"Pitcher {self.state.defense()['pitcher']} invokes the mercy rule!"),
+                            GameTags.game_updates)
+        self.messenger.send(Decimal("0.1") + len(self.state.bases), GameTags.runs_scored)
+        self.end_half()
 
     def update_basepaths(self, summary: BaseSummary):
         self.state.bases = summary
 
     def send_tick(self):
         """Send a new gamestate tick, calling for the next pitch."""
+        self.tick_count += 1
+        self.batter_mercy_count += 1
+        if self.batter_mercy_count >= 64:
+            self.batter_mercy()
         if self.needs_new_batter[self.state.offense_i()]:
             self.start_at_bat()
 
@@ -136,6 +169,7 @@ class BallGame:
     def end_half(self):
         """Call for the end of a half inning and entire inning/game as needed"""
         # TODO: shame
+        self.pitcher_mercy_count = 0
         if self.state.inning_half:
             # we're in the top of the inning
             self.state.inning_half -= 1
@@ -168,6 +202,9 @@ class BallGame:
                     f"{self.state.teams[0]['pitcher']['team']} {self.state.scores[0]}, "
                     f"{self.state.teams[1]['pitcher']['team']} {self.state.scores[1]}.")
         self.messenger.send(GameManagmentUpdate(game_end), [GameTags.game_updates, GameTags.game_over])
+
+        logger.success(f"Ballgame {self.state.away_team.name} at {self.state.home_team.name} completed, "
+                       f"{self.tick_count} ticks.")
 
 
 """

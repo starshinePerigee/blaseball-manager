@@ -14,6 +14,7 @@ from typing import Union, List
 import pandas as pd
 from numpy import integer
 from numpy.random import normal
+from loguru import logger
 
 from data import playerdata
 from blaseball.stats.stats import all_stats, Stat
@@ -332,6 +333,8 @@ class PlayerBase(MutableMapping):
 
         if num_players > 0:
             self.new_players(num_players)
+
+        logger.success(f"Instantiated new playerbase with {num_players} players.")
 
     def new_players(self, num_players: int) -> List[Player]:
         """batch create new players. Returns the new players as a list

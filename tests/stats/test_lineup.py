@@ -62,3 +62,6 @@ class TestLineup:
         assert isinstance(lineup_1.string_summary(), str)
         assert isinstance(lineup_1.__str__(), str)
 
+    def test_team(self, lineup_1):
+        assert lineup_1['team'] == lineup_1['batter 1']['team']
+        assert isinstance(lineup_1['team'], str)

@@ -11,8 +11,16 @@ from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmana
 from blaseball.util import messenger
 from support.mock_functions import FunctionPatcher
 from data import teamdata
+
 import numpy
 import random
+from loguru import logger
+import sys
+
+
+# disable typical debug logging info during tests.
+logger.remove()
+logger.add(sys.stderr, level="WARNING")
 
 
 @pytest.fixture(scope='function')

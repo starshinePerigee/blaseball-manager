@@ -109,6 +109,13 @@ class TestMessenger:
 
         assert isinstance(repr(m), str)
 
+    def test_handle_error(self):
+        # TODO
+        m = Messenger()
+        counter = Receiver(m)
+        m.send("this will throw an error", TestTags.count)
+        print("rrr")
+
 
 def fake_messenger_send(argument=None, tags=""):
     if not isinstance(tags, list):

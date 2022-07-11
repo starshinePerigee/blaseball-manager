@@ -1,5 +1,5 @@
 
-refactor to use Logging (loguru?) + error handling
+error handling
 - error handling on messenger sends as the firewall (wrap messenger sends in try blocks)
 
 convert speed from abstract to MPH
@@ -12,6 +12,8 @@ add/fix spacers and stat dumps
 fix docs
 write balance tests
 review converting some module methods to staticmethods?
+
+refactor to use Logging (loguru?)
 
 
 to consider:

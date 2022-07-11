@@ -5,6 +5,7 @@ This is how we're going to pass messages between classes.
 from collections import defaultdict, namedtuple
 from enum import Enum
 import inspect
+from loguru import logger
 
 from typing import Callable, Union, List, Type
 
@@ -57,11 +58,19 @@ class Messenger:
                 recipients = self.listeners[tag]
                 for recipient in recipients:
                     if recipient not in sent:
-                        if argument is None:
-                            recipient()
-                        else:
-                            recipient(argument)
-                        sent.add(recipient)
+                        try:
+                            if argument is None:
+                                recipient()
+                            else:
+                                recipient(argument)
+                        except Exception as err:  # do not no-qa this. this is dangerous and you should be aware
+                            # at ALL TIMES
+                            caller = inspect.stack()[1]  # respond(), messenger.send(), caller
+                            logger.exception(f"{type(err)} exception raised "
+                                             f"while processing tags {tags} "
+                                             f"from function {caller.function}")
+                        finally:
+                            sent.add(recipient)
 
     # TODO: add "send queue" for optional timing management
 

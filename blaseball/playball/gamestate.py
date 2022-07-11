@@ -149,8 +149,8 @@ class GameState:
         score_a = self.scores[1]
         if score_a % 1 == 0:
             score_a = f"{score_a:.0f}"
-        team_h = self.home_team['pitcher']['team']
-        team_a = self.away_team['pitcher']['team']
+        team_h = self.home_team['team']
+        team_a = self.away_team['team']
         return f"{team_h}: {score_h} - {team_a}: {score_a}"
 
 
@@ -170,7 +170,7 @@ class GameTags(Enum):
     player_walked = 'player walked to first <Player>'
     home_run = 'home run was hit <int>'
     cycle_batting_order = 'every batter hit <Lineup>'
-    runs_scored = 'runs were scored <int>'
+    runs_scored = 'runs were scored <int/Decimal>'
     strike = 'strike was thrown <bool: strike swinging?>'
     ball = 'ball was thrown <None>'
     foul = 'foul was hit <None>'

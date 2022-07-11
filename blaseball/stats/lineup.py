@@ -243,6 +243,8 @@ class Lineup(Collection):
         key_l = key.lower()
         if key_l == "pitcher":
             return self.pitcher
+        elif key_l == "team":
+            return self.pitcher['team']
         elif key_l == "batters" or key_l == "batting_order":
             return self.batting_order
         elif 'batter ' in key_l:

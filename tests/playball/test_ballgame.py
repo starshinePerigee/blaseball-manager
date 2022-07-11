@@ -2,6 +2,8 @@ import pytest
 
 from blaseball.playball.gamestate import GameState, GameTags
 
+from decimal import Decimal
+
 
 class TestBallGame:
 
@@ -51,6 +53,29 @@ class TestBallGame:
         assert ballgame_1.state.at_bat_numbers == [0, 1]
         assert count_store_all[0] == 1
         assert "struck out swinging" in count_store_all[1].text
+
+    def test_batter_mercy(self, ballgame_1, count_store_all, pitch_manager_1, patcher):
+        # guarantee no-swing, all strikes
+        patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: False)
+        patcher.patch('blaseball.playball.pitching.roll_location', lambda target_location, pitcher_accuracy: 0.0)
+        ballgame_1.send_tick()
+        ballgame_1.batter_mercy_count = 63
+        ballgame_1.send_tick()
+        assert ballgame_1.state.scores[ballgame_1.state.offense_i()] == Decimal('0.9')
+        assert ballgame_1.state.batter() == ballgame_1.state.offense()['batter 2']
+        assert ballgame_1.state.outs == 1
+        assert count_store_all.tag_inventory()[GameTags.new_batter] == 2
+
+    def test_pitcher_mercy(self, ballgame_1, count_store_all, pitch_manager_1, patcher):
+        # guarantee no-swing, all balls
+        patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: False)
+        patcher.patch('blaseball.playball.pitching.roll_location', lambda target_location, pitcher_accuracy: 2.0)
+        ballgame_1.send_tick()
+        ballgame_1.pitcher_mercy_count = 63
+        ballgame_1.state.balls = 3
+        ballgame_1.send_tick()
+        assert ballgame_1.state.scores[ballgame_1.state.defense_i()] == Decimal('1.1')
+        assert count_store_all.tag_inventory()[GameTags.new_half] == 1
 
     def test_send_tick_new_batter(self, ballgame_1, count_store_all):
         ballgame_1.send_tick()
