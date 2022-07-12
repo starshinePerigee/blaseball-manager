@@ -273,7 +273,7 @@ class Pitch(Update):
         else:
             pitch_text = "two seam fastball"
 
-        text_force = normal(pitcher['force'] * 20 + 70, 20)
+        text_force = normal(pitcher['force'] * 20 + 70, 10)
 
         return f"{text_force:.0f} mph {pitch_text} {loc_text}."
 

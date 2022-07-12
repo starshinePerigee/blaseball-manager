@@ -146,6 +146,12 @@ class BallGame:
         self.messenger.send(Decimal("0.1") + len(self.state.bases), GameTags.runs_scored)
         self.end_half()
 
+    def inning_mercy(self):
+        logger.warning(f"Inning mercy: {self.state.away_team['team']} at {self.state.home_team['team']}")
+        self.messenger.send(Update(f"The home team recieves a boon to move things along, please."),
+                            GameTags.game_updates)
+        self.messenger.send(Decimal("0.1"), GameTags.runs_scored)
+
     def update_basepaths(self, summary: BaseSummary):
         self.state.bases = summary
 
@@ -181,6 +187,9 @@ class BallGame:
                                 GameTags.game_updates)
             self.state.inning_half = 1
             self.state.inning += 1
+            if self.state.inning > 64:
+                # inning mercy
+                self.inning_mercy()
             self.messenger.send(self.state.inning_half, GameTags.new_half)
             self.messenger.send(self.state.inning, GameTags.new_inning)
 
