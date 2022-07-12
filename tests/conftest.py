@@ -10,6 +10,7 @@ from blaseball.stats import players, teams, stadium, lineup
 from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame
 from blaseball.util import messenger
 from support.mock_functions import FunctionPatcher
+from support.loggercapture import LoggerCapture
 from data import teamdata
 
 import numpy
@@ -18,9 +19,23 @@ from loguru import logger
 import sys
 
 
-# disable typical debug logging info during tests.
+# disable logging during tests
 logger.remove()
-logger.add(sys.stderr, level="WARNING")
+
+
+@pytest.fixture(scope='function')
+def logger_print():
+    logger_id = logger.add(sys.stdout)
+    yield
+    logger.remove(logger_id)
+
+
+@pytest.fixture(scope='function')
+def logger_store():
+    logger_capture = LoggerCapture()
+    logger_id = logger.add(logger_capture.receive, level="TRACE")
+    yield logger_capture
+    logger.remove(logger_id)
 
 
 @pytest.fixture(scope='function')

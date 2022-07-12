@@ -1,6 +1,8 @@
 from loguru import logger
 import sys
 
+from support.loggercapture import LoggerCapture
+
 logger.debug("testing, testing, one, two, three")
 
 
@@ -13,7 +15,7 @@ from_fn()
 
 print("~~~")
 
-logger.trace("trace...")
+logger.trace("trace...")  # does not print
 logger.debug("debug?")
 logger.info("info :v")
 logger.success("success.")
@@ -26,3 +28,14 @@ logger.add(sys.stderr, level="WARNING")
 
 logger.trace("trace 2")  # you shouldn't see this
 logger.error("error 2")
+
+c = LoggerCapture()
+
+cid = logger.add(c.receive)
+print(cid)
+
+logger.info("info message")
+
+m = c.log[0]
+
+print(c.log)

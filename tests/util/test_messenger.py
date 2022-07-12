@@ -109,12 +109,11 @@ class TestMessenger:
 
         assert isinstance(repr(m), str)
 
-    def test_handle_error(self):
-        # TODO
+    def test_handle_error(self, logger_store):
         m = Messenger()
         counter = Receiver(m)
         m.send("this will throw an error", TestTags.count)
-        print("rrr")
+        assert "TypeError" in logger_store
 
 
 def fake_messenger_send(argument=None, tags=""):

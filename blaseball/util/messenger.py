@@ -7,7 +7,7 @@ from enum import Enum
 import inspect
 from loguru import logger
 
-from typing import Callable, Union, List, Type
+from typing import Callable, Union, List, Type, Optional
 
 
 class Messenger:
@@ -63,11 +63,12 @@ class Messenger:
                                 recipient()
                             else:
                                 recipient(argument)
-                        except Exception as err:  # do not no-qa this. this is dangerous and you should be aware
-                            # at ALL TIMES
+                        except Exception as err:
+                            # a bare exception is a dangerous thing, but in this case we genuinely
+                            # want messenger to be a "firewall"
                             caller = inspect.stack()[1]  # respond(), messenger.send(), caller
-                            logger.exception(f"{type(err)} exception raised "
-                                             f"while processing tags {tags} "
+                            logger.exception(f"{type(err).__name__}: {str(err)}. "
+                                             f"Exception raised while processing tags '{tag_string(tags)}' "
                                              f"from function {caller.function}")
                         finally:
                             sent.add(recipient)
@@ -80,6 +81,13 @@ class Messenger:
 
     def __repr__(self):
         return f"<Messenger ID {self.id}>"
+
+
+def tag_string(tags: List[Optional[Enum]]):
+    if tags[0] is None:
+        return ""
+    else:
+        return "+".join([tag.name for tag in tags])
 
 
 class Listener:
@@ -99,14 +107,8 @@ class ReceivedArgument:
         self.tags = callers[0].frame.f_locals['tags']
         self.great_grand_caller = callers[1]
 
-    def _tag_string(self):
-        if self.tags[0] is None:
-            return ""
-        else:
-            return "+".join([tag.name for tag in self.tags])
-
     def __str__(self):
-        return (f"[{self._tag_string()}] {self.great_grand_caller.function}: {self.argument}")
+        return (f"[{tag_string(self.tags)}] {self.great_grand_caller.function}: {self.argument}")
 
     def as_padded_string(self):
         return (f"{self._tag_string():30} {self.great_grand_caller.function:20} "

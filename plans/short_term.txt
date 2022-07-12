@@ -1,7 +1,4 @@
 
-error handling
-- error handling on messenger sends as the firewall (wrap messenger sends in try blocks)
-
 convert speed from abstract to MPH
 write stats handlers
 refactor to use stats handlers in classes

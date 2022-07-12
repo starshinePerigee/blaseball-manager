@@ -77,6 +77,16 @@ class TestBallGame:
         assert ballgame_1.state.scores[ballgame_1.state.defense_i()] == Decimal('1.1')
         assert count_store_all.tag_inventory()[GameTags.new_half] == 1
 
+    def test_full_mercy(self, ballgame_1):
+        # if something catastrophically fails with pitch_manager (such as not being instantiated),
+        # make sure the mercy rules still lead to the end of a ballgame.
+        loops = 0
+        while ballgame_1.live_game and loops < 100000:
+            ballgame_1.send_tick()
+            loops += 1
+        # you'd think this test is slow but it actually zips without any pitchmanager to simulate
+        assert loops < 100000
+
     def test_send_tick_new_batter(self, ballgame_1, count_store_all):
         ballgame_1.send_tick()
         assert "stepping up" in count_store_all[1].text
