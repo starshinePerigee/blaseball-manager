@@ -1,21 +1,34 @@
 from enum import Enum
 
-from blaseball.util.messenger import Messenger, CircuitBreaker, CountStore, ReceivedArgument
+from blaseball.util.messenger import Messenger, CircuitBreaker, BreakerError, CountStore, ReceivedArgument
 
 import pytest
 
 
 class Receiver:
+    class_numbers = []
+    running_id = 1
+
+    @classmethod
+    def reset(cls):
+        cls.running_id = 1
+        cls.class_numbers = []
+
     def __init__(self, messenger=None):
         self.count = 0
         if messenger is not None:
             messenger.subscribe(self.increment, TestTags.count)
+        self.id = Receiver.running_id
+        Receiver.running_id += 1
 
     def increment(self, number):
         self.count += number
 
     def decrement(self, number):
         self.count -= number
+
+    def append(self):
+        self.class_numbers += [self.id]
 
 
 class Bidirectional(Receiver):
@@ -32,6 +45,7 @@ class TestTags(Enum):
     decount = "decount",
     count_2 = "count 2",
     count_3 = "count 3"
+    append = "append"
 
 
 class TestMessenger:
@@ -115,6 +129,40 @@ class TestMessenger:
         m.send("this will throw an error", TestTags.count)
         assert "TypeError" in logger_store
 
+    def test_null_priority(self):
+        Receiver.reset()
+        m = Messenger()
+        r1 = Receiver(m)
+        r2 = Receiver(m)
+
+        m.subscribe(r1.append, TestTags.append)
+        m.subscribe(r2.append, TestTags.append)
+
+        m.send(tags=TestTags.append)
+        assert r1.class_numbers == [1, 2]
+
+        m.send(tags=TestTags.append)
+        assert r1.class_numbers == [1, 2, 1, 2]
+
+    def test_priority(self):
+        Receiver.reset()
+        m = Messenger()
+        r1 = Receiver(m)
+        r2 = Receiver(m)
+        r3 = Receiver(m)
+        r4 = Receiver(m)
+
+        m.subscribe(r1.append, TestTags.append)  # priority 0
+        m.subscribe(r2.append, TestTags.append, priority=10)
+        m.subscribe(r3.append, TestTags.append, priority=-1)
+        m.subscribe(r4.append, TestTags.append, priority=5)
+
+        m.send(tags=TestTags.append)
+        assert r1.class_numbers == [2, 4, 1, 3]
+
+        m.send(tags=TestTags.append)
+        assert r1.class_numbers == [2, 4, 1, 3] * 2
+
 
 def fake_messenger_send(argument=None, tags=""):
     if not isinstance(tags, list):
@@ -134,7 +182,7 @@ class TestListeners:
         m.send("test", TestTags.count)
         m.send([1, 2, 3], TestTags.count)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(BreakerError):
             m.send(1, TestTags.count)
 
     @pytest.mark.parametrize(

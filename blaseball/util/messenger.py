@@ -1,8 +1,46 @@
 """
-This is how we're going to pass messages between classes.
+Messenger impliments the Observer pattern, to send information between classes.
+
+Some guidelines and caveats:
+
+1. Mssenger is best when:
+    a: you don't care if there is a response
+        messenger is meant to carry information in a single direction - from a class/module to another one.
+        carrying information back couples modules a little too tightly, although you can call messenger again
+            DO NOT send a message on a tag that you are responding on - that will recurse!
+    b:  you don't care about what the receiver does
+        the receiver can error (in which case, it gets caught by messenger and logged, but execution continues)
+        the receiver could have been changed since you last wrote the sender
+    c: you don't really care about execution order
+        there is a priority option to configure messenger order, but because the way the stack works (see the next
+        caveat) execution order can get pretty weird!
+
+2. messenger sends broadcast to many targets at once, but it's important not to forget what a broadcast is:
+it's a remote function call. This is a way of making one module call functions in none/some/many other modules.
+
+These modules can (and often do!) send their own messages. These messages are propagated and handled from the
+point of call. This means they are executed before later listeners up the "messenger stack"!
+
+As an example:
+
+    Alice subscribes Appraise() to Messenger M1 tag new_house
+    Bob subscribes Bellow() to M1 tag new_house
+    Bob also subscribes Bellow() to M1 tag announce
+
+    if Alice's Appraise() sends a message on the announce tag, then this is the order of execution:
+
+    1. caller sends on new_house
+    2.  Appraise() is called from messenger
+    3.  Appraise() sends a message on announce
+    4.   This calls Bellow()
+    5.  Bellow() is called from the new_house tag
+
+this results in Bob bellowing the results of the appraisal before bellowing the new house! this may or may not be
+what you want.
+
 """
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from enum import Enum
 import inspect
 from loguru import logger
@@ -21,17 +59,26 @@ class Messenger:
     running_id = 1
 
     def __init__(self):
+
+        # listeners is a dictionary of list of tuples:
+        """
+        {
+           tag1: [(4, funct1), (1, funct2), (-2, funct3)]
+           tag2: [(1, funct2)]
+        }
+        """
         self.listeners = defaultdict(list)
         self.id = Messenger.running_id
         Messenger.running_id += 1
 
-    def subscribe(self, function: Callable, tags: Union[Enum, List[Enum]] = "") -> None:
+    def subscribe(self, function: Callable, tags: Union[Enum, List[Enum]] = "", priority=0) -> None:
         """Subscribe function to tags. Whenever messenger is sent, this function will be called """
         if not isinstance(tags, list):
             tags = [tags]
 
         for tag in tags:
-            self.listeners[tag] += [function]
+            self.listeners[tag] += [(priority, function)]
+            self.listeners[tag].sort(key=lambda x: x[0], reverse=True)
 
     def unsubscribe(self, function: Callable, tags: Union[Enum, List[Enum]] = "") -> None:
         """Unsubscribe the function from the tags."""
@@ -39,7 +86,9 @@ class Messenger:
             tags = [tags]
 
         for tag in tags:
-            self.listeners[tag].remove(function)
+            for priority_tuple in self.listeners[tag]:
+                if priority_tuple[1] == function:
+                    self.listeners[tag].remove(priority_tuple)
 
     def send(self, argument=None, tags: Union[Enum, List[Enum]] = "") -> None:
         """Send a message."""
@@ -55,7 +104,7 @@ class Messenger:
 
         for tag in tags:
             if tag in self.listeners:
-                recipients = self.listeners[tag]
+                recipients = [priority_tuple[1] for priority_tuple in self.listeners[tag]]
                 for recipient in recipients:
                     if recipient not in sent:
                         try:
@@ -66,6 +115,9 @@ class Messenger:
                         except Exception as err:
                             # a bare exception is a dangerous thing, but in this case we genuinely
                             # want messenger to be a "firewall"
+                            if isinstance(err, BreakerError):
+                                raise
+
                             caller = inspect.stack()[1]  # respond(), messenger.send(), caller
                             logger.exception(f"{type(err).__name__}: {str(err)}. "
                                              f"Exception raised while processing tags '{tag_string(tags)}' "
@@ -92,8 +144,8 @@ def tag_string(tags: List[Optional[Enum]]):
 
 class Listener:
     """An abstract base class for any of several utilities that exist to limpet on to a messenger."""
-    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]]):
-        messenger.subscribe(self.respond, tags)
+    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]], priority=0):
+        messenger.subscribe(self.respond, tags, priority)
 
     def respond(self, argument):
         pass
@@ -108,10 +160,10 @@ class ReceivedArgument:
         self.great_grand_caller = callers[1]
 
     def __str__(self):
-        return (f"[{tag_string(self.tags)}] {self.great_grand_caller.function}: {self.argument}")
+        return f"[{tag_string(self.tags)}] {self.great_grand_caller.function}: {self.argument}"
 
     def as_padded_string(self):
-        return (f"{self._tag_string():30} {self.great_grand_caller.function:20} "
+        return (f"{tag_string(self.tags):30} {self.great_grand_caller.function:20} "
                 f"{str(self.argument):80} {type(self.argument)}")
 
     def __repr__(self):
@@ -124,24 +176,28 @@ class Printer(Listener):
         print(f"[{type(argument)}] <{argument}>")
 
 
+class BreakerError(TypeError):
+    pass
+
+
 class CircuitBreaker(Listener):
-    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]], types:Union[Type, List[Type]]):
+    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]], types: Union[Type, List[Type]]):
         if not isinstance(types, list):
             types = [types]
         self.types = types
-        super().__init__(messenger, tags)
+        super().__init__(messenger, tags, 90)
 
     def respond(self, argument):
         arg_type = type(argument)
         if arg_type not in self.types:
-            raise TypeError(f"Circuitbreaker detected invalid type: {arg_type}, expected {self.types}")
+            raise BreakerError(f"Circuitbreaker detected invalid type: {arg_type}, expected {self.types}")
 
 
 class CountStore(Listener):
     def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]], items_to_store=-1):
         """Count the number of items passing through this message with tags, and optionally save them.
         If items_to_store is 0, no items will be saved. if items_to_store is -1, all items will be saved."""
-        super().__init__(messenger, tags)
+        super().__init__(messenger, tags, 100)
         self.items_to_store = items_to_store
         self.count = 0
         self.items = []

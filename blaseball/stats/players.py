@@ -146,6 +146,7 @@ class Player(Mapping):
         self.derive()
 
     def reset_tracking(self):
+        """Reset all tracking stats to 0"""
         for stat in all_stats['performance'] + all_stats['averaging']:
             self[stat.name] = 0
 

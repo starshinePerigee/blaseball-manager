@@ -10,8 +10,6 @@ fix docs
 write balance tests
 review converting some module methods to staticmethods?
 
-refactor to use Logging (loguru?)
-
 
 to consider:
 - which classes persist vs. which are destroy and remake / which are passed around?

@@ -13,11 +13,11 @@ class TestPitchManager:
 
         messenger_1.send(gamestate_1, GameTags.state_ticks)
 
-        pitch_hopefully = count_store_all[-1]
+        pitch_hopefully = count_store_all[-2]
         assert isinstance(pitch_hopefully, Pitch)
         assert pitch_hopefully.location == 0.5
 
-        swing_hopefully = count_store_all[-2]
+        swing_hopefully = count_store_all[-3]
         assert isinstance(swing_hopefully, Swing)
         assert swing_hopefully.strike
 
@@ -49,8 +49,8 @@ class TestPitchManager:
         # all of pitch_manager_1's messages arrive before the game state update tick.
 
         assert len(count_store_all) > 10
-        assert count_store_all[2] == 4  # four outs
-        base_summary = count_store_all[1]
+        assert count_store_all[1] == 4  # four outs
+        base_summary = count_store_all[0]
         assert isinstance(base_summary, BaseSummary)
         assert base_summary.bases == [None, None, None, None]
 
@@ -62,13 +62,14 @@ class TestPitchManager:
         messenger_1.send(batters_4[2], GameTags.player_walked)
 
         assert len(count_store_all) == 3
-        summary_hopefully = count_store_all[1]
+        summary_hopefully = count_store_all[0]
         assert isinstance(summary_hopefully, BaseSummary)
         assert summary_hopefully[1] == batters_4[2]
 
         messenger_1.send(batters_4[3], GameTags.player_walked)
         assert count_store_all.tag_inventory()[GameTags.runs_scored] == 1
-        assert count_store_all[2] == 1
-        summary_hopefully = count_store_all[1]
+        assert count_store_all[1] == 1
+        summary_hopefully = count_store_all[0]
         assert isinstance(summary_hopefully, BaseSummary)
         assert summary_hopefully[1] == batters_4[3]
+        
