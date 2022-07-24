@@ -46,6 +46,7 @@ class AllStats(Collection):
         self.weights[weight].add(stat, value)
 
     def __getitem__(self, item) -> Union['Stat', List]:
+        # TODO: this v SUUUUCKS so much time
         found_stats = [found_stat for found_stat in self.all_stats if found_stat.name == item]
         if len(found_stats) > 1:
             return found_stats
@@ -501,6 +502,7 @@ pull.default = -1
 element = Stat('element', 'character')
 element.default = "Basic"
 element.abbreviate("ELE")
+
 
 at_bats = Stat('at bats', 'performance')
 

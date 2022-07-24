@@ -155,6 +155,7 @@ class GameState:
 
 
 class GameTags(Enum):
+    pre_tick = 'state synchronization tick immediately prior to state tick <GameState>'
     state_ticks = 'state ticks <GameState>'
     new_batter = 'new player up to bat <Player>'
     new_inning = 'new inning reached <int>'

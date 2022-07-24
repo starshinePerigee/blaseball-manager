@@ -112,26 +112,6 @@ class Swing(Update):
                 self.ball = True
                 self.text = "Ball."
 
-        self.update_stats(batter)
-
-    def update_stats(self, batter: Player):
-        batter.add_average(
-            [
-                'strike rate',
-                'ball rate',
-                'foul rate',
-                'hit rate',
-                'pitch read chance'
-            ],
-            [
-                float(self.strike),
-                float(self.ball),
-                float(self.foul),
-                float(self.hit),
-                self.read_chance
-            ]
-        )
-
     def __bool__(self):
         return self.did_swing
 

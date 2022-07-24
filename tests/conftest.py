@@ -7,7 +7,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 import pytest
 
 from blaseball.stats import players, teams, stadium, lineup
-from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame
+from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame, statsmonitor
 from blaseball.util import messenger
 from support.mock_functions import FunctionPatcher
 from support.loggercapture import LoggerCapture
@@ -97,22 +97,27 @@ def lineup_1(team_1):
     test_lineup.generate(team_1, in_order=True)
     return test_lineup
 
-
 @pytest.fixture(scope='class')
 def defense_1(lineup_1):
     return lineup_1.defense
 
-
 @pytest.fixture(scope='function')
-def gamestate_1(league_2, stadium_cut_lf):
+def ballgame_1(league_2, stadium_cut_lf, messenger_1):
+    null_messenger = messenger.Messenger()
+
     home_lineup = lineup.Lineup("Home Lineup")
     home_lineup.generate(league_2[0])
     away_lineup = lineup.Lineup("Away Lineup")
     away_lineup.generate(league_2[1])
 
-    test_ballgame = gamestate.GameState(home_lineup, away_lineup, stadium_cut_lf, gamestate.GameRules())
+    test_ballgame = ballgame.BallGame(
+        null_messenger, home_lineup, away_lineup, stadium_cut_lf, gamestate.GameRules(), messenger_1
+    )
     return test_ballgame
 
+@pytest.fixture(scope='function')
+def gamestate_1(ballgame_1):
+    return ballgame_1.state
 
 @pytest.fixture(scope='function')
 def pitch_1(gamestate_1, monkeypatch):
@@ -203,15 +208,6 @@ def count_store_all(messenger_1):
     return messenger.CountStore(messenger_1, list(gamestate.GameTags))
 
 @pytest.fixture(scope='function')
-def ballgame_1(league_2, stadium_cut_lf, messenger_1):
-    null_messenger = messenger.Messenger()
-
-    home_lineup = lineup.Lineup("Home Lineup")
-    home_lineup.generate(league_2[0])
-    away_lineup = lineup.Lineup("Away Lineup")
-    away_lineup.generate(league_2[1])
-
-    test_ballgame = ballgame.BallGame(
-        null_messenger, home_lineup, away_lineup, stadium_cut_lf, gamestate.GameRules(), messenger_1
-    )
-    return test_ballgame
+def stats_monitor_1(ballgame_1):
+    stats_monitor = statsmonitor.StatsMonitor(ballgame_1.messenger, ballgame_1.state)
+    return stats_monitor

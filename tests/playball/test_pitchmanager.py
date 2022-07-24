@@ -72,4 +72,3 @@ class TestPitchManager:
         summary_hopefully = count_store_all[0]
         assert isinstance(summary_hopefully, BaseSummary)
         assert summary_hopefully[1] == batters_4[3]
-        

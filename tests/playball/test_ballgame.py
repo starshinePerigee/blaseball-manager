@@ -89,7 +89,7 @@ class TestBallGame:
 
     def test_send_tick_new_batter(self, ballgame_1, count_store_all):
         ballgame_1.send_tick()
-        assert "stepping up" in count_store_all[1].text
+        assert "stepping up" in count_store_all[2].text
         assert ballgame_1.state.offense()['batter 1'] == count_store_all[0].batter()
 
         ballgame_1.state.increment_batting_order(7)

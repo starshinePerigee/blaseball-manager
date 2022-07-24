@@ -185,7 +185,7 @@ class TestHitIntegrated:
 
 class TestHitStats:
     # this goes in its own class because playerbase fixtures are class-scoped
-    def test_swing_stats_tracking(self, gamestate_1, patcher):
+    def test_swing_stats_tracking(self, gamestate_1, stats_monitor_1, patcher):
         # be aware that we're mocking for legibility - the rates seen in this test have no resemblance
         # to expected or desired rates.
 
@@ -226,6 +226,8 @@ class TestHitStats:
         for __ in patcher:
             pitch = pitching.Pitch(gamestate_1, gamestate_1.defense()['pitcher'], gamestate_1.defense()['catcher'])
             swing = hitting.Swing(gamestate_1, pitch, batter)
+            stats_monitor_1.update_pitch(pitch)
+            stats_monitor_1.update_swing(swing)
             all_swings += [swing]
 
         print(f"Total pitches simulated: {len(all_swings)}")

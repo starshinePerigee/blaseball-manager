@@ -239,7 +239,6 @@ class Pitch(Update):
         self.reduction = roll_reduction(pitcher['trickery'])
 
         super().__init__(self.description_string(pitcher))
-        self.update_stats(pitcher, catcher)
 
     def description_string(self, pitcher: Player):
         if self.location > 1.6:
@@ -281,27 +280,6 @@ class Pitch(Update):
         strike_text = "Strike" if self.strike else "Ball"
         return (f"{strike_text}: loc {self.location:.2f} call {self.target:.2f} obs {self.obscurity:.2f} "
                 f"dif {self.difficulty:.2f} red {self.reduction:.2f}")
-
-    def update_stats(self, pitcher: Player, catcher: Player):
-        catcher.add_average("average called location", self.location)
-        pitcher.add_average(
-            [
-                'average pitch difficulty',
-                'average pitch obscurity',
-                'average pitch distance from edge',
-                'average pitch distance from call',
-                'thrown strike rate',
-                'average reduction'
-            ],
-            [
-                self.difficulty,
-                self.obscurity,
-                min(abs(self.location - 1), abs(self.location + 1)),
-                abs(self.location - self.target),
-                int(self.strike),
-                self.reduction
-            ]
-        )
 
     def __eq__(self, other):
         return (

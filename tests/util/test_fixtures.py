@@ -52,7 +52,7 @@ class TestFixtures:
     def test_lineup_1(self, lineup_1):
         assert isinstance(lineup_1, blaseball.stats.lineup.Lineup)
 
-    def test_defesne_1(self, defense_1):
+    def test_defense_1(self, defense_1):
         assert isinstance(defense_1, blaseball.stats.lineup.Defense)
 
     def test_gamestate_1(self, gamestate_1):
@@ -61,6 +61,15 @@ class TestFixtures:
     def test_empty_basepaths(self, empty_basepaths):
         assert isinstance(empty_basepaths, blaseball.playball.basepaths.Basepaths)
         assert len(empty_basepaths) == 0
+
+    def test_stats_monitor_1(self, stats_monitor_1, ballgame_1):
+        assert isinstance(stats_monitor_1, blaseball.playball.statsmonitor.StatsMonitor)
+        assert stats_monitor_1.current_state is ballgame_1.state
+        assert stats_monitor_1.new_game_state in [
+            priority_tuple[1]
+            for priority_tuple
+            in ballgame_1.messenger.listeners[blaseball.playball.gamestate.GameTags.pre_tick]
+        ]
 
     previous_pitch = None
 
@@ -109,8 +118,9 @@ class TestFixtures:
         messenger_1.send(gamestate_1, blaseball.playball.gamestate.GameTags.state_ticks)
         assert isinstance(count_store_pitch[0], blaseball.playball.pitching.Pitch)
 
-    def test_ballgame_1(self, messenger_1, ballgame_1, count_store_all):
+    def test_ballgame_1(self, messenger_1, ballgame_1, count_store_all, gamestate_1):
         assert isinstance(ballgame_1, blaseball.playball.ballgame.BallGame)
+        assert ballgame_1.state == gamestate_1
         ballgame_1.send_tick()
         assert len(count_store_all) > 1
         assert isinstance(count_store_all[0], blaseball.playball.gamestate.GameState)

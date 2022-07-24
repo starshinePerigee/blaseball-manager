@@ -266,7 +266,7 @@ class TestPitching:
 
 
 class TestPitchIntegrated:
-    def test_pitch(self, gamestate_1, monkeypatch, patcher):
+    def test_pitch(self, gamestate_1, stats_monitor_1, monkeypatch, patcher):
         gamestate_1.outs = 1
         catcher = gamestate_1.defense()['catcher']
         pitcher = gamestate_1.defense()['pitcher']
@@ -298,6 +298,7 @@ class TestPitchIntegrated:
             )
 
             pitches = [pitching.Pitch(gamestate_1, pitcher, catcher) for __ in patcher]
+            [stats_monitor_1.update_pitch(pitch) for pitch in pitches]
 
             assert catcher['total pitches called'] == 100
             assert pitcher['total pitches thrown'] == 100

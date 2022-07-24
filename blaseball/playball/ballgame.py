@@ -4,6 +4,7 @@
 from decimal import Decimal
 from loguru import logger
 from typing import Union
+from copy import copy
 
 from blaseball.playball.event import Update
 from blaseball.playball.gamestate import GameState, GameTags, GameRules, BaseSummary
@@ -164,7 +165,9 @@ class BallGame:
         if self.needs_new_batter[self.state.offense_i()]:
             self.start_at_bat()
 
-        self.messenger.send(self.state, GameTags.state_ticks)
+        new_state = copy(self.state)
+        self.messenger.send(new_state, GameTags.pre_tick)
+        self.messenger.send(new_state, GameTags.state_ticks)
 
     def add_outs(self, outs):
         """Add a number of outs, will move game along."""
