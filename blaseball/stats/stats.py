@@ -8,86 +8,208 @@ if TYPE_CHECKING:
     from blaseball.stats.players import Player
 
 from collections.abc import Collection
+from collections import defaultdict
 from typing import Union, List
+from enum import Enum, auto
 
 
-STAT_KINDS = [
-    'personality',  # one of the personality four
-    'category',  # one of the categories
-    'rating',  # one of the 0-2 numeric ratings
-    'descriptor',  # an english derived stat
-    'condition',  # stats that govern a player's condition
-    'character',  # a miscellaneous player attribute
-    'performance',  # a tracked performance metric
-    'averaging',  # a performance stat that is a running average; requires a total performance stat.
-    'test'  # stats in the test group are only for use in testing and shouldn't be called anywhere else
-]
+class StatKinds(Enum):
+    # the number in this enum
+    personality = auto()  # core personality types
+    category = auto()  # stat categories, like "batting"
+    rating = auto()  # 0-2 numeric ratings that govern a player's ball ability
+    base_rating = auto()  # a base value for a player's rating, before modifiers or effects
+    weight = auto()  # a weight is a stat representing a summary of several other stats.
+    descriptor = auto()  # english derived stat descriptors based on a weight
+    total_weight = auto()  # a summary weight that depends on other weights
+    condition = auto()  # a player's condition stats, such as mood and soul
+    character = auto()  # a player's character stats, such as name and fingers
+    performance = auto()  # a tracked performance metric, such as number of hits
+    averaging = auto()  # tracked metric that is a running average, such as batting average
+    test = auto()  # stats in the test group are only for use in testing and shouldn't be used anywehre else.
+    test_dependent = auto()  # a test that depends on test
+
+
+# A "dependency" is a list of all kinds that a kind depends on.
+# ie: a rating stat depends on its base_rating.
+# note that this is for live updates. So even though a base_rating is generated based on the personality,
+# that stat doesn't update if personality later updates, and thus base_rating doesn't depend on personality.
+#
+# When a stat is updated, all stats that depend on that stat get their stale flags flipped.
+# when defining a get method, only pull from stats in their dependency.
+# to handle order, we manually define a recalculation order for each kind. (this could be automatically managed
+# but that sounds like a ton of work! stats without dependencies do not need to be recalculated.
+
+BASE_DEPENDENCIES = {
+    # make sure you include all dependencies, include dependencies of dependencies.
+    # Listed in recalculation order!
+    StatKinds.rating: [StatKinds.base_rating],
+    StatKinds.category: [StatKinds.rating, StatKinds.base_rating],
+    StatKinds.weight: [StatKinds.rating, StatKinds.base_rating, StatKinds.category],
+    StatKinds.total_weight: [StatKinds.rating, StatKinds.base_rating, StatKinds.category,
+                             StatKinds.weight],
+    StatKinds.descriptor: [StatKinds.rating, StatKinds.base_rating, StatKinds.character, StatKinds.category,
+                           StatKinds.weight, StatKinds.total_weight],
+    StatKinds.averaging: [StatKinds.performance],
+    StatKinds.test_dependent: [StatKinds.test]
+}
+
+recalculation_order = BASE_DEPENDENCIES.keys()
+
+dependencies = BASE_DEPENDENCIES
+# fill in everything that's not a dependent
+for kind in StatKinds:
+    if kind not in dependencies:
+        dependencies[kind] = []
+
+# invert the array so we know what to look up / set the stale flag for when we write
+dependents = {kind: [] for kind in StatKinds}
+for kind in StatKinds:
+    for dependency in dependencies[kind]:
+        dependents[dependency] += [kind]
+
+
+# initialize the stale flag dictionary
+stale_flags = {kind: defaultdict(lambda: True) for kind in BASE_DEPENDENCIES}
 
 
 class AllStats(Collection):
+    """A singleston class meant to contain all stats and provide convenient indexing methods."""
     def __init__(self):
-        self.all_stats = []
-        self.weights = {}
+        self._stats_dict = {}
 
-    def append(self, item):
-        self.all_stats.append(item)
+    def _get_all_with_kind(self, kind: StatKinds):
+        return [x for x in self._stats_dict.values() if x.kind == kind]
 
-    def all_personality(self, personality):
-        personality = str(personality).lower()
-        return [x for x in self.all_stats if x.personality == personality]
+    def _get_all_with_personality(self, personality: "Stat"):
+        return [x for x in self._stats_dict.values() if x.personality == personality]
 
-    def all_category(self, category):
-        category = str(category).lower()
-        return [x for x in self.all_stats if x.category == category]
+    def _get_all_with_category(self, category: "Stat"):
+        return [x for x in self._stats_dict.values() if x.category == category]
 
-    def weight(self, weight: str, stat: 'Stat', value):
-        if weight not in self.weights:
-            self.weights[weight] = Weight(weight)
-        self.weights[weight].add(stat, value)
+    def _get_all_by_name_partial(self, identifier: str):
+        return [self._stats_dict[x] for x in self._stats_dict if identifier in x]
 
-    def __getitem__(self, item) -> Union['Stat', List]:
-        # TODO: this v SUUUUCKS so much time
-        found_stats = [found_stat for found_stat in self.all_stats if found_stat.name == item]
-        if len(found_stats) > 1:
-            return found_stats
-        elif len(found_stats) == 1:
-            return found_stats[0]
+    def __getitem__(self, item: Union['Stat', StatKinds, str]) -> Union['Stat', List]:
+        """Get stats that match a criteria.
+        Do not use this in core loops, index by dot directly."""
+        if isinstance(item, Stat):
+            if item.kind is StatKinds.personality:
+                return self._get_all_with_personality(item)
+            elif item.kind is StatKinds.category:
+                return self._get_all_with_category(item)
+        elif isinstance(item, StatKinds):
+            return self._get_all_with_kind(item)
         else:
-            return [x for x in self.all_stats if x.kind == item]
+            if item in self._stats_dict:
+                return self._stats_dict[item]
+            else:
+                return self._get_all_by_name_partial(item)
+
+    def __setitem__(self, key: str, value: 'Stat'):
+        self._stats_dict[key] = value
 
     def __contains__(self, item):
         if isinstance(item, Stat):
-            return item.name in self
-        return item in [this_stat.name for this_stat in self.all_stats]
+            return item.name in self._stats_dict
+        return item in self._stats_dict
 
     def __iter__(self):
-        return iter(self.all_stats)
+        return iter(self._stats_dict.values())
 
     def __len__(self):
-        return len(self.all_stats)
+        return len(self._stats_dict)
 
 
 all_stats = AllStats()
 
 
-class Weight:
-    def __init__(self, name: str):
+class Stat:
+    def __init__(self, name: str, kind: StatKinds):
         self.name = name
+        if name in all_stats:
+            raise KeyError(f"Stat {name} already defined!")
+        all_stats[name] = self
+
+        self.kind = kind
+
+        # these are optional stat attributes
+        self.personality = None  # the personality stat that governs this stat (applies to ratings)
+        self.category = None  # the stat category this applies to
+        self.abbreviation = None  # the abbreviation for this stat
+        self.default = None  # the default value for this stat when a new player is generated
+
+    def get(self, player: 'Player') -> Union[float, str]:
+        return player.pb.df.at[player.cid, self.name]
+
+    def set(self, player: 'Player', value: object) -> None:
+        # set value
+        player.pb.df.at[player.cid, self.name] = value
+        # update stale flags
+        for dependent in dependents[self.kind]:
+            stale_flags[dependent][player.cid] = True
+
+    def abbreviate(self, abbreviation: str):
+        for stat in all_stats:
+            if stat.abbreviation == abbreviation:
+                raise KeyError(f"Duplicate Abbreviation {abbreviation}! "
+                               f"Collision between {stat.name} and {self.name}")
+        self.abbreviation = abbreviation
+
+    def weight(self, weight: "Weight", value: Union[float, int]):
+        weight.add(self, value)
+
+    def __str__(self):
+        return self.name.capitalize()
+
+    def __repr__(self):
+        return f"Stat({self.name}, {self.kind.name})"
+
+
+class Calculatable(Stat):
+    """a calculatable is a stat which can be calculated based on other stats."""
+
+    def __init__(self, name: str, kind: StatKinds):
+        super().__init__(name, kind)
+        self.formula = None
+        self.default = -1
+
+    def get(self, player: 'Player') -> Union[float, str]:
+        if stale_flags[self.kind][player.cid]:
+            return player.pb.df.at[player.cid, self.name]
+        else:
+            return self.formula(player)
+
+    def set(self, player: 'Player', value: object) -> None:
+        raise AttributeError(f"Tried to set calculated stat {self}!")
+
+
+def recalculate_kind(kind: StatKinds, player: 'Player'):
+    """Recalculate all values in the specified Kind and update the stale flag"""
+    for stat in all_stats[kind]:
+        player.pb.df.at[player.cid, stat.name] = stat.get(player)
+    stale_flags[kind][player.cid] = False
+
+
+class Weight(Calculatable):
+    """a Weight is a special stat which is derived from a number of other stats using methods described in
+    util.descriptors. (this might move). """
+    def __init__(self, name: str, kind: StatKinds = StatKinds.weight):
+        super().__init__(name, kind)
+
+        self.formula = self.calculate_weighted
+
         self.stats = {}
         self.extra_weight = 0
 
-    def add(self, stat: Union['Stat', str], value: Union[float, int]):
-        if isinstance(stat, str):
-            if 'extra' in stat:
-                self.extra_weight += value
-            else:
-                raise KeyError("You must add stats to a weight by class, not name.")
-        else:
-            self.stats[stat.name] = value
+    def add(self, stat: Stat, value: Union[float, int]):
+        """Add a stat to the total weight.
+        To add extra weight, access the attribute directly."""
+        self.stats[stat.name] = value
 
     def calculate_weighted(self, player: 'Player'):
         weight = sum(self.stats.values()) + self.extra_weight
-        total = sum(player[s] * self.stats[s] for s in self.stats)
+        total = sum([player.pb.df.at[player.cid, stat.name] * self.stats[stat] for stat in self.stats])
         return total / weight
 
     def nice_string(self) -> str:
@@ -102,479 +224,493 @@ class Weight:
         return f"Weight {self.name.capitalize()}"
 
 
-class Stat:
-    def __init__(self, name: str, kind:str):
-        self.name = name
-        if name in all_stats:
-            raise KeyError(f"Stat {name} already defined!")
+class Rating(Calculatable):
+    def __init__(self, name: str):
+        super().__init__(name, StatKinds.rating)
 
-        self.kind = kind
-        if kind not in STAT_KINDS:
-            raise RuntimeError("Invalid stat type!")
+        self.base_stat = Stat(('base_' + name), StatKinds.base_rating)
+        setattr(all_stats, self.base_stat.name, self.base_stat)
 
-        self.personality = None
-        self.category = None
-        self.abbreviation = None
-        self.default = None
-        self.total_stat = None
+        self.formula = self.calculate_rating
 
-        all_stats.append(self)
-
-    def personalize(self, personality: 'Stat'):
-        self.personality = personality.name
-
-    def categorize(self, category: 'Stat'):
-        self.category = category.name
-
-    def abbreviate(self, abbreviation: str):
-        for stat in all_stats:
-            if stat.abbreviation == abbreviation:
-                raise KeyError(f"Duplicate Abbreviation {abbreviation}! "
-                               f"Collision between {stat.name} and {self.name}")
-        self.abbreviation = abbreviation
-
-    def weight(self, weight: str, value: Union[float, int]):
-        all_stats.weight(weight, self, value)
-
-    def __str__(self):
-        return self.name.capitalize()
-
-    def __repr__(self):
-        return f"Stat({self.name}, {self.kind})"
+    def calculate_rating(self, player: 'Player'):
+        # TODO
+        return player.pb.df.at[player.cid, self.base_stat.name]
 
 
-determination = Stat('determination', 'personality')
-determination.abbreviate("DTR")
-determination.weight('descriptor_determination', 1)
+# personality descriptor weights:
+all_stats.weight_determination = Weight("determination weight")
+all_stats.weight_enthusiasm = Weight("enthusiasm weight")
+all_stats.weight_stability = Weight("stability weight")
+all_stats.weight_insight = Weight("insight weight")
 
-enthusiasm = Stat('enthusiasm', 'personality')
-enthusiasm.abbreviate("ENT")
-enthusiasm.weight('descriptor_enthusiasm', 1)
+# personality four
+all_stats.determination = Stat("determination", StatKinds.personality)
+all_stats.determination.abbreviate("DTR")
+all_stats.determination.weight(all_stats.weight_determination, 1)
 
-stability = Stat('stability', 'personality')
-stability.abbreviate("STB")
-stability.weight('descriptor_stability', 1)
+all_stats.enthusiasm = Stat("enthusiasm", StatKinds.personality)
+all_stats.enthusiasm.abbreviate("ENT")
+all_stats.enthusiasm.weight(all_stats.weight_enthusiasm, 1)
 
-insight = Stat('insight', 'personality')
-insight.abbreviate("INS")
-insight.weight('descriptor_insight', 1)
+all_stats.stability = Stat("stability", StatKinds.personality)
+all_stats.stability.abbreviate("STB")
+all_stats.stability.weight(all_stats.weight_stability, 1)
 
-for stat in all_stats['personality']:
+all_stats.insight = Stat("insight", StatKinds.personality)
+all_stats.insight.abbreviate("INS")
+all_stats.insight.weight(all_stats.weight_insight, 1)
+
+for stat in all_stats[StatKinds.personality]:
     stat.default = 0
 
 
-batting = Stat('batting', 'category')
-batting.abbreviate("BAT")
-batting.weight('total_offense', 2)
+# top level ultimate summary weights
+all_stats.total_offense = Weight('total offense', StatKinds.total_weight)
+all_stats.total_offense.abbreviate("TOF")
+all_stats.total_offense.default = -1
 
-baserunning = Stat('baserunning', 'category')
-baserunning.abbreviate("RUN")
-baserunning.weight('total_offense', 1)
+all_stats.total_defense = Weight('total defense', StatKinds.total_weight)
+all_stats.total_defense.abbreviate("TDE")
+all_stats.total_defense.default = -1
 
-defense = Stat('defense', 'category')
-defense.abbreviate("DEF")
-defense.weight('total_defense_pitching', 0.5)
-defense.weight('total_defense_fielding', 2)
+all_stats.total_off_field = Weight('total off-field', StatKinds.total_weight)
+all_stats.total_off_field.abbreviate("TFD")
+all_stats.total_off_field.default = -1
 
-pitching = Stat('pitching', 'category')
-pitching.abbreviate("PCH")
-pitching.weight('total_defense_pitching', 2)
+all_stats.total_defense_pitching = Weight("total pitching defense")
+all_stats.total_defense_fielding = Weight("total fielding defense")
 
-edge = Stat('edge', 'category')
-edge.abbreviate("EDG")
-edge.weight('total_offense', 0.5)
-edge.weight('total_defense_pitching', 0.25)
-edge.weight('total_defense_fielding', 0.25)
+# categories and category weights
 
-vitality = Stat('vitality', 'category')
-vitality.abbreviate('VIT')
-vitality.weight('total_off_field', 1.5)
+all_stats.batting = Weight("batting", StatKinds.category)
+all_stats.batting.abbreviate("BAT")
+all_stats.batting.weight(all_stats.total_offense, 2)
 
-social = Stat('social', 'category')
-social.abbreviate("SOC")
-social.weight('total_off_field', 1.5)
+all_stats.baserunning = Weight("baserunning", StatKinds.category)
+all_stats.baserunning.abbreviate("RUN")
+all_stats.baserunning.weight(all_stats.total_offense, 1)
 
-for stat in all_stats['category']:
-    stat.default = -1
+all_stats.defense = Weight("defense", StatKinds.category)
+all_stats.defense.abbreviate("DEF")
+all_stats.defense.weight(all_stats.total_defense_pitching, 0.5)
+all_stats.defense.weight(all_stats.total_defense_fielding, 2)
 
+all_stats.pitching = Weight("pitching", StatKinds.category)
+all_stats.pitching.abbreviate("PCH")
+all_stats.pitching.weight(all_stats.total_defense_pitching, 2)
 
-power = Stat('power', 'rating')
-power.personalize(determination)
-power.categorize(batting)
-power.abbreviate("POW")
-power.weight('batting', 2)
-power.weight('descriptor_o_power', 2)
-power.weight('descriptor_slugging', 2)
+all_stats.edge = Weight("edge", StatKinds.category)
+all_stats.edge.abbreviate("EDG")
+all_stats.edge.weight(all_stats.total_offense, 0.5)
+all_stats.edge.weight(all_stats.total_defense_pitching, 0.25)
+all_stats.edge.weight(all_stats.total_defense_fielding, 0.25)
 
-contact = Stat('contact', 'rating')
-contact.personalize(enthusiasm)
-contact.categorize(batting)
-contact.abbreviate("CON")
-contact.weight('batting', 3)
-contact.weight('descriptor_o_power', 0.5)
-contact.weight('descriptor_o_smallball', 2)
-contact.weight('descriptor_slugging', 1)
-contact.weight('descriptor_contact', 2)
-contact.weight('descriptor_utility_hitter', 1)
-all_stats.weights['descriptor_utility_hitter'].add('extra_weight', 0.25)
+all_stats.vitality = Weight("vitality", StatKinds.category)
+all_stats.vitality.abbreviate("VIT")
+all_stats.vitality.weight(all_stats.total_off_field, 1.5)
 
-discipline = Stat('discipline', 'rating')
-discipline.personalize(stability)
-discipline.categorize(batting)
-discipline.abbreviate("DSC")
-discipline.weight('batting', 1)
-discipline.weight('descriptor_o_power', 1)
-discipline.weight('descriptor_o_smallball', 1)
-discipline.weight('descriptor_o_utility', 0.25)
-discipline.weight('descriptor_contact', 1)
-discipline.weight('descriptor_manufacture', 1)
-
-speed = Stat('speed', 'rating')
-speed.personality = 'enthusiasm'
-speed.categorize(baserunning)
-speed.abbreviate("SPD")
-speed.weight('baserunning', 3)
-speed.weight('descriptor_o_smallball', 1)
-speed.weight('descriptor_manufacture', 2)
-
-bravery = Stat('bravery', 'rating')
-bravery.personalize(determination)
-bravery.categorize(baserunning)
-bravery.abbreviate("BRV")
-bravery.weight('baserunning', 1)
-bravery.weight('descriptor_o_smallball', 0.5)
-bravery.weight('descriptor_manufacture', 1)
-
-timing = Stat('timing', 'rating')
-timing.personalize(insight)
-timing.categorize(baserunning)
-timing.abbreviate("TMG")
-timing.weight('baserunning', 2)
-timing.weight('descriptor_o_smallball', 0.75)
-timing.weight('descriptor_o_utility', 0.25)
-timing.weight('descriptor_manufacture', 1)
-
-reach = Stat('reach', 'rating')
-reach.personality = 'enthusiasm'
-reach.categorize(defense)
-reach.abbreviate("RCH")
-reach.weight('defense', 1)
-reach.weight('descriptor_o_fielding', 1)
-reach.weight('descriptor_outfield', 2)
-all_stats.weights['descriptor_outfield'].add('extra', -0.75)
-
-grabbiness = Stat('grabbiness', 'rating')
-grabbiness.personalize(stability)
-grabbiness.categorize(defense)
-grabbiness.abbreviate("GRA")
-grabbiness.weight('defense', 1.5)
-grabbiness.weight('descriptor_o_fielding', 1)
-grabbiness.weight('descriptor_special', 1)
-grabbiness.weight('descriptor_infield', 1)
-grabbiness.weight('descriptor_catcher', 1)
-
-throwing = Stat('throwing', 'rating')
-throwing.personalize(stability)
-throwing.abbreviate("THR")
-throwing.weight('defense', 1)
-throwing.weight('descriptor_o_fielding', 0.75)
-throwing.weight('descriptor_outfield', 1)
-throwing.weight('descriptor_catcher', 0.5)
-throwing.weight('descriptor_special', .5)
-
-awareness = Stat('awareness', 'rating')
-awareness.personalize(insight)
-awareness.abbreviate("AWR")
-awareness.weight('defense', 0.5)
-awareness.weight('descriptor_o_fielding', 0.5)
-awareness.weight('pitching', 0.25)
-awareness.weight('descriptor_catcher', 1)
-throwing.weight('descriptor_outfield', 0.5)
-awareness.weight('descriptor_special', .75)
-
-calling = Stat('calling', 'rating')
-calling.personalize(insight)
-calling.categorize(defense)
-calling.abbreviate('CAL')
-calling.weight('defense', 0.5)
-calling.weight('pitching', 0.25)
-calling.weight('descriptor_o_fielding', 0.25)
-calling.weight('descriptor_catcher', 3)
-
-force = Stat('force', 'rating')
-force.personalize(determination)
-force.categorize(pitching)
-force.abbreviate("FOR")
-force.weight('pitching', 2)
-force.weight('descriptor_o_fastball', 2)
-force.weight('descriptor_force', 2)
-all_stats.weights['descriptor_force'].add('extra_weight', 0.25)
-force.weight('descriptor_pitcher_generic', 2)
-
-trickery = Stat('trickery', 'rating')
-trickery.personalize(insight)
-trickery.categorize(pitching)
-trickery.abbreviate("TRK")
-trickery.weight('pitching', 1.5)
-trickery.weight('descriptor_o_tricky', 2)
-trickery.weight('descriptor_o_utility', 0.25)
-trickery.weight('descriptor_trickery', 2)
-all_stats.weights['descriptor_trickery'].add('extra_weight', 0.25)
-trickery.weight('descriptor_pitcher_generic', 1.5)
-
-accuracy = Stat('accuracy', 'rating')
-accuracy.personalize(stability)
-accuracy.categorize(pitching)
-accuracy.abbreviate('ACC')
-accuracy.weight('pitching', 1)
-accuracy.weight('descriptor_o_fastball', 1)
-accuracy.weight('descriptor_o_tricky', 1)
-accuracy.weight('descriptor_accuracy', 2)
-all_stats.weights['descriptor_accuracy'].add('extra_weight', 0.25)
-accuracy.weight('descriptor_pitcher_generic', 1)
-
-leadership = Stat('leadership', 'rating')
-leadership.personalize(determination)
-leadership.categorize(edge)
-leadership.abbreviate("LED")
-leadership.weight('edge', 0.5)
-leadership.weight('descriptor_o_coach', 1)
-
-heckling = Stat('heckling', 'rating')
-heckling.personalize(enthusiasm)
-heckling.categorize(edge)
-heckling.abbreviate('HCK')
-heckling.weight('edge', 0.5)
-heckling.weight('descriptor_o_coach', 0.5)
-
-sparkle = Stat('sparkle', 'rating')
-sparkle.personalize(insight)
-sparkle.categorize(edge)
-sparkle.abbreviate('SPK')
-sparkle.weight('edge', 1.5)
-sparkle.weight('total_offense', 0.25)
-sparkle.weight('total_defense_pitching', 0.25)
-sparkle.weight('descriptor_o_tricky', 0.25)
-sparkle.weight('descriptor_o_utility', 1.5)
-all_stats.weights['descriptor_o_utility'].add('extra_weight', -0.5)
-sparkle.weight('descriptor_utility_hitter', 1)
-sparkle.weight('descriptor_special', 2)
+all_stats.social = Weight("social", StatKinds.category)
+all_stats.social.abbreviate("SOC")
+all_stats.social.weight(all_stats.total_off_field, 1.5)
 
 
-infotech = Stat('i.t.', 'rating')
-infotech.personalize(stability)
-infotech.categorize(edge)
-infotech.abbreviate('I.T')
-infotech.weight('edge', 1)
-infotech.weight('descriptor_o_utility', 1)
+# rating descriptor weights
 
-endurance = Stat('endurance', 'rating')
-endurance.personalize(determination)
-endurance.categorize(vitality)
-endurance.abbreviate("EDR")
-endurance.weight('vitality', 1)
+# overall weights:
+all_stats.overall_power = Weight("overall power")
+all_stats.overall_smallball = Weight("overall smallball")
+all_stats.overall_fielding = Weight("overall fielding")
+all_stats.overall_fastball = Weight("overall fastball")
+all_stats.overall_trickery = Weight("overall trickery")
+all_stats.overall_utility = Weight("overall utility")
+all_stats.overall_utility.extra_weight = -0.5
+all_stats.overall_captaincy = Weight("overall captaincy")
+all_stats.overall_support = Weight("overall support")
 
-energy = Stat('energy', 'rating')
-energy.personalize(enthusiasm)
-energy.categorize(vitality)
-energy.abbreviate("ENG")
-energy.weight('vitality', 1)
+# offense weights
+all_stats.slugger = Weight("slugging")
+all_stats.reliable_hitter = Weight("contact hitter")
+all_stats.manufacturer = Weight("runs manufacturer")
+all_stats.utility_hitter = Weight("utility hitter")
+all_stats.utility_hitter.extra_weight = 0.25
 
-positivity = Stat('positivity', 'rating')
-positivity.personalize(stability)
-positivity.categorize(vitality)
-positivity.abbreviate("POS")
-positivity.weight('vitality', 1)
+# pitching weights
+all_stats.pitcher_speed = Weight("fastball pitcher")
+all_stats.pitcher_speed.extra_weight = 0.25
+all_stats.pitcher_movement = Weight("movement pitcher")
+all_stats.pitcher_speed.extra_weight = 0.25
+all_stats.pitcher_accuracy = Weight("control pitcher")
+all_stats.pitcher_accuracy.extra_weight = 0.25
+all_stats.pitcher_special = Weight("special pitcher")
 
-recovery = Stat('recovery', 'rating')
-recovery.personalize(insight)
-recovery.categorize(vitality)
-recovery.abbreviate("RCV")
-recovery.weight('vitality', 1)
+# fielding weights
+all_stats.infield = Weight("infielder")
+all_stats.outfield = Weight("outfielder")
+all_stats.outfield.extra_weight = -0.75
+all_stats.catcher = Weight("catcher")
+all_stats.pitcher_generic = Weight("pitcher")
 
-cool = Stat('cool', 'rating')
-cool.personalize(determination)
-cool.categorize(social)
-cool.abbreviate("COO")
-cool.weight('social', 1)
-cool.weight('descriptor_o_utility', 0.5)
+# TODO: personality and element handling
 
-hangouts = Stat('hangouts', 'rating')
-hangouts.personalize(enthusiasm)
-hangouts.categorize(social)
-hangouts.abbreviate("HNG")
-hangouts.weight('social', 1)
-hangouts.weight('descriptor_o_support', 1)
+# Rating stats
+# offense
 
-support = Stat('support', 'rating')
-support.personalize(stability)
-support.categorize(social)
-support.abbreviate("SUP")
-support.weight('social', 1)
-support.weight('descriptor_o_support', 2)
+all_stats.power = Rating('power')
+all_stats.power.personality = all_stats.determination
+all_stats.power.category = all_stats.batting
+all_stats.power.abbreviate("POW")
+all_stats.power.weight(all_stats.batting, 2)
+all_stats.power.weight(all_stats.overall_power, 2)
+all_stats.power.weight(all_stats.slugger, 2)
 
-teaching = Stat('teaching', 'rating')
-teaching.personalize(insight)
-teaching.categorize(social)
-teaching.abbreviate("TCH")
-teaching.weight('social', 1)
-teaching.weight('descriptor_o_coach', 1)
+all_stats.contact = Rating('contact')
+all_stats.contact.personality = all_stats.enthusiasm
+all_stats.contact.category = all_stats.batting
+all_stats.contact.abbreviate("CON")
+all_stats.contact.weight(all_stats.batting, 3)
+all_stats.contact.weight(all_stats.overall_power, 0.5)
+all_stats.contact.weight(all_stats.overall_smallball, 2)
+all_stats.contact.weight(all_stats.slugger, 1)
+all_stats.contact.weight(all_stats.utility_hitter, 1)
 
+all_stats.discipline = Rating('discipline')
+all_stats.discipline.personality = all_stats.stability
+all_stats.discipline.category = all_stats.batting
+all_stats.discipline.abbreviate("DSC")
+all_stats.discipline.weight(all_stats.batting, 1)
+all_stats.discipline.weight(all_stats.overall_power, 1)
+all_stats.discipline.weight(all_stats.overall_smallball, 1)
+all_stats.discipline.weight(all_stats.overall_utility, 0.25)
+all_stats.discipline.weight(all_stats.reliable_hitter, 1)
+all_stats.discipline.weight(all_stats.manufacturer, 1)
+
+all_stats.speed = Rating('speed')
+all_stats.speed.personality = all_stats.enthusiasm
+all_stats.speed.category = all_stats.baserunning
+all_stats.speed.abbreviate("SPD")
+all_stats.speed.weight(all_stats.baserunning, 3)
+all_stats.speed.weight(all_stats.overall_smallball, 1)
+all_stats.speed.weight(all_stats.manufacturer, 2)
+
+all_stats.bravery = Rating('bravery')
+all_stats.bravery.personality = all_stats.determination
+all_stats.bravery.category = all_stats.baserunning
+all_stats.bravery.abbreviate("BRV")
+all_stats.bravery.weight(all_stats.baserunning, 1)
+all_stats.bravery.weight(all_stats.overall_smallball, 0.5)
+all_stats.bravery.weight(all_stats.manufacturer, 1)
+
+all_stats.timing = Rating('timing')
+all_stats.timing.personality = all_stats.insight
+all_stats.timing.category = all_stats.baserunning
+all_stats.timing.abbreviate("TMG")
+all_stats.timing.weight(all_stats.baserunning, 2)
+all_stats.timing.weight(all_stats.overall_smallball, 0.75)
+all_stats.timing.weight(all_stats.overall_utility, 0.25)
+all_stats.timing.weight(all_stats.manufacturer, 1)
+
+# defense
+
+all_stats.reach = Rating('reach')
+all_stats.reach.personality = 'enthusiasm'
+all_stats.reach.category = all_stats.defense
+all_stats.reach.abbreviate("RCH")
+all_stats.reach.weight(all_stats.defense, 1)
+all_stats.reach.weight(all_stats.overall_fielding, 1)
+all_stats.reach.weight(all_stats.outfield, 2)
+
+all_stats.grabbiness = Rating('grabbiness')
+all_stats.grabbiness.personality = all_stats.stability
+all_stats.grabbiness.category = all_stats.defense
+all_stats.grabbiness.abbreviate("GRA")
+all_stats.grabbiness.weight(all_stats.defense, 1.5)
+all_stats.grabbiness.weight(all_stats.overall_fielding, 1)
+all_stats.grabbiness.weight(all_stats.pitcher_special, 1)
+all_stats.grabbiness.weight(all_stats.infield, 1)
+all_stats.grabbiness.weight(all_stats.catcher, 1)
+
+all_stats.throwing = Rating('throwing')
+all_stats.throwing.personality = all_stats.stability
+all_stats.throwing.abbreviate("THR")
+all_stats.throwing.weight(all_stats.defense, 1)
+all_stats.throwing.weight(all_stats.overall_fielding, 0.75)
+all_stats.throwing.weight(all_stats.outfield, 1)
+all_stats.throwing.weight(all_stats.catcher, 0.5)
+all_stats.throwing.weight(all_stats.pitcher_special, .5)
+
+all_stats.awareness = Rating('awareness')
+all_stats.awareness.personality = all_stats.insight
+all_stats.awareness.abbreviate("AWR")
+all_stats.awareness.weight(all_stats.defense, 0.5)
+all_stats.awareness.weight(all_stats.overall_fielding, 0.5)
+all_stats.awareness.weight(all_stats.pitching, 0.25)
+all_stats.awareness.weight(all_stats.catcher, 1)
+all_stats.awareness.weight(all_stats.outfield, 0.5)
+all_stats.awareness.weight(all_stats.pitcher_special, .75)
+
+all_stats.calling = Rating('calling')
+all_stats.calling.personality = all_stats.insight
+all_stats.calling.category = all_stats.defense
+all_stats.calling.abbreviate('CAL')
+all_stats.calling.weight(all_stats.defense, 0.5)
+all_stats.calling.weight(all_stats.pitching, 0.25)
+all_stats.calling.weight(all_stats.overall_fielding, 0.25)
+all_stats.calling.weight(all_stats.catcher, 3)
+
+all_stats.force = Rating('force')
+all_stats.force.personality = all_stats.determination
+all_stats.force.category = all_stats.pitching
+all_stats.force.abbreviate("FOR")
+all_stats.force.weight(all_stats.pitching, 2)
+all_stats.force.weight(all_stats.overall_fastball, 2)
+all_stats.force.weight(all_stats.pitcher_speed, 2)
+all_stats.force.weight(all_stats.pitcher_generic, 2)
+
+all_stats.trickery = Rating('trickery')
+all_stats.trickery.personality = all_stats.insight
+all_stats.trickery.category = all_stats.pitching
+all_stats.trickery.abbreviate("TRK")
+all_stats.trickery.weight(all_stats.pitching, 1.5)
+all_stats.trickery.weight(all_stats.overall_trickery, 2)
+all_stats.trickery.weight(all_stats.overall_utility, 0.25)
+all_stats.trickery.weight(all_stats.pitcher_movement, 2)
+all_stats.trickery.weight(all_stats.pitcher_generic, 1.5)
+
+all_stats.accuracy = Rating('accuracy')
+all_stats.accuracy.personality = all_stats.stability
+all_stats.accuracy.category = all_stats.pitching
+all_stats.accuracy.abbreviate('ACC')
+all_stats.accuracy.weight(all_stats.pitching, 1)
+all_stats.accuracy.weight(all_stats.overall_fastball, 1)
+all_stats.accuracy.weight(all_stats.overall_trickery, 1)
+all_stats.accuracy.weight(all_stats.pitcher_accuracy, 2)
+all_stats.accuracy.weight(all_stats.pitcher_generic, 1)
+
+all_stats.leadership = Rating('leadership')
+all_stats.leadership.personality = all_stats.determination
+all_stats.leadership.category = all_stats.edge
+all_stats.leadership.abbreviate("LED")
+all_stats.leadership.weight(all_stats.edge, 0.5)
+all_stats.leadership.weight(all_stats.overall_captaincy, 1)
+
+all_stats.heckling = Rating('heckling')
+all_stats.heckling.personality = all_stats.enthusiasm
+all_stats.heckling.category = all_stats.edge
+all_stats.heckling.abbreviate('HCK')
+all_stats.heckling.weight(all_stats.edge, 0.5)
+all_stats.heckling.weight(all_stats.overall_captaincy, 0.5)
+
+all_stats.sparkle = Rating('sparkle')
+all_stats.sparkle.personality = all_stats.insight
+all_stats.sparkle.category = all_stats.edge
+all_stats.sparkle.abbreviate('SPK')
+all_stats.sparkle.weight(all_stats.edge, 1.5)
+all_stats.sparkle.weight(all_stats.total_offense, 0.25)
+all_stats.sparkle.weight(all_stats.total_defense_pitching, 0.25)
+all_stats.sparkle.weight(all_stats.overall_trickery, 0.25)
+all_stats.sparkle.weight(all_stats.overall_utility, 1.5)
+all_stats.sparkle.weight(all_stats.utility_hitter, 1)
+all_stats.sparkle.weight(all_stats.pitcher_special, 2)
+
+all_stats.infotech = Rating('i.t.')
+all_stats.infotech.personality = all_stats.stability
+all_stats.infotech.category = all_stats.edge
+all_stats.infotech.abbreviate('I.T')
+all_stats.infotech.weight(all_stats.edge, 1)
+all_stats.infotech.weight(all_stats.overall_utility, 1)
+
+all_stats.endurance = Rating('endurance')
+all_stats.endurance.personality = all_stats.determination
+all_stats.endurance.category = all_stats.vitality
+all_stats.endurance.abbreviate("EDR")
+all_stats.endurance.weight(all_stats.vitality, 1)
+
+all_stats.energy = Rating('energy')
+all_stats.energy.personality = all_stats.enthusiasm
+all_stats.energy.category = all_stats.vitality
+all_stats.energy.abbreviate("ENG")
+all_stats.energy.weight(all_stats.vitality, 1)
+
+all_stats.positivity = Rating('positivity')
+all_stats.positivity.personality = all_stats.stability
+all_stats.positivity.category = all_stats.vitality
+all_stats.positivity.abbreviate("POS")
+all_stats.positivity.weight(all_stats.vitality, 1)
+
+all_stats.recovery = Rating('recovery')
+all_stats.recovery.personality = all_stats.insight
+all_stats.recovery.category = all_stats.vitality
+all_stats.recovery.abbreviate("RCV")
+all_stats.recovery.weight(all_stats.vitality, 1)
+
+all_stats.cool = Rating('cool')
+all_stats.cool.personality = all_stats.determination
+all_stats.cool.category = all_stats.social
+all_stats.cool.abbreviate("COO")
+all_stats.cool.weight(all_stats.social, 1)
+all_stats.cool.weight(all_stats.overall_utility, 0.5)
+
+all_stats.hangouts = Rating('hangouts')
+all_stats.hangouts.personality = all_stats.enthusiasm
+all_stats.hangouts.category = all_stats.social
+all_stats.hangouts.abbreviate("HNG")
+all_stats.hangouts.weight(all_stats.social, 1)
+all_stats.hangouts.weight(all_stats.overall_support, 1)
+
+all_stats.support = Rating('support')
+all_stats.support.personality = all_stats.stability
+all_stats.support.category = all_stats.social
+all_stats.support.abbreviate("SUP")
+all_stats.support.weight(all_stats.social, 1)
+all_stats.support.weight(all_stats.overall_support, 2)
+
+all_stats.teaching = Rating('teaching')
+all_stats.teaching.personality = all_stats.insight
+all_stats.teaching.category = all_stats.social
+all_stats.teaching.abbreviate("TCH")
+all_stats.teaching.weight(all_stats.social, 1)
+all_stats.teaching.weight(all_stats.overall_captaincy, 1)
 
 for stat in all_stats['rating']:
     stat.default = 0
 
 
-total_offense = Stat('total offense', 'category')
-total_offense.abbreviate("TOF")
-total_offense.default = -1
+# Descriptors
 
-total_defense = Stat('total defense', 'category')
-total_defense.abbreviate("TDE")
-total_defense.default = -1
+all_stats.overall_descriptor = Calculatable('overall descriptor', StatKinds.descriptor)
+all_stats.overall_descriptor.default = "The Observed"
 
-total_off_field = Stat('total off-field', 'category')
-total_off_field.abbreviate("TFD")
-total_off_field.default = -1
+all_stats.offense_descriptor = Calculatable('offense descriptor', StatKinds.descriptor)
+all_stats.offense_descriptor.default = "Unevaluated Hitter"
 
+all_stats.defense_descriptor = Calculatable('defense descriptor', StatKinds.descriptor)
+all_stats.defense_descriptor.default = "Unable To Catch A Cold"
 
-overall_descriptor = Stat('overall descriptor', 'descriptor')
-overall_descriptor.default = "The Observed"
+all_stats.personality_descriptor = Calculatable('personality descriptor', StatKinds.descriptor)
+all_stats.personality_descriptor.default = "Smol Bean"
 
-offense_descriptor = Stat('offense descriptor', 'descriptor')
-offense_descriptor.default = "Unevaluated Hitter"
+all_stats.offense_position = Calculatable('offense position', StatKinds.descriptor)
+all_stats.offense_position.default = 'Bench'
 
-defense_descriptor = Stat('defense descriptor', 'descriptor')
-defense_descriptor.default = "Unable To Catch A Cold"
-
-personality_descriptor = Stat('personality descriptor', 'descriptor')
-personality_descriptor.default = "Smol Bean"
-
-offense_position = Stat('offense position', 'descriptor')
-offense_position.default = 'Bench'
-
-defense_position = Stat('defense position', 'descriptor')
-defense_position.default = 'Bullpen'
+all_stats.defense_position = Calculatable('defense position', StatKinds.descriptor)
+all_stats.defense_position.default = 'Bullpen'
 
 
-vibes = Stat('vibes', 'condition')
-vibes.abbreviate("VIB")
-vibes.default = 1.0
 
-stamina = Stat('stamina', 'condition')
-stamina.abbreviate('STA')
-stamina.default = 1.0
+all_stats.vibes = Stat('vibes', StatKinds.condition)
+all_stats.vibes.abbreviate("VIB")
+all_stats.vibes.default = 1.0
 
-mood = Stat('mood', 'condition')
-mood.abbreviate("MOD")
-mood.default = 1.0
+all_stats.stamina = Stat('stamina', StatKinds.condition)
+all_stats.stamina.abbreviate('STA')
+all_stats.stamina.default = 1.0
 
-soul = Stat('soul', 'condition')
-soul.abbreviate("SOL")
-soul.default = 1.0
+all_stats.mood = Stat('mood', StatKinds.condition)
+all_stats.mood.abbreviate("MOD")
+all_stats.mood.default = 1.0
 
-
-name = Stat('name', 'character')
-name.abbreviate("NAME")
-name.default = "WYATT MASON"
-
-team = Stat('team', 'character')
-team.abbreviate("TEAM")
-team.default = "DETROIT DEFAULT"
-
-number = Stat('number', 'character')
-number.abbreviate("#")
-number.default = "-1"
-
-fingers = Stat('fingers', 'character')
-fingers.default = 9
-
-is_pitcher = Stat('is pitcher', 'character')
-is_pitcher.default = False
-
-clutch = Stat('clutch', 'character')
-clutch.default = 0.2
-clutch.abbreviate("CLT")
-
-pull = Stat('pull', 'character')
-pull.default = -1
-
-element = Stat('element', 'character')
-element.default = "Basic"
-element.abbreviate("ELE")
+all_stats.soul = Stat('soul', StatKinds.condition)
+all_stats.soul.abbreviate("SOL")
+all_stats.soul.default = 1.0
 
 
-at_bats = Stat('at bats', 'performance')
+all_stats.name = Stat('name', StatKinds.character)
+all_stats.name.abbreviate("NAME")
+all_stats.name.default = "WYATT MASON"
 
-pitches_called = Stat('total pitches called', 'performance')
+all_stats.team = Stat('team', StatKinds.character)
+all_stats.team.abbreviate("TEAM")
+all_stats.team.default = "DETROIT DEFAULT"
 
-average_called_location = Stat('average called location', 'averaging')
-average_called_location.total_stat = 'total pitches called'
+all_stats.number = Stat('number', StatKinds.character)
+all_stats.number.abbreviate("#")
+all_stats.number.default = "-1"
 
-pitches_thrown = Stat('total pitches thrown', 'performance')
+all_stats.fingers = Stat('fingers', StatKinds.character)
+all_stats.fingers.default = 9
 
-pitch_stats = [
-    'average pitch difficulty',
-    'average pitch obscurity',
-    'average pitch distance from edge',
-    'average pitch distance from call',
-    'thrown strike rate',
-    'average reduction'
-]
+all_stats.is_pitcher = Stat('is pitcher', StatKinds.character)
+all_stats.is_pitcher.default = False
 
-for stat in pitch_stats:
-    new_stat = Stat(stat, 'averaging')
-    new_stat.total_stat = 'total pitches thrown'
+all_stats.clutch = Stat('clutch', StatKinds.character)
+all_stats.clutch.default = 0.2
+all_stats.clutch.abbreviate("CLT")
 
-pitches_seen = Stat('pitches seen', 'performance')
+all_stats.pull = Stat('pull', StatKinds.character)
+all_stats.pull.default = -1
 
-hit_stats = ['strike rate', 'ball rate', 'foul rate', 'hit rate', 'pitch read chance']
-for stat in hit_stats:
-    new_stat = Stat(stat, 'averaging')
-    new_stat.total_stat = 'pitches seen'
+all_stats.element = Stat('element', StatKinds.character)
+all_stats.element.default = "Basic"
+all_stats.element.abbreviate("ELE")
 
-total_hits = Stat('total hits', 'performance')
-
-average_hit_distance = Stat('average hit distance', 'averaging')
-average_hit_distance.total_stat = 'total hits'
-
-exit_velo = Stat('average exit velocity', 'averaging')
-exit_velo.total_stat = 'total hits'
-
-total_home_runs = Stat('total home runs', 'performance')
-
-for stat in all_stats['performance'] + all_stats['averaging']:
-    stat.default = 0
+#
+# all_stats.at_bats = Stat('at bats', 'performance')
+#
+# pitches_called = Stat('total pitches called', 'performance')
+#
+# average_called_location = Stat('average called location', 'averaging')
+# average_called_location.total_stat = 'total pitches called'
+#
+# pitches_thrown = Stat('total pitches thrown', 'performance')
+#
+# pitch_stats = [
+#     'average pitch difficulty',
+#     'average pitch obscurity',
+#     'average pitch distance from edge',
+#     'average pitch distance from call',
+#     'thrown strike rate',
+#     'average reduction'
+# ]
+#
+# for stat in pitch_stats:
+#     new_stat = Stat(stat, 'averaging')
+#     new_stat.total_stat = 'total pitches thrown'
+#
+# pitches_seen = Stat('pitches seen', 'performance')
+#
+# hit_stats = ['strike rate', 'ball rate', 'foul rate', 'hit rate', 'pitch read chance']
+# for stat in hit_stats:
+#     new_stat = Stat(stat, 'averaging')
+#     new_stat.total_stat = 'pitches seen'
+#
+# total_hits = Stat('total hits', 'performance')
+#
+# average_hit_distance = Stat('average hit distance', 'averaging')
+# average_hit_distance.total_stat = 'total hits'
+#
+# exit_velo = Stat('average exit velocity', 'averaging')
+# exit_velo.total_stat = 'total hits'
+#
+# total_home_runs = Stat('total home runs', 'performance')
+#
+# for stat in all_stats['performance'] + all_stats['averaging']:
+#     stat.default = 0
 
 
 if __name__ == "__main__":
-    for p in all_stats['personality']:
+    for p in all_stats[StatKinds.personality]:
         print(p.name.upper())
-        for s in all_stats.all_personality(p):
+        for s in all_stats[p]:
             print(f"\t{s}")
     print("\n")
-    for c in all_stats['category']:
+    for c in all_stats[StatKinds.category]:
         print(c.name.upper())
-        for s in all_stats.all_category(c):
+        for s in all_stats[c]:
             print(f"\t{s}")
 
-    for s in all_stats:
-        print(s)
-        print(type(s))
-        break
-
     print("\r\n\r\n")
-    for weight in all_stats.weights:
-        if "descriptor" not in weight:
-            print(all_stats.weights[weight].nice_string())
+    for weight in all_stats[StatKinds.weight]:
+        if "overall" not in weight.name and "total" not in weight.name:
+            print(weight.nice_string())
     print('\r\n')
-    for weight in all_stats.weights:
-        if "descriptor" in weight and "descriptor_o" not in weight:
-            print(all_stats.weights[weight].nice_string())
+    for weight in all_stats[StatKinds.weight]:
+        if "overall" in weight.name and "total" not in weight.name:
+            print(weight.nice_string())
     print('\r\n')
-    for weight in all_stats.weights:
-        if "descriptor_o" in weight:
-            print(all_stats.weights[weight].nice_string())
+    for weight in all_stats[StatKinds.weight]:
+        if "total" in weight.name:
+            print(weight.nice_string())
 
     print("\r\n\r\nPersonality Report:")
     print("TBR")

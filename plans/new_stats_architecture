@@ -1,0 +1,60 @@
+There are a handful of issues that are currettly emerging with the way stats are handled at the moment:
+
+- a ton of stats are "derived stats":
+    > attributes w/ modifier effects
+    > some way of getting base stats
+    > derived performance stats (batting averages, etc)
+
+
+- updating a running average every time will slowly cause drift from error accumulation
+    > is this even a concern on our scale/precision?
+
+- stats.py is a horrible mess
+
+- indexing by "string" is kind of annoying, and could be improved
+    > class member lookup?
+    > enum?
+
+- statshortener is kinda silly
+    > abbreviations should be stored in the class database
+
+- a stat should be an object all the time (instead of just some of the time?
+
+- player indexing in general could be tuned? (index via stats class + player CID instead of player index?)
+
+- auto-track if derived columns are "stale" and recompute only when necessary (end of game?)
+
+- why is AllStats a singleton class when it could be a module?
+
+
+oh god this is going to be horrid, isn't it.
+
+
+here's the plan:
+
+all stats are a Stats class instance in the top level module of stats
+
+stats is designed to be imported as "import stats as s"
+
+player indexing indexes off Stats primarily - passes a CID and Playerbase reference to stats
+
+some stats are derived - they have dependent stats. If the dependent stats are modified, these stat categories become
+stale, and must be recalculated every time. Otherwise, you can use the cached version.
+
+Stats are stale per-player - they're their own columns
+
+
+stale flags are player attributes instead of df columns? (faster)
+
+
+What is up with weights / descriptors / categories??
+    - weight:
+        did not used to be stats. used to be their own thing, which was maintained by all_stats.
+        weights was pulled by descriptors.py and used to generate a descriptor
+    - descriptor:
+        a string that describes an aspect of a player. Weight --descriptors.py+playerdescriptors.py--> descriptors
+    - category:
+        a top level stat that summarizes a player's ability in an aspect of blaseball.
+        "isn't that just weight" you might ask?
+        well, yes - but it's processed somewhere else (right now) and displayed as a numeric.
+        also, stats fall under a category.

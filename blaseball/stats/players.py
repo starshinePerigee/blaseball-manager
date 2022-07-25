@@ -49,7 +49,7 @@ class Player(Mapping):
         return Player.player_class_id
 
     def __init__(self) -> None:
-        self._cid = Player.new_cid()  # players "Character ID", a unique identifier
+        self.cid = Player.new_cid()  # players "Character ID", a unique identifier
         self.pb = None  # pointer to the playerbase containing this player's stats
         self.traits = []
         # you MUST call initialize after this.
@@ -68,7 +68,7 @@ class Player(Mapping):
 
         low_thresh = max(random.randrange(-20, 20, 2), (-20 if unusual else 0))
         high_thresh = random.randrange(45, random.randrange(50, (1000 if unusual else 100)))
-        base = self._cid % 100
+        base = self.cid % 100
 
         if (base < high_thresh) and (base > low_thresh) and not unusual:
             return base
@@ -151,6 +151,7 @@ class Player(Mapping):
             self[stat.name] = 0
 
     def add_trait(self, trait: traits.Trait, derive=True) -> None:
+        # TODO: stale out stats
         self.traits += [trait]
         for stat in trait:
             self[stat] += trait[stat]
@@ -158,6 +159,7 @@ class Player(Mapping):
             self.derive()
 
     def remove_trait(self, trait: traits.Trait) -> None:
+        # TODO: stale out stats
         if trait not in self.traits:
             raise KeyError(f"Trait {trait} not on player {self}")
         else:
@@ -183,26 +185,26 @@ class Player(Mapping):
             raise RuntimeError(f"{self} not linked to a valid PlayerBase! Call player.initialize"
                                f"before using this player!")
         else:
-            return self.pb.df.loc[self._cid]
+            return self.pb.df.loc[self.cid]
 
     def df_index(self) -> int:
         """get the CID / dataframe index of this player."""
-        if self.stat_row().name == self._cid:
-            return self._cid
+        if self.stat_row().name == self.cid:
+            return self.cid
         else:
             raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row().name} "
-                               f"does not match player CID {self._cid}, likely playerbase corruption.")
+                               f"does not match player CID {self.cid}, likely playerbase corruption.")
 
-    def __getitem__(self, item) -> Union[float, str]:
-        if item == 'cid':
-            return self._cid
-        elif isinstance(item, Stat):
-            return self.pb.df.at[self._cid, item.name]
+    def __getitem__(self, item: Union[Stat, str]) -> Union[float, str]:
+        if isinstance(item, Stat):
+            return item.get(self)
+        elif item == 'cid':
+            return self.cid
         else:
-            return self.pb.df.at[self._cid, item]
+            raise KeyError(f"Invalid indexer provided to Player: {item} of type {type(item)}")
 
-    def __setitem__(self, item: Hashable, value: object) -> None:
-        self.pb.df.at[self._cid, item] = value
+    def __setitem__(self, item: Stat, value: object) -> None:
+        item.set(self.cid, self.pb, value)
 
     def add_average(self, item: Union[List, str], value: Union[List, Union[int, float]]) -> None:
         """Updates a stat which is a running average, such as batting average. Pass one or more stats and values in
@@ -308,16 +310,16 @@ class Player(Mapping):
         return text
 
     def __str__(self) -> str:
-        return(f"[{self._cid}] "
+        return(f"[{self.cid}] "
                f"'{self['name']}' ({self['team']}) "
                f"{self.total_stars()}"
                )
 
     def __repr__(self) -> str:
         return (f"<{self.__module__}.{self.__class__.__name__} "
-                f"[{self._cid}] "
+                f"[{self.cid}] "
                 f"'{self['name']}' "
-                f"(c{self._cid}) at {hex(id(self))}>")
+                f"(c{self.cid}) at {hex(id(self))}>")
 
 
 class PlayerBase(MutableMapping):
@@ -345,7 +347,7 @@ class PlayerBase(MutableMapping):
         for i in range(num_players):
             # create a set of new players:
             player = Player()
-            self.df.loc[player._cid] = None  # noqa - this is the one time we're setting _cid
+            self.df.loc[player.cid] = None  # noqa - this is the one time we're setting _cid
             player.initialize(self)
             player.randomize()
 
@@ -365,7 +367,7 @@ class PlayerBase(MutableMapping):
         """
         try:
             for key in self.players.keys():
-                if self.players[key]._cid != key:
+                if self.players[key].cid != key:
                     raise RuntimeError(
                         f"Player CID and key mismatch:"
                         f"key {key}, "

@@ -8,6 +8,7 @@ from copy import copy
 
 from blaseball.playball.event import Update
 from blaseball.playball.gamestate import GameState, GameTags, GameRules, BaseSummary
+from blaseball.playball.statsmonitor import StatsMonitor
 from blaseball.stats.lineup import Lineup
 from blaseball.stats.stadium import Stadium
 from blaseball.util.messenger import Messenger
@@ -45,6 +46,8 @@ class BallGame:
             self.messenger = Messenger()
         else:
             self.messenger = game_messenger
+
+        self.stats_monitor = StatsMonitor(self.messenger, self.state)
 
         self.messenger.subscribe(self.score_runs, GameTags.runs_scored)
         self.messenger.subscribe(self.add_ball, GameTags.ball)

@@ -47,7 +47,7 @@ class TestStatsMonitor:
 
         assert batter['pitches seen'] == 1
         assert batter['strike rate'] == pytest.approx(0)
-        
+
 
 class TestStatsMonitorIntegrated:
     def test_state_update_state(self, ballgame_1, stats_monitor_1, patcher):

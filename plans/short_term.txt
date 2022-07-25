@@ -1,29 +1,19 @@
-
-write stats handlers
-
-figure out a good way of handling derived stats in player indexing
-- attributes w/ modifier effects
-- some way of getting base stats
-- derived performance stats (batting averages, etc)
-- review running average calculations
-
-consider refactoring stats in general?
-- typedef instead of index by name?
-- s.whatever
-- it's kinda janky and cluttered already?
-- player stats indexing uses stats class + player CID as argument instead? (spicy!)
+stats refactor
+review statshortener
+review descriptors
 
 refactor to use stats handlers in classes
 add additional fielding descriptions
 fix pitch descriptors (mph and type)
 write hit descriptors
 add/fix spacers and stat dumps
-fix docs
+fix docs / remove old plans
 write balance tests
 review converting some module methods to staticmethods?
 
 pull single module run code
 
+create git tag
 
 to consider:
 - which classes persist vs. which are destroy and remake / which are passed around?
