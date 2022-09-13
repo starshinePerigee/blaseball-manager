@@ -1,10 +1,11 @@
-There are a handful of issues that are currettly emerging with the way stats are handled at the moment:
+There are a handful of issues that are currently emerging with the way stats are handled at the moment:
 
 - a ton of stats are "derived stats":
     > attributes w/ modifier effects
     > some way of getting base stats
     > derived performance stats (batting averages, etc)
 
+- if 11/12 games are run in the background, we only need to update derived stats once at the back end.
 
 - updating a running average every time will slowly cause drift from error accumulation
     > is this even a concern on our scale/precision?
@@ -37,6 +38,7 @@ all stats are a Stats class instance in the top level module of stats
 stats is designed to be imported as "import stats as s"
 
 player indexing indexes off Stats primarily - passes a CID and Playerbase reference to stats
+- keep string indexing as a fallback (don't break everything lol)
 
 some stats are derived - they have dependent stats. If the dependent stats are modified, these stat categories become
 stale, and must be recalculated every time. Otherwise, you can use the cached version.
@@ -57,4 +59,16 @@ What is up with weights / descriptors / categories??
         a top level stat that summarizes a player's ability in an aspect of blaseball.
         "isn't that just weight" you might ask?
         well, yes - but it's processed somewhere else (right now) and displayed as a numeric.
-        also, stats fall under a category.
+
+
+
+
+need to do python magic to transform definition with strings (or something) into lookups
+
+stats should have an init function
+
+personality needs a base personality also
+
+all stats (of a certain category?) should have a base - managed automatically by the stat?
+
+handle modifiers in a sane way
