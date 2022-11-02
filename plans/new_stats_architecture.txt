@@ -45,8 +45,13 @@ stale, and must be recalculated every time. Otherwise, you can use the cached ve
 
 Stats are stale per-player - they're their own columns
 
+ - stale flags are player attributes instead of df columns? (faster)
 
-stale flags are player attributes instead of df columns? (faster)
+- need to do python magic to transform definition with strings (or something) into lookups
+- stats should have an init function
+- personality needs a base personality also
+- all stats (of a certain category?) should have a base - managed automatically by the stat?
+- handle modifiers in a sane way
 
 
 What is up with weights / descriptors / categories??
@@ -60,15 +65,3 @@ What is up with weights / descriptors / categories??
         "isn't that just weight" you might ask?
         well, yes - but it's processed somewhere else (right now) and displayed as a numeric.
 
-
-
-
-need to do python magic to transform definition with strings (or something) into lookups
-
-stats should have an init function
-
-personality needs a base personality also
-
-all stats (of a certain category?) should have a base - managed automatically by the stat?
-
-handle modifiers in a sane way

@@ -11,3 +11,9 @@ print(ps.stat_class.stat_four)  # y
 print(ps.stat_class.stat_five)  # y
 
 print(ps.stat_class.stat_six)  # n
+
+sc = ps.StatClass()
+
+print(sc.stat_four)  # y
+print(sc.stat_five)  # y
+print(sc.stat_six)  #

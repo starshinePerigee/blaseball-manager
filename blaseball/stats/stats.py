@@ -4,9 +4,22 @@ defines stats for use in other classes
 
 from collections import defaultdict
 from enum import Enum, auto
+from typing import Union, List, Dict, Optional, Callable
+
+import pandas as pd
+from loguru import logger
+
+from blaseball.util.dfmap import dataframe_map
 
 
-class StatKinds(Enum):
+# this is the default dictionary; which is a big dictionary for indexing / filtering methods
+# if you need a second dictionary you can create and pass one.
+all_stats = {}
+
+
+# a stat kind is the relative type of a stat; these are used for categorization and dependencies
+# this is ordered! this is the order these will be generated
+class Kinds(Enum):
     # the number in this enum
     personality = auto()  # core personality types
     category = auto()  # stat categories, like "batting"
@@ -23,6 +36,113 @@ class StatKinds(Enum):
     test_dependent = auto()  # a test that depends on test
 
 
+class Stat:
+    """This is the top level class for a stat. This doesn't carry any numeric info, but it's a key to the
+    PlayerBase and has a number of useful functions to create and maintain the PlayerBase.
+
+    This is not a abstract base class, but it does have some abstract functions and members.
+
+    """
+    def __init__(self, name: str, kind: Kinds, stat_dict: Dict = None):
+        self.name = name
+
+        if stat_dict is None:
+            stat_dict = all_stats
+        if name in stat_dict:
+            raise KeyError(f"Stat {name} already defined!")
+        stat_dict[name] = self
+        self._linked_dict = stat_dict
+
+        self.kind = kind
+
+        # these are optional stat attributes
+        self.abbreviation = None  # the abbreviation for this stat
+        self.default = None  # the default value for this stat when a new player is generated
+
+        # this links to the active playerbase dataframe
+        self._linked_dataframe = None
+
+    def initialize_functions(self, df: pd.DataFrame):
+        """Create wrapped dataframe accessors for calculate_initial and calculate_value."""
+        # abstract method
+        self._linked_dataframe = df
+
+    def calculate_initial(self, player_index):
+        """Calculate the initial value for this based on its default value"""
+        return self.default
+
+    def calculate_value(self, player_index):
+        """Calculate the current value for this stat based on its current value"""
+        logger.debug(f"abstract calculate_value called for {self.name}")
+        return self._linked_dataframe.at[player_index, self.name]
+
+    def abbreviate(self, abbreviation: str):
+        for stat in self._linked_dict.values():
+            if stat.abbreviation == abbreviation:
+                raise KeyError(f"Duplicate Abbreviation {abbreviation}! "
+                               f"Collision between {stat.name} and {self.name}")
+        self.abbreviation = abbreviation
+
+    def weight(self, weight: "Weight", value: Union[float, int]):
+        weight.add(self, value)
+
+    def __str__(self):
+        return self.name.title()
+
+    def __repr__(self):
+        return f"Stat({self.name}, {self.kind.name})"
+
+
+# These are lookup functions to find stats from all_stats
+def get_all_with_kind(kind: Kinds) -> List[Stat]:
+    stats = [x for x in all_stats.values() if x.kind == kind]
+    if len(stats) == 0:
+        raise KeyError(f"Could not locate any stats with kind {kind}!")
+    return stats
+
+
+def get_all_with_personality(personality: Stat) -> List[Stat]:
+    stats = [x for x in all_stats.values() if x.personality == personality]
+    if len(stats) == 0:
+        raise KeyError(f"Could not locate any stats with personality {personality}!")
+    return stats
+
+
+def get_all_with_category(category: Stat) -> List[Stat]:
+    stats = [x for x in all_stats.values() if x.category == category]
+    if len(stats) == 0:
+        raise KeyError(f"Could not locate any stats with category {category}!")
+    return stats
+
+
+def get_all_by_name_partial(identifier: str) -> List[Stat]:
+    stats = [x for x in all_stats.values() if x.abbreviation == identifier]
+    if len(stats) == 0:
+        stats = [all_stats[x] for x in all_stats if identifier in x]
+        if len(stats) == 0:
+            raise KeyError(f"Could not locate any stats with identifier {identifier}!")
+    return stats
+
+
+def get_all(item: Union[Stat, "Kinds", str]) -> Union[Stat, List[Stat]]:
+    """Get stats that match a criteria.
+    Do not use this in core loops, index by dot directly."""
+    if isinstance(item, Stat):
+        if item.kind is Kinds.personality:
+            return get_all_with_personality(item)
+        elif item.kind is Kinds.category:
+            return get_all_with_category(item)
+    elif isinstance(item, Kinds):
+        return get_all_with_kind(item)
+    elif isinstance(item, str):
+        if item in all_stats:
+            return all_stats[item]
+        else:
+            return get_all_by_name_partial(item)
+    else:
+        raise KeyError(f"Invalid key! Key '{item}' with type {type(item)}")
+
+
 # A "dependency" is a list of all kinds that a kind depends on.
 # ie: a rating stat depends on its base_rating.
 # note that this is for live updates. So even though a base_rating is generated based on the personality,
@@ -36,228 +156,208 @@ class StatKinds(Enum):
 BASE_DEPENDENCIES = {
     # make sure you include all dependencies, include dependencies of dependencies.
     # Listed in recalculation order!
-    StatKinds.rating: [StatKinds.base_rating],
-    StatKinds.category: [StatKinds.rating, StatKinds.base_rating],
-    StatKinds.weight: [StatKinds.rating, StatKinds.base_rating, StatKinds.category],
-    StatKinds.total_weight: [StatKinds.rating, StatKinds.base_rating, StatKinds.category,
-                             StatKinds.weight],
-    StatKinds.descriptor: [StatKinds.rating, StatKinds.base_rating, StatKinds.character, StatKinds.category,
-                           StatKinds.weight, StatKinds.total_weight],
-    StatKinds.averaging: [StatKinds.performance],
-    StatKinds.test_dependent: [StatKinds.test]
+    Kinds.rating: [Kinds.base_rating],
+    Kinds.category: [Kinds.rating, Kinds.base_rating],
+    Kinds.weight: [Kinds.rating, Kinds.base_rating, Kinds.category],
+    Kinds.total_weight: [Kinds.rating, Kinds.base_rating, Kinds.category,
+                         Kinds.weight],
+    Kinds.descriptor: [Kinds.rating, Kinds.base_rating, Kinds.character, Kinds.category,
+                       Kinds.weight, Kinds.total_weight],
+    Kinds.averaging: [Kinds.performance],
+    Kinds.test_dependent: [Kinds.test]
 }
 
 recalculation_order = BASE_DEPENDENCIES.keys()
 
 dependencies = BASE_DEPENDENCIES
 # fill in everything that's not a dependent
-for kind in StatKinds:
-    if kind not in dependencies:
-        dependencies[kind] = []
+for kind_ in Kinds:
+    if kind_ not in dependencies:
+        dependencies[kind_] = []
 
 # invert the array so we know what to look up / set the stale flag for when we write
-dependents = {kind: [] for kind in StatKinds}
-for kind in StatKinds:
-    for dependency in dependencies[kind]:
-        dependents[dependency] += [kind]
-
-
-# initialize the stale flag dictionary
-stale_flags = {kind: defaultdict(lambda: True) for kind in BASE_DEPENDENCIES}
-
-class Stat:
-    def __init__(self, name: str, kind: StatKinds):
-        self.name = name
-        if name in all_stats:
-            raise KeyError(f"Stat {name} already defined!")
-        all_stats[name] = self
-
-        self.kind = kind
-
-        # these are optional stat attributes
-        self.abbreviation = None  # the abbreviation for this stat
-        self.default = None  # the default value for this stat when a new player is generated
-
-    def get(self, player: 'Player') -> Union[float, str]:
-        return player.pb.df.at[player.cid, self.name]
-
-    def set(self, player: 'Player', value: object) -> None:
-        # set value
-        player.pb.df.at[player.cid, self.name] = value
-        # update stale flags
-        for dependent in dependents[self.kind]:
-            stale_flags[dependent][player.cid] = True
-
-    def abbreviate(self, abbreviation: str):
-        for stat in all_stats:
-            if stat.abbreviation == abbreviation:
-                raise KeyError(f"Duplicate Abbreviation {abbreviation}! "
-                               f"Collision between {stat.name} and {self.name}")
-        self.abbreviation = abbreviation
-
-    def weight(self, weight: "Weight", value: Union[float, int]):
-        weight.add(self, value)
-
-    def __str__(self):
-        return self.name.capitalize()
-
-    def __repr__(self):
-        return f"Stat({self.name}, {self.kind.name})"
+dependents = {kind: [] for kind in Kinds}
+for kind_ in Kinds:
+    for dependency in dependencies[kind_]:
+        dependents[dependency] += [kind_]
 
 
 class Calculatable(Stat):
-    """a calculatable is a stat which can be calculated based on other stats."""
+    """This is the top level class for a stat. This doesn't carry any numeric info, but it's a key to the
+    PlayerBase and has a number of useful functions to create and maintain the PlayerBase.
 
-    def __init__(self, name: str, kind: StatKinds):
-        super().__init__(name, kind)
-        self.formula = None
-        self.default = -1
+    This is not a abstract base class, but it does have some abstract functions and members.
 
-    def get(self, player: 'Player') -> Union[float, str]:
-        if stale_flags[self.kind][player.cid]:
-            return player.pb.df.at[player.cid, self.name]
-        else:
-            return self.formula(player)
+    """
+    def __init__(self, name: str, kind: Kinds, stat_dict: Dict = None):
+        super().__init__(name, kind, stat_dict)
 
-    def set(self, player: 'Player', value: object) -> None:
-        raise AttributeError(f"Tried to set calculated stat {self}!")
+        self.initial_formula = None
+        self.value_formula = None
+        # default and value should either be a mappable callable (via dfmap), constant, or None
+        self._wrapped_initial = None
+        self._wrapped_value = None
 
+    def initialize_functions(self, df: pd.DataFrame):
+        self._linked_dataframe = df
+        if isinstance(self.initial_formula, Callable):
+            self._wrapped_initial = dataframe_map(self.initial_formula, df)
+        if isinstance(self.value_formula, Callable):
+            self._wrapped_value = dataframe_map(self.value_formula, df)
 
-def recalculate_kind(kind: StatKinds, player: 'Player'):
-    """Recalculate all values in the specified Kind and update the stale flag"""
-    for stat in all_stats[kind]:
-        player.pb.df.at[player.cid, stat.name] = stat.get(player)
-    stale_flags[kind][player.cid] = False
+    def calculate_initial(self, player_index):
+        if self._linked_dataframe is None:
+            if isinstance(self.initial_formula, Callable):
+                raise RuntimeError("Uninitialized stat called! Initialize this stat using .initialize_functions()!")
+        if self.initial_formula is None:
+            return self.default
+        return self._wrapped_initial(player_index)
 
-
-class Weight(Calculatable):
-    """a Weight is a special stat which is derived from a number of other stats using methods described in
-    util.descriptors. (this might move). """
-    def __init__(self, name: str, kind: StatKinds = StatKinds.weight):
-        super().__init__(name, kind)
-
-        self.formula = self.calculate_weighted
-
-        self.stats = {}
-        self.extra_weight = 0
-
-    def add(self, stat: Stat, value: Union[float, int]):
-        """Add a stat to the total weight.
-        To add extra weight, access the attribute directly."""
-        self.stats[stat.name] = value
-
-    def calculate_weighted(self, player: 'Player'):
-        weight = sum(self.stats.values()) + self.extra_weight
-        total = sum([player.pb.df.at[player.cid, stat.name] * self.stats[stat] for stat in self.stats])
-        return total / weight
-
-    def nice_string(self) -> str:
-        nice = self.name + ":"
-        for v, s in sorted(zip(self.stats.values(), self.stats.keys()), reverse=True):
-            nice += f" {s} {v}"
-        if self.extra_weight != 0:
-            nice += f" extra {self.extra_weight}"
-        return nice
-
-    def __str__(self):
-        return f"Weight {self.name.capitalize()}"
+    def calculate_value(self, player_index):
+        if self._linked_dataframe is None:
+            if isinstance(self.value_formula, Callable):
+                raise RuntimeError("Uninitialized stat called! Initialize this stat using .initialize_functions()!")
+        return self._wrapped_value(player_index)
 
 
-class Rating(Calculatable):
-    def __init__(self, name: str, personality: Stat, category: Stat):
-        super().__init__(name, StatKinds.rating)
+def initialize_all(df: pd.DataFrame) -> None:
+    for stat in all_stats.values():
+        stat.initialize_functions(df)
 
-        self.personality = personality  # the personality stat that governs this stat (applies to ratings)
-        self.category = category  # the stat category this applies to
-        self.base_stat = Stat(('base_' + name), StatKinds.base_rating)
-
-        setattr(all_stats, self.base_stat.name, self.base_stat)
-
-        self.formula = self.calculate_rating
-
-    def calculate_rating(self, player: 'Player'):
-        # TODO
-        return player.pb.df.at[player.cid, self.base_stat.name]
-
-
-# alias:
-s = all_stats
-
-# personality descriptor weights:
-s.weight_determination = Weight("determination weight")
-s.weight_enthusiasm = Weight("enthusiasm weight")
-s.weight_stability = Weight("stability weight")
-s.weight_insight = Weight("insight weight")
-
-# personality four
-s.determination = Stat("determination", StatKinds.personality)
-s.determination.abbreviate("DTR")
-s.determination.weight(s.weight_determination, 1)
-
-s.enthusiasm = Stat("enthusiasm", StatKinds.personality)
-s.enthusiasm.abbreviate("ENT")
-s.enthusiasm.weight(s.weight_enthusiasm, 1)
-
-s.stability = Stat("stability", StatKinds.personality)
-s.stability.abbreviate("STB")
-s.stability.weight(s.weight_stability, 1)
-
-s.insight = Stat("insight", StatKinds.personality)
-s.insight.abbreviate("INS")
-s.insight.weight(s.weight_insight, 1)
-
-for stat in s[StatKinds.personality]:
-    stat.default = 0
-
-
-# top level ultimate summary weights
-s.total_offense = Weight('total offense', StatKinds.total_weight)
-s.total_offense.abbreviate("TOF")
-s.total_offense.default = -1
-
-s.total_defense = Weight('total defense', StatKinds.total_weight)
-s.total_defense.abbreviate("TDE")
-s.total_defense.default = -1
-
-s.total_off_field = Weight('total off-field', StatKinds.total_weight)
-s.total_off_field.abbreviate("TFD")
-s.total_off_field.default = -1
-
-s.total_defense_pitching = Weight("total pitching defense")
-s.total_defense_fielding = Weight("total fielding defense")
-
-# categories and category weights
-
-s.batting = Weight("batting", StatKinds.category)
-s.batting.abbreviate("BAT")
-s.batting.weight(s.total_offense, 2)
-
-s.baserunning = Weight("baserunning", StatKinds.category)
-s.baserunning.abbreviate("RUN")
-s.baserunning.weight(s.total_offense, 1)
-
-s.defense = Weight("defense", StatKinds.category)
-s.defense.abbreviate("DEF")
-s.defense.weight(s.total_defense_pitching, 0.5)
-s.defense.weight(s.total_defense_fielding, 2)
-
-s.pitching = Weight("pitching", StatKinds.category)
-s.pitching.abbreviate("PCH")
-s.pitching.weight(s.total_defense_pitching, 2)
-
-s.edge = Weight("edge", StatKinds.category)
-s.edge.abbreviate("EDG")
-s.edge.weight(s.total_offense, 0.5)
-s.edge.weight(s.total_defense_pitching, 0.25)
-s.edge.weight(s.total_defense_fielding, 0.25)
-
-s.vitality = Weight("vitality", StatKinds.category)
-s.vitality.abbreviate("VIT")
-s.vitality.weight(s.total_off_field, 1.5)
-
-s.social = Weight("social", StatKinds.category)
-s.social.abbreviate("SOC")
-s.social.weight(s.total_off_field, 1.5)
+#
+# class Weight(Stat):
+#     """a Weight is a special stat which is derived from a number of other stats using methods described in
+#     util.descriptors. (this might move). """
+#     def __init__(self, name: str, kind: Kinds = Kinds.weight):
+#         super().__init__(name, kind)
+#
+#         self.stats = {}
+#         self.extra_weight = 0
+#         self._linked_dataframe = None
+#
+#     def add(self, stat: Stat, value: Union[float, int]):
+#         """Add a stat to the total weight.
+#         To add extra weight, access the attribute directly."""
+#         self.stats[stat.name] = value
+#
+#     def initialize_functions(self, df: pd.DataFrame):
+#         self._linked_dataframe = df
+#
+#     def calculate_initial(self, player_index):
+#         return self.calculate_value(player_index)
+#
+#     def calculate_value(self, player_index):
+#         weight = sum(self.stats.values()) + self.extra_weight
+#         total = sum([self._linked_dataframe.at[player_index, stat.name] * self.stats[stat] for stat in self.stats])
+#         return total / weight
+#
+#     def nice_string(self) -> str:
+#         nice = self.name + ":"
+#         for v, s in sorted(zip(self.stats.values(), self.stats.keys()), reverse=True):
+#             nice += f" {s} {v}"
+#         if self.extra_weight != 0:
+#             nice += f" extra {self.extra_weight}"
+#         return nice
+#
+#     def __str__(self):
+#         return f"Weight {self.name.capitalize()}"
+#
+#
+# class Rating(Calculatable):
+#     def __init__(self, name: str, personality: Stat, category: Stat):
+#         super().__init__(name, Kinds.rating)
+#
+#         self.personality = personality  # the personality stat that governs this stat (applies to ratings)
+#         self.category = category  # the stat category this applies to
+#         self.base_stat = Stat(('base_' + name), Kinds.base_rating)
+#
+#         setattr(all_stats, self.base_stat.name, self.base_stat)
+#
+#         self.formula = self.calculate_rating
+#
+#     def calculate_rating(self, player: 'Player'):
+#         # TODO
+#         return player.pb.df.at[player.cid, self.base_stat.name]
+#
+# #
+# # alias:
+# s = all_stats
+#
+# # personality descriptor weights:
+# s.weight_determination = Weight("determination weight")
+# s.weight_enthusiasm = Weight("enthusiasm weight")
+# s.weight_stability = Weight("stability weight")
+# s.weight_insight = Weight("insight weight")
+#
+# # personality four
+# s.determination = Stat("determination", Kinds.personality)
+# s.determination.abbreviate("DTR")
+# s.determination.weight(s.weight_determination, 1)
+#
+# s.enthusiasm = Stat("enthusiasm", Kinds.personality)
+# s.enthusiasm.abbreviate("ENT")
+# s.enthusiasm.weight(s.weight_enthusiasm, 1)
+#
+# s.stability = Stat("stability", Kinds.personality)
+# s.stability.abbreviate("STB")
+# s.stability.weight(s.weight_stability, 1)
+#
+# s.insight = Stat("insight", Kinds.personality)
+# s.insight.abbreviate("INS")
+# s.insight.weight(s.weight_insight, 1)
+#
+# for stat_ in s[Kinds.personality]:
+#     stat_.default = 0
+#
+#
+# # top level ultimate summary weights
+# s.total_offense = Weight('total offense', Kinds.total_weight)
+# s.total_offense.abbreviate("TOF")
+# s.total_offense.default = -1
+#
+# s.total_defense = Weight('total defense', Kinds.total_weight)
+# s.total_defense.abbreviate("TDE")
+# s.total_defense.default = -1
+#
+# s.total_off_field = Weight('total off-field', Kinds.total_weight)
+# s.total_off_field.abbreviate("TFD")
+# s.total_off_field.default = -1
+#
+# s.total_defense_pitching = Weight("total pitching defense")
+# s.total_defense_fielding = Weight("total fielding defense")
+#
+# # categories and category weights
+#
+# s.batting = Weight("batting", Kinds.category)
+# s.batting.abbreviate("BAT")
+# s.batting.weight(s.total_offense, 2)
+#
+# s.baserunning = Weight("baserunning", Kinds.category)
+# s.baserunning.abbreviate("RUN")
+# s.baserunning.weight(s.total_offense, 1)
+#
+# s.defense = Weight("defense", Kinds.category)
+# s.defense.abbreviate("DEF")
+# s.defense.weight(s.total_defense_pitching, 0.5)
+# s.defense.weight(s.total_defense_fielding, 2)
+#
+# s.pitching = Weight("pitching", Kinds.category)
+# s.pitching.abbreviate("PCH")
+# s.pitching.weight(s.total_defense_pitching, 2)
+#
+# s.edge = Weight("edge", Kinds.category)
+# s.edge.abbreviate("EDG")
+# s.edge.weight(s.total_offense, 0.5)
+# s.edge.weight(s.total_defense_pitching, 0.25)
+# s.edge.weight(s.total_defense_fielding, 0.25)
+#
+# s.vitality = Weight("vitality", Kinds.category)
+# s.vitality.abbreviate("VIT")
+# s.vitality.weight(s.total_off_field, 1.5)
+#
+# s.social = Weight("social", Kinds.category)
+# s.social.abbreviate("SOC")
+# s.social.weight(s.total_off_field, 1.5)
 
 #
 # # rating descriptor weights
@@ -503,69 +603,69 @@ s.social.weight(s.total_off_field, 1.5)
 #
 # # Descriptors
 #
-# s.overall_descriptor = Calculatable('overall descriptor', StatKinds.descriptor)
+# s.overall_descriptor = Calculatable('overall descriptor', Kinds.descriptor)
 # s.overall_descriptor.default = "The Observed"
 #
-# s.offense_descriptor = Calculatable('offense descriptor', StatKinds.descriptor)
+# s.offense_descriptor = Calculatable('offense descriptor', Kinds.descriptor)
 # s.offense_descriptor.default = "Unevaluated Hitter"
 #
-# s.defense_descriptor = Calculatable('defense descriptor', StatKinds.descriptor)
+# s.defense_descriptor = Calculatable('defense descriptor', Kinds.descriptor)
 # s.defense_descriptor.default = "Unable To Catch A Cold"
 #
-# s.personality_descriptor = Calculatable('personality descriptor', StatKinds.descriptor)
+# s.personality_descriptor = Calculatable('personality descriptor', Kinds.descriptor)
 # s.personality_descriptor.default = "Smol Bean"
 #
-# s.offense_position = Calculatable('offense position', StatKinds.descriptor)
+# s.offense_position = Calculatable('offense position', Kinds.descriptor)
 # s.offense_position.default = 'Bench'
 #
-# s.defense_position = Calculatable('defense position', StatKinds.descriptor)
+# s.defense_position = Calculatable('defense position', Kinds.descriptor)
 # s.defense_position.default = 'Bullpen'
 #
 #
 #
-# s.vibes = Stat('vibes', StatKinds.condition)
+# s.vibes = Stat('vibes', Kinds.condition)
 # s.vibes.abbreviate("VIB")
 # s.vibes.default = 1.0
 #
-# s.stamina = Stat('stamina', StatKinds.condition)
+# s.stamina = Stat('stamina', Kinds.condition)
 # s.stamina.abbreviate('STA')
 # s.stamina.default = 1.0
 #
-# s.mood = Stat('mood', StatKinds.condition)
+# s.mood = Stat('mood', Kinds.condition)
 # s.mood.abbreviate("MOD")
 # s.mood.default = 1.0
 #
-# s.soul = Stat('soul', StatKinds.condition)
+# s.soul = Stat('soul', Kinds.condition)
 # s.soul.abbreviate("SOL")
 # s.soul.default = 1.0
 #
 #
-# s.name = Stat('name', StatKinds.character)
+# s.name = Stat('name', Kinds.character)
 # s.name.abbreviate("NAME")
 # s.name.default = "WYATT MASON"
 #
-# s.team = Stat('team', StatKinds.character)
+# s.team = Stat('team', Kinds.character)
 # s.team.abbreviate("TEAM")
 # s.team.default = "DETROIT DEFAULT"
 #
-# s.number = Stat('number', StatKinds.character)
+# s.number = Stat('number', Kinds.character)
 # s.number.abbreviate("#")
 # s.number.default = "-1"
 #
-# s.fingers = Stat('fingers', StatKinds.character)
+# s.fingers = Stat('fingers', Kinds.character)
 # s.fingers.default = 9
 #
-# s.is_pitcher = Stat('is pitcher', StatKinds.character)
+# s.is_pitcher = Stat('is pitcher', Kinds.character)
 # s.is_pitcher.default = False
 #
-# s.clutch = Stat('clutch', StatKinds.character)
+# s.clutch = Stat('clutch', Kinds.character)
 # s.clutch.default = 0.2
 # s.clutch.abbreviate("CLT")
 #
-# s.pull = Stat('pull', StatKinds.character)
+# s.pull = Stat('pull', Kinds.character)
 # s.pull.default = -1
 #
-# s.element = Stat('element', StatKinds.character)
+# s.element = Stat('element', Kinds.character)
 # s.element.default = "Basic"
 # s.element.abbreviate("ELE")
 
@@ -614,26 +714,26 @@ s.social.weight(s.total_off_field, 1.5)
 # 
 # 
 # if __name__ == "__main__":
-#     for p in all_stats[StatKinds.personality]:
+#     for p in all_stats[Kinds.personality]:
 #         print(p.name.upper())
 #         for s in all_stats[p]:
 #             print(f"\t{s}")
 #     print("\n")
-#     for c in all_stats[StatKinds.category]:
+#     for c in all_stats[Kinds.category]:
 #         print(c.name.upper())
 #         for s in all_stats[c]:
 #             print(f"\t{s}")
 # 
 #     print("\r\n\r\n")
-#     for weight in all_stats[StatKinds.weight]:
+#     for weight in all_stats[Kinds.weight]:
 #         if "overall" not in weight.name and "total" not in weight.name:
 #             print(weight.nice_string())
 #     print('\r\n')
-#     for weight in all_stats[StatKinds.weight]:
+#     for weight in all_stats[Kinds.weight]:
 #         if "overall" in weight.name and "total" not in weight.name:
 #             print(weight.nice_string())
 #     print('\r\n')
-#     for weight in all_stats[StatKinds.weight]:
+#     for weight in all_stats[Kinds.weight]:
 #         if "total" in weight.name:
 #             print(weight.nice_string())
 # 

@@ -9,7 +9,6 @@ from collections.abc import Mapping
 from typing import Union, Type
 
 from data import playertraits
-from blaseball.util.statshortener import short
 
 
 class Trait(Mapping):

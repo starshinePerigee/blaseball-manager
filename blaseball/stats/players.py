@@ -195,6 +195,18 @@ class Player(Mapping):
             raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row().name} "
                                f"does not match player CID {self.cid}, likely playerbase corruption.")
 
+    # this code is from the old Stat class
+    # it probably belongs here instead:
+    # def get(self, player: 'Player') -> Union[float, str]:
+    #     return player.pb.df.at[player.cid, self.name]
+    #
+    # def set(self, player: 'Player', value: object) -> None:
+    #     # set value
+    #     player.pb.df.at[player.cid, self.name] = value
+    #     # update stale flags
+    #     for dependent in dependents[self.kind]:
+    #         stale_flags[dependent][player.cid] = True
+
     def __getitem__(self, item: Union[Stat, str]) -> Union[float, str]:
         if isinstance(item, Stat):
             return item.get(self)
