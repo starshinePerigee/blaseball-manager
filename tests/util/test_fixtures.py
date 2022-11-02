@@ -32,9 +32,6 @@ class TestFixtures:
         # just a little worried because logger has its whole global thing going on
         assert logger_store.log == []
         assert len(logger_store) == 0
-
-    def test_stats_dict(self, stats_dict):
-        assert isinstance(stats_dict["test 1"], Stat)  # todo: revise
 #
 #     def test_league_2(self, league_2):
 #         assert isinstance(league_2, blaseball.stats.teams.League)

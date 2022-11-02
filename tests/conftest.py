@@ -23,17 +23,6 @@ import sys
 # disable logging during tests
 logger.remove()
 
-@pytest.fixture(scope='function')
-def stats_dict():
-    stats_dict = {}
-    stat_one = stats.Stat("test 1", stats.Kinds.test, stats_dict)
-    stat_two = stats.Stat("test 2", stats.Kinds.test, stats_dict)
-    return stats_dict
-
-
-def stat_1(stats_dict):
-    return stats_dict["test 1"]
-
 
 # @pytest.fixture(scope='function')
 # def logger_print():
