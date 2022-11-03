@@ -65,3 +65,45 @@ What is up with weights / descriptors / categories??
         "isn't that just weight" you might ask?
         well, yes - but it's processed somewhere else (right now) and displayed as a numeric.
 
+# TODO: this needs to get hashed out
+
+ok open question:
+what's the actual chain for indexing?
+
+in the wider game, you're going to index like this:
+    batter[s.earned_run_average]
+
+without caching, the call chain for this looks like so:
+    batter.__getitem__(s.earned_run_average)
+    > disambiguation magic?
+    >> earned_run_average.calculate_value(cid)
+    >>> wrapper magic using embedded dataframe
+
+but that disambiguation magic is the trick. Stats should just be pulling from the playerbase, for instance.
+and with caching - why are we making player hold stats again?
+
+it should be like:
+    batter.__getitem__(s.earned_run_average)
+    > earned_run_average.get(player_id)
+    >> earned_run_average disambiguation magic
+    >>> cache hit: earned_run_average > super().get()
+    >>> cache miss: earned_run_average > earned_run_average.calculate_value()
+
+
+something we keep running into:
+    *playerbase*
+
+playerbase is weird. It's a wrapper around the BIG STATS DATAFRAME, but it's also responsible for making and managing
+players.
+
+It probably shouldn't be in players?
+
+the import chain should be like
+
+playerbase > stats
+playerbase > player
+
+a stat is a way of accessing playerbase.
+a player is another layer on top, as a way of accessing stats which access playerbase.
+
+other views can lie on top of the same playerbase?

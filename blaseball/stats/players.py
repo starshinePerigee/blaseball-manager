@@ -8,11 +8,10 @@ playerbase entries as-needed (and vice versa)
 """
 
 import random
-from collections.abc import Mapping, MutableMapping, Hashable
+from collections.abc import Mapping
 from typing import Union, List
 
 import pandas as pd
-from numpy import integer
 from numpy.random import normal
 from loguru import logger
 
@@ -333,160 +332,68 @@ class Player(Mapping):
                 f"'{self['name']}' "
                 f"(c{self.cid}) at {hex(id(self))}>")
 
+# lost PlayerBase methods:
 
-class PlayerBase(MutableMapping):
-    """this class contains the whole set of players and contains operations
-    to execute actions on batches of players
-
-    It has two parts: a dataframe df, which contains the actual stats
-        with players as rows and stats as columns,
-    and players, a dict indext by CID which contains pointers to the Players objects.
-    """
-    def __init__(self, num_players: int = 0) -> None:
-        self.df = pd.DataFrame(columns=[s.name for s in all_stats])
-        self.players = {}
-
-        if num_players > 0:
-            self.new_players(num_players)
-
-        logger.success(f"Instantiated new playerbase with {num_players} players.")
-
-    def new_players(self, num_players: int) -> List[Player]:
-        """batch create new players. Returns the new players as a list
-        of Player"""
-
-        finished_players = []
-        for i in range(num_players):
-            # create a set of new players:
-            player = Player()
-            self.df.loc[player.cid] = None  # noqa - this is the one time we're setting _cid
-            player.initialize(self)
-            player.randomize()
-
-            self.players[player.df_index()] = player
-
-            finished_players.append(player)
-        return finished_players
-
-    def verify_players(self) -> bool:
-        """Because we have a dataframe with player stats, and a separate
-        list of player objects that are linked, it's important to make sure
-        these two data sources don't get out of sync with each other.
-
-        This function performs a validation to make sure that each Player
-        links to a valid dataframe row and each dataframe row has a valid
-        Player.
-        """
-        try:
-            for key in self.players.keys():
-                if self.players[key].cid != key:
-                    raise RuntimeError(
-                        f"Player CID and key mismatch:"
-                        f"key {key}, "
-                        f"player {self.players[key]}"
-                    )
-                if self[key] != self.players[key]:
-                    raise RuntimeError(
-                        f"Player verification failure! "
-                        f"Player {key} mismatch: "
-                        f"{self[key]} vs {self.players[key]}"
-                    )
-            for key in self.df.index:
-                if self.players[key] != self.df.loc[key]:
-                    raise RuntimeError(
-                        f"Player verification failure! "
-                        f"Dataframe row key {key} mismatch: "
-                        f"{self.df.loc[key]['name']} "
-                        f"vs {self.players[key]}"
-                    )
-        except KeyError as e:
-            raise RuntimeError(f"KeyError during verification: {e}")
-        return True
-
-    def __len__(self) -> int:
-        if len(self.players) != len(self.df.index):
-            raise RuntimeError(
-                f"Player/df mismatch!"
-                f"{len(self.players)} players vs "
-                f"{len(self.df.index)} dataframe rows."
-            )
-        return len(self.df.index)
-
-    def __getitem__(self, key: Hashable) -> Union[Player, List[Player]]:
-        """Get a player or range of players by name(s) or cid(s)"""
-        if isinstance(key, str):
-            item_row = self.df.loc[self.df['name'] == key.title()]
-            if len(item_row) > 1:
-                # you have duplicate names!
-                pass
-            item_row = item_row.iloc[0]
-            return self.players[item_row.name]
-        elif isinstance(key, (int, integer)):
-            return self.players[key]
-        elif isinstance(key, (range, list)):
-            return [self[i] for i in key]
-        else:
-            raise KeyError(f"Could not index by type {type(key)}, expected CID int or name string.")
-
-    def iloc(self, key: Union[int, slice, range]) -> Union[Player, List[Player]]:
-        """
-        You should not be able to do this. This is a mapping, so order doesn't matter.
-        But dang it, sometimes you just need a player or a handful, and you don't care who you get.
-        Don't expect this to be anything but a random selection!
-        """
-        all_cids = list(self.players.keys())
-
-        if isinstance(key, int):
-            return self[all_cids[key]]
-        if isinstance(key, range):
-            key = slice(key.start, key.stop, key.step)
-
-        return_players = []
-        for cid in all_cids[key]:
-            return_players.append(self[cid])
-        return return_players
-
-    def __setitem__(self, key: Hashable, value: Union[Player, pd.Series]) -> None:
-        """
-        If the value player is in the playerbase, that player will be duplicated!
-        Take care with this function!
-        """
-        self[key].assign(value)
-
-    def __delitem__(self, key: Hashable) -> None:
-        del self.players[key]
-        self.df.drop(key)
-
-    def __str__(self) -> str:
-        return_str = f"PlayerBase {len(self)} players x "
-        return_str += (f"{len(list(self.df.columns))} cols"
-                      f"\r\n{list(self.df.columns)}")
-
-        if len(self) <= 10:
-            for player in self.iloc(range(len(self))):
-                return_str += "\r\n" + str(player)
-        else:
-            for player in self.iloc(range(0, 5)):
-                return_str += "\r\n" + str(player)
-            return_str += "\r\n..."
-            for player in self.iloc(range(len(self)-5, len(self))):
-                return_str += "\r\n" + str(player)
-        return return_str
-
-    def __repr__(self) -> str:
-        return(f"<{self.__module__}.{self.__class__.__name__} "
-               f"[{len(self)} rows x "
-               f"{len(self.df.columns)} cols] "
-               f"at {hex(id(self))}>")
-
-    def __iter__(self) -> iter:
-        return iter(self.players.values())
+    #
+    # def new_players(self, num_players: int) -> List[Player]:
+    #     """batch create new players. Returns the new players as a list
+    #     of Player"""
+    #
+    #     finished_players = []
+    #     for i in range(num_players):
+    #         # create a set of new players:
+    #         player = Player()
+    #         self.df.loc[player.cid] = None  # noqa - this is the one time we're setting _cid
+    #         player.initialize(self)
+    #         player.randomize()
+    #
+    #         self.players[player.df_index()] = player
+    #
+    #         finished_players.append(player)
+    #     return finished_players
+    #
+    # def verify_players(self) -> bool:
+    #     """Because we have a dataframe with player stats, and a separate
+    #     list of player objects that are linked, it's important to make sure
+    #     these two data sources don't get out of sync with each other.
+    #
+    #     This function performs a validation to make sure that each Player
+    #     links to a valid dataframe row and each dataframe row has a valid
+    #     Player.
+    #     """
+    #     try:
+    #         for key in self.players.keys():
+    #             if self.players[key].cid != key:
+    #                 raise RuntimeError(
+    #                     f"Player CID and key mismatch:"
+    #                     f"key {key}, "
+    #                     f"player {self.players[key]}"
+    #                 )
+    #             if self[key] != self.players[key]:
+    #                 raise RuntimeError(
+    #                     f"Player verification failure! "
+    #                     f"Player {key} mismatch: "
+    #                     f"{self[key]} vs {self.players[key]}"
+    #                 )
+    #         for key in self.df.index:
+    #             if self.players[key] != self.df.loc[key]:
+    #                 raise RuntimeError(
+    #                     f"Player verification failure! "
+    #                     f"Dataframe row key {key} mismatch: "
+    #                     f"{self.df.loc[key]['name']} "
+    #                     f"vs {self.players[key]}"
+    #                 )
+    #     except KeyError as e:
+    #         raise RuntimeError(f"KeyError during verification: {e}")
+    #     return True
 
 
-if __name__ == "__main__":
-    pb = PlayerBase(10)
-    print(pb)
-    print(pb[1001].text_breakdown())
-
-    for p in pb:
-        print(p)
+#
+#
+# if __name__ == "__main__":
+#     pb = PlayerBase(10)
+#     print(pb)
+#     print(pb[1001].text_breakdown())
+#
+#     for p in pb:
+#         print(p)

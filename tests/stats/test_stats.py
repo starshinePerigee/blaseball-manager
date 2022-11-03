@@ -1,44 +1,45 @@
 import pytest
 import pandas as pd
 
-from blaseball.stats import stats
+from blaseball.stats import stats, playerbase
 
 
 @pytest.fixture
-def stats_dict():
-    stats_dict = {}
-    stats.Stat("test 1", stats.Kinds.test, stats_dict)
-    stats.Stat("test 2", stats.Kinds.test, stats_dict)
-    return stats_dict
+def playerbase_2():
+    pb = playerbase.PlayerBase()
+    stats.Stat("test 1", stats.Kinds.test, 1, pb)
+    stats.Stat("test 2", stats.Kinds.test, 2, pb)
+    return pb
 
 
 @pytest.fixture
-def stat_1(stats_dict):
-    return stats_dict["test 1"]
+def stat_1(playerbase_2):
+    return playerbase_2.stats["test 1"]
 
 
 class TestStatsBase:
     def test_stat_creation(self):
-        test_dict = {}
-        test_stat = stats.Stat("test stat", stats.Kinds.test, test_dict)
+        pb = playerbase.PlayerBase()
+        test_stat = stats.Stat("test stat", stats.Kinds.test, None, pb)
         assert str(test_stat) == "Test Stat"
+        assert pb.stats['test stat'] is test_stat
 
         with pytest.raises(KeyError):
-            test_stat_err = stats.Stat("test stat", stats.Kinds.test, test_dict)
+            test_stat_err = stats.Stat("test stat", stats.Kinds.test, None, pb)
 
-    def test_stat_abbreviation(self, stats_dict):
-        stats_dict["test 1"].abbreviate("TS1")
-        assert stats_dict["test 1"].abbreviation == "TS1"
+    def test_stat_abbreviation(self, playerbase_2):
+        playerbase_2.stats["test 1"].abbreviate("TS1")
+        assert playerbase_2.stats["test 1"].abbreviation == "TS1"
 
-        stats_dict["test 1"].abbreviate("TS2")
-        assert stats_dict["test 1"].abbreviation == "TS2"
+        playerbase_2.stats["test 1"].abbreviate("TS2")
+        assert playerbase_2.stats["test 1"].abbreviation == "TS2"
 
         with pytest.raises(KeyError):
-            stats_dict["test 2"].abbreviate("TS2")
+            playerbase_2.stats["test 2"].abbreviate("TS2")
 
 
 @pytest.fixture
-def arbitrary_df():
+def arbitrary_pb():
     test_dataframe = pd.DataFrame(
         data={
             'col1': [1, 2, 3, 4, 5],
@@ -48,19 +49,27 @@ def arbitrary_df():
         },
         index=[10, 11, 12, 13, 14]
     )
-    return test_dataframe
+    pb = playerbase.PlayerBase()
+    pb.players = {i: None for i in test_dataframe.index}
+    pd.stats = {name: stats.Stat(name, stats.Kinds.test, None, pb) for name in test_dataframe.columns}
+    pb.df = test_dataframe
+    return pb
 
 
 @pytest.fixture
-def calculatable_1(arbitrary_df, stats_dict):
-    calculatable = stats.Calculatable("test c", stats.Kinds.test_dependent, stats_dict)
-    calculatable.initial_formula = lambda col1: col1
-    calculatable.value_formula = lambda col2, col3: col2 + col3
-    calculatable.initialize_functions(arbitrary_df)
+def calculatable_1(arbitrary_pb):
+    calculatable = stats.Calculatable(
+        "test c",
+        stats.Kinds.test_dependent,
+        initial_formula=lambda col1: col1,
+        value_formula=lambda col2, col3: col2 + col3,
+        pb=arbitrary_pb,
+    )
+    return calculatable
 
 
 class TestCalculatable:
-    def test_create(self, calculatable_1):
+    def test_calculatable_fixture(self, calculatable_1):
         assert isinstance(calculatable_1, stats.Calculatable)
 
     def test_calculate(self, calculatable_1):
@@ -69,14 +78,28 @@ class TestCalculatable:
         assert calculatable_1.calculate_value(10) == pytest.approx(6.1)
         assert calculatable_1.calculate_value(14) == pytest.approx(10.5)
 
-    def test_uninitialized(self, stats_dict):
-        calculatable = stats.Calculatable("test c", stats.Kinds.test_dependent, stats_dict)
-        calculatable.initial_formula = lambda col1: col1
-        assert stats_dict['test 1'].calculate_initial(10) is None
+    def test_add(self, arbitrary_pb):
+        new_calc = stats.Calculatable(
+            "new stat",
+            stats.Kinds.test,
+            initial_formula=lambda col1, col2: col1 * col2,
+            value_formula=lambda col1, col3:  col1 + col3,
+            pb=arbitrary_pb
+        )
 
-        with pytest.raises(RuntimeError):
-            assert calculatable.calculate_initial(10) == 0
+        assert arbitrary_pb.df["new stat"][10] == 6
+        assert arbitrary_pb.df["new stat"][14] == 50
 
+    def test_add_empty(self):
+        pb = playerbase.PlayerBase()
+        stats.Calculatable(
+            "new stat",
+            stats.Kinds.test,
+            pb=pb
+        )
+
+        assert "new stat" in pb.stats
+        assert "new stat" in pb.df.columns
 
 #
 # class TestAllStats:

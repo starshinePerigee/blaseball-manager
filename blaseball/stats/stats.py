@@ -4,7 +4,8 @@ defines stats for use in other classes
 
 from collections import defaultdict
 from enum import Enum, auto
-from typing import Union, List, Dict, Optional, Callable
+from typing import Union, List, Dict, Optional, Callable, TYPE_CHECKING
+from blaseball.stats.playerbase import PlayerBase
 
 import pandas as pd
 from loguru import logger
@@ -12,9 +13,10 @@ from loguru import logger
 from blaseball.util.dfmap import dataframe_map
 
 
+
 # this is the default dictionary; which is a big dictionary for indexing / filtering methods
 # if you need a second dictionary you can create and pass one.
-all_stats = {}
+all_base = PlayerBase()
 
 
 # a stat kind is the relative type of a stat; these are used for categorization and dependencies
@@ -43,29 +45,31 @@ class Stat:
     This is not a abstract base class, but it does have some abstract functions and members.
 
     """
-    def __init__(self, name: str, kind: Kinds, stat_dict: Dict = None):
+    def __init__(
+            self,
+            name: str,
+            kind: Kinds,
+            default=None,
+            pb: PlayerBase = None
+    ):
         self.name = name
 
-        if stat_dict is None:
-            stat_dict = all_stats
-        if name in stat_dict:
+        if pb is None:
+            pb = all_base
+
+        if name in pb.stats:
             raise KeyError(f"Stat {name} already defined!")
-        stat_dict[name] = self
-        self._linked_dict = stat_dict
+        pb.stats[name] = self
+        self._linked_dict = pb.stats
+
+        pb.df[name] = default
+        self.default = default
+        self._linked_dataframe = pb.df
 
         self.kind = kind
 
         # these are optional stat attributes
         self.abbreviation = None  # the abbreviation for this stat
-        self.default = None  # the default value for this stat when a new player is generated
-
-        # this links to the active playerbase dataframe
-        self._linked_dataframe = None
-
-    def initialize_functions(self, df: pd.DataFrame):
-        """Create wrapped dataframe accessors for calculate_initial and calculate_value."""
-        # abstract method
-        self._linked_dataframe = df
 
     def calculate_initial(self, player_index):
         """Calculate the initial value for this based on its default value"""
@@ -91,56 +95,6 @@ class Stat:
 
     def __repr__(self):
         return f"Stat({self.name}, {self.kind.name})"
-
-
-# These are lookup functions to find stats from all_stats
-def get_all_with_kind(kind: Kinds) -> List[Stat]:
-    stats = [x for x in all_stats.values() if x.kind == kind]
-    if len(stats) == 0:
-        raise KeyError(f"Could not locate any stats with kind {kind}!")
-    return stats
-
-
-def get_all_with_personality(personality: Stat) -> List[Stat]:
-    stats = [x for x in all_stats.values() if x.personality == personality]
-    if len(stats) == 0:
-        raise KeyError(f"Could not locate any stats with personality {personality}!")
-    return stats
-
-
-def get_all_with_category(category: Stat) -> List[Stat]:
-    stats = [x for x in all_stats.values() if x.category == category]
-    if len(stats) == 0:
-        raise KeyError(f"Could not locate any stats with category {category}!")
-    return stats
-
-
-def get_all_by_name_partial(identifier: str) -> List[Stat]:
-    stats = [x for x in all_stats.values() if x.abbreviation == identifier]
-    if len(stats) == 0:
-        stats = [all_stats[x] for x in all_stats if identifier in x]
-        if len(stats) == 0:
-            raise KeyError(f"Could not locate any stats with identifier {identifier}!")
-    return stats
-
-
-def get_all(item: Union[Stat, "Kinds", str]) -> Union[Stat, List[Stat]]:
-    """Get stats that match a criteria.
-    Do not use this in core loops, index by dot directly."""
-    if isinstance(item, Stat):
-        if item.kind is Kinds.personality:
-            return get_all_with_personality(item)
-        elif item.kind is Kinds.category:
-            return get_all_with_category(item)
-    elif isinstance(item, Kinds):
-        return get_all_with_kind(item)
-    elif isinstance(item, str):
-        if item in all_stats:
-            return all_stats[item]
-        else:
-            return get_all_by_name_partial(item)
-    else:
-        raise KeyError(f"Invalid key! Key '{item}' with type {type(item)}")
 
 
 # A "dependency" is a list of all kinds that a kind depends on.
@@ -189,40 +143,37 @@ class Calculatable(Stat):
     This is not a abstract base class, but it does have some abstract functions and members.
 
     """
-    def __init__(self, name: str, kind: Kinds, stat_dict: Dict = None):
-        super().__init__(name, kind, stat_dict)
+    def __init__(
+            self,
+            name: str,
+            kind: Kinds,
+            initial_formula: Callable = None,
+            value_formula: Callable = None,
+            pb: PlayerBase = None,
+    ):
+        super().__init__(name, kind, None, pb)
 
-        self.initial_formula = None
-        self.value_formula = None
         # default and value should either be a mappable callable (via dfmap), constant, or None
-        self._wrapped_initial = None
-        self._wrapped_value = None
+        if initial_formula is not None:
+            self._wrapped_initial = dataframe_map(initial_formula, self._linked_dataframe)
+        else:
+            self._wrapped_initial = dataframe_map(lambda: None, self._linked_dataframe)
 
-    def initialize_functions(self, df: pd.DataFrame):
-        self._linked_dataframe = df
-        if isinstance(self.initial_formula, Callable):
-            self._wrapped_initial = dataframe_map(self.initial_formula, df)
-        if isinstance(self.value_formula, Callable):
-            self._wrapped_value = dataframe_map(self.value_formula, df)
+        if value_formula is not None:
+            self._wrapped_value = dataframe_map(value_formula, self._linked_dataframe)
+        else:
+            self._wrapped_value = dataframe_map(lambda: None, self._linked_dataframe)
+
+        if len(self._linked_dataframe) > 0:
+            # create default values
+            initial_values = [self.calculate_initial(i) for i in self._linked_dataframe.index]
+            self._linked_dataframe[name] = initial_values
 
     def calculate_initial(self, player_index):
-        if self._linked_dataframe is None:
-            if isinstance(self.initial_formula, Callable):
-                raise RuntimeError("Uninitialized stat called! Initialize this stat using .initialize_functions()!")
-        if self.initial_formula is None:
-            return self.default
         return self._wrapped_initial(player_index)
 
     def calculate_value(self, player_index):
-        if self._linked_dataframe is None:
-            if isinstance(self.value_formula, Callable):
-                raise RuntimeError("Uninitialized stat called! Initialize this stat using .initialize_functions()!")
         return self._wrapped_value(player_index)
-
-
-def initialize_all(df: pd.DataFrame) -> None:
-    for stat in all_stats.values():
-        stat.initialize_functions(df)
 
 #
 # class Weight(Stat):
