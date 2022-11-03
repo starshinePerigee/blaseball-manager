@@ -1,3 +1,40 @@
+import random
+
+from blaseball.stats.statclasses import Stat, Calculatable, Kinds
+from data import playerdata
+
+
+def _generate_name(df, cid) -> str:
+    """Creates a random name from the playerdata lists.
+    Guaranteed to be great."""
+    first_name = random.choice(playerdata.PLAYER_FIRST_NAMES)
+    last_name = random.choice(playerdata.PLAYER_LAST_NAMES)
+    return f"{first_name} {last_name}".title()
+
+
+name = Stat('name', Kinds.character, _generate_name)
+name.abbreviate("NAME")
+
+
+def _generate_number(df, cid) -> int:
+    """dumb fun function to create a player number based partially on CID"""
+    unusual = random.random() < 0.10
+
+    low_thresh = max(random.randrange(-20, 20, 2), (-20 if unusual else 0))
+    high_thresh = random.randrange(45, random.randrange(50, (1000 if unusual else 100)))
+    base = cid % 100
+
+    if (base < high_thresh) and (base > low_thresh) and not unusual:
+        return base
+    else:
+        ones = base % 10
+        tens = int(((base % high_thresh) + low_thresh) / 10) * 10
+        return ones + tens
+
+
+number = Stat('number', Kinds.character, _generate_number)
+number.abbreviate("#")
+
 
 # # alias:
 # s = all_stats
@@ -359,17 +396,9 @@
 # s.soul.default = 1.0
 #
 #
-# s.name = Stat('name', Kinds.character)
-# s.name.abbreviate("NAME")
-# s.name.default = "WYATT MASON"
-#
 # s.team = Stat('team', Kinds.character)
 # s.team.abbreviate("TEAM")
 # s.team.default = "DETROIT DEFAULT"
-#
-# s.number = Stat('number', Kinds.character)
-# s.number.abbreviate("#")
-# s.number.default = "-1"
 #
 # s.fingers = Stat('fingers', Kinds.character)
 # s.fingers.default = 9

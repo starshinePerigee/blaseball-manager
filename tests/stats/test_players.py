@@ -14,14 +14,6 @@ def playerbase_10():
 
 
 class TestPlayer:
-    def test_generate_name(self):
-        assert isinstance(Player.generate_name(), str)
-        assert Player.generate_name() != Player.generate_name()
-
-    def test_generate_name_case(self):
-        assert Player.generate_name()[0].isupper()
-        assert Player.generate_name()[1].islower()
-
     def test_index_get(self, player_1):
         assert isinstance(player_1["name"], str)
         assert isinstance(player_1["power"], float)

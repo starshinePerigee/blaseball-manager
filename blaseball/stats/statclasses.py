@@ -5,13 +5,12 @@ does not handle caching! that's handled in Player. But some of the logic is defi
 """
 
 from enum import Enum, auto
-from typing import Union, Callable
+from typing import Union, Callable, Dict, List
 from blaseball.stats.playerbase import PlayerBase
 
 from loguru import logger
 
 from blaseball.util.dfmap import dataframe_map
-
 
 
 # this is the default dictionary; which is a big dictionary for indexing / filtering methods
@@ -81,8 +80,12 @@ class Stat:
         return self._linked_dataframe.at[player_index, self.name]
 
     def calculate_initial(self, player_index):
-        """Calculate the initial value for this based on its default value"""
-        return self.default
+        """Calculate the initial value for this based on its default value.
+        Default can be function with parameters 'playerbase df' and 'cid'"""
+        if isinstance(self.default, Callable):
+            return self.default(self._linked_dataframe, player_index)
+        else:
+            return self.default
 
     def calculate_value(self, player_index):
         """Calculate the current value for this stat based on its current value"""
@@ -103,7 +106,7 @@ class Stat:
         return self.name.title()
 
     def __repr__(self):
-        return f"Stat({self.name}, {self.kind.name})"
+        return f"{type(self).__name__}({self.name}, {self.kind.name}) x{self._hash}"
 
     def __hash__(self):
         return self._hash
@@ -185,44 +188,139 @@ class Calculatable(Stat):
     def calculate_value(self, player_index):
         return self._wrapped_value(player_index)
 
-#
-# class Weight(Stat):
-#     """a Weight is a special stat which is derived from a number of other stats using methods described in
-#     util.descriptors. (this might move). """
-#     def __init__(self, name: str, kind: Kinds = Kinds.weight):
-#         super().__init__(name, kind)
-#
-#         self.stats = {}
-#         self.extra_weight = 0
-#         self._linked_dataframe = None
-#
-#     def add(self, stat: Stat, value: Union[float, int]):
-#         """Add a stat to the total weight.
-#         To add extra weight, access the attribute directly."""
-#         self.stats[stat.name] = value
-#
-#     def initialize_functions(self, df: pd.DataFrame):
-#         self._linked_dataframe = df
-#
-#     def calculate_initial(self, player_index):
-#         return self.calculate_value(player_index)
-#
-#     def calculate_value(self, player_index):
-#         weight = sum(self.stats.values()) + self.extra_weight
-#         total = sum([self._linked_dataframe.at[player_index, stat.name] * self.stats[stat] for stat in self.stats])
-#         return total / weight
-#
-#     def nice_string(self) -> str:
-#         nice = self.name + ":"
-#         for v, s in sorted(zip(self.stats.values(), self.stats.keys()), reverse=True):
-#             nice += f" {s} {v}"
-#         if self.extra_weight != 0:
-#             nice += f" extra {self.extra_weight}"
-#         return nice
-#
-#     def __str__(self):
-#         return f"Weight {self.name.capitalize()}"
-#
+
+class Weight(Stat):
+    """a Weight is a special stat meant to represent a weighted average of several other stats.
+     It is a Stat, not a Calculatable, because it's defined by its own built-in functions instead of
+     wrapped ones.
+
+     Because it is created in advance, it starts stale; so the initial value is set to something
+     obvious and breaking. Make sure it is recalculated prior to use.
+     """
+    def __init__(
+            self,
+            name: str,
+            kind: Kinds = Kinds.weight,
+            pb: PlayerBase = None
+    ):
+        super().__init__(name, kind, -1, pb)
+
+        self.stats = {}
+        self.extra_weight = 0
+
+    def add(self, stat: Stat, value: Union[float, int]):
+        """Add a stat to the total weight.
+        To add extra weight, access the attribute directly."""
+        self.stats[stat] = value
+
+    def calculate_initial(self, player_index):
+        logger.debug(f"Initial call for Weight {self.name} called!")
+        return self.default
+
+    def calculate_value(self, player_index):
+        weight = sum(self.stats.values()) + self.extra_weight
+        total = sum([self._linked_dataframe.at[player_index, stat.name] * self.stats[stat] for stat in self.stats])
+        return total / weight
+
+    def nice_string(self) -> str:
+        nice = self.name + ":"
+        for v, s in sorted(zip(self.stats.values(), self.stats.keys()), reverse=True):
+            nice += f" {s} {v}"
+        if self.extra_weight != 0:
+            nice += f" extra {self.extra_weight}"
+        return nice
+
+
+class Descriptor(Stat):
+    """Descriptors are text string representations of ratios of weights.
+    Effectively, they're a way of translating lots of different stats into a single user-understandable string.
+
+    The process goes like this:
+    Stats get bundled and weighted into a Weight, which is a number.
+    Weights get bundled and compared into a descriptor, which is a string.
+
+    Creating a descriptor is changing a ton from the previous version, now it's nice and stats/class-based.
+    """
+    def __init__(
+            self,
+            name: str,
+            kind: Kinds = Kinds.descriptor,
+            pb: PlayerBase = None
+    ):
+        super().__init__(name, kind, f"{name.upper()}_DEFAULT", pb)
+
+        self.weights = {}
+        self.secondary_threshold = 0.0  # what percentage of the primary stat the next biggest needs to be counted.
+        self._first_threshold = 0.0  # used to carry between loops if needed
+
+    def add_weight(
+            self,
+            stat: Stat,
+            text: Union[str, Dict]
+    ):
+        """This is how you add a weight. There are a lot of options here!
+
+        First, you get a weight and a 'text'. If this weight is the highest of all weights passed,
+        it's selected. What happens next depends on the text type.
+
+        If text is just a string, we return that.
+        If text is a dictionary, it depends on the contents of the dictionary:
+            if it's float-keyed, we select based on the keys as thresholds.
+            if it's stat-keyed, we re-run this process using the previous one.
+                This recurses!
+                include the same stat for the "the second stat is below the secondary_threshold" value!
+        """
+        self.weights[stat] = text
+
+    def get_descriptor(self, player_index, weights_dict):
+        weight_values = {weight[player_index]: weight for weight in weights_dict}
+
+        max_weight_value = max(weight_values)
+        if self._first_threshold is None:
+            self._first_threshold = max_weight_value
+
+        max_weight = weight_values.pop(max_weight_value)
+        text_result = self.weights[max_weight]
+
+        if isinstance(text_result, str):
+            #  Dict[Stat: str]
+            return text_result
+
+        text_instance = next(iter(text_result))
+        if isinstance(text_instance, Stat):
+            # Dict[Stat: Dict[Stat: xxx]]
+            if len(weight_values) > 0:
+                next_highest_value = max(weight_values)
+                next_highest = weight_values[next_highest_value]
+            else:
+                # this can happen if multiple values are equal; they'll collide when weight_values gets generated.
+                next_highest_value = 0
+                next_highest = max_weight
+
+            try:
+                if next_highest_value / self._first_threshold >= self.secondary_threshold:
+                    secondary_key = next_highest
+                else:
+                    secondary_key = max_weight
+            except ZeroDivisionError:
+                secondary_key = max_weight
+
+            if isinstance(text_result[secondary_key], str):
+                return text_result[secondary_key]
+            else:
+                self.get_descriptor(player_index, text_result[secondary_key])
+        else:
+            # Dict[Stat: Dict[float: str]]
+            for key in sorted(text_result.keys()):
+                if max_weight_value < key:
+                    return text_result[key]
+            raise RuntimeError(f"Could not build a descriptor for {max_weight} and player {player_index}! "
+                   f"Max weight value: {max_weight_value} vs keys: {text_result}")
+
+    def calculate_value(self, player_index):
+        self._first_threshold = None
+        return self.get_descriptor(player_index, self.weights)
+
 #
 # class Rating(Calculatable):
 #     def __init__(self, name: str, personality: Stat, category: Stat):

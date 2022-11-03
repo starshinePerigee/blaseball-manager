@@ -25,6 +25,7 @@ def arbitrary_pb():
             'col2': [6, 7, 8, 9, 10],
             'cola': ['a', 'b', 'c', 'd', 'e'],
             'col3': [0.1, 0.2, 0.3, 0.4, 0.5],
+            'col4': [0.3, 0.3, 0.3, 0.3, 0.3]
         },
         index=[10, 11, 12, 13, 14]
     )
@@ -114,59 +115,71 @@ class TestCalculatable:
         assert "new stat" in pb.stats
         assert "new stat" in pb.df.columns
 
-#
-# class TestAllStats:
-#     stat_param_ids = "name, default"
-#     stat_params = [
-#         ("determination", 0),
-#         ("batting", -1),
-#         ("i.t.", 0),
-#         ("total pitches called", 0),
-#         ("average pitch distance from edge", 0),
-#         ("element", "Basic")
-#     ]
-#
-#     @pytest.mark.parametrize(stat_param_ids, stat_params)
-#     def test_build_all_stats(self, name, default):
-#         assert name in all_stats
-#
-#     def test_len_all_stats(self):
-#         assert len(all_stats) > 20
-#
-#     @pytest.mark.parametrize(stat_param_ids, stat_params)
-#     def test_index_all_stats(self, name, default):
-#         assert isinstance(all_stats[name], stats.Stat)
-#         assert all_stats[name].default == default
-#
-#     def test_get_kind(self):
-#         p_stats = all_stats['personality']
-#         assert isinstance(p_stats, list)
-#         assert len(p_stats) > 2
-#         for stat in p_stats:
-#             assert stat.default == 0
-#             assert stat.kind == 'personality'
-#
-#     def test_get_personality(self):
-#         d_stats = all_stats.all_personality('determination')
-#         for stat in d_stats:
-#             assert stat.personality == 'determination'
-#
-#     def test_initialize_all(self, arbitrary_df, stats_dict):
-#         pass  # operates on all
-#
-#
-# class TestNewStat:
-#     # not using a fixture because this is basically modifying a global
-#     test_stat = stats.Stat('test_stat', 'test')
-#
-#     def test_stat_addition(self):
-#         assert TestNewStat.test_stat in all_stats
-#         assert 'test_stat' in all_stats
-#
-#     def test_stat_attributes(self):
-#         TestNewStat.test_stat.categorize(stats.baserunning)
-#         TestNewStat.test_stat.personalize(stats.enthusiasm)
-#
-#         assert TestNewStat.test_stat in all_stats.all_category('baserunning')
-#         assert TestNewStat.test_stat.personality is 'enthusiasm'
-#
+
+class TestWeight:
+    def test_weighting(self, arbitrary_pb):
+        test_weight = statclasses.Weight("test weight", pb=arbitrary_pb)
+
+        stat_1 = statclasses.Stat("s1", statclasses.Kinds.test, 0.5, arbitrary_pb)
+        stat_1.weight(test_weight, 2)
+
+        stat_2 = statclasses.Stat("s2", statclasses.Kinds.test, 1, arbitrary_pb)
+        stat_2.weight(test_weight, 1)
+
+        assert test_weight.calculate_value(10) == pytest.approx((0.5 * 2 + 1) / 3)
+
+
+@pytest.fixture
+def test_descriptor(arbitrary_pb):
+    return statclasses.Descriptor("test descriptor", pb=arbitrary_pb)
+
+
+class TestDescriptor:
+    def test_single_str(self, test_descriptor, arbitrary_pb):
+        test_descriptor.add_weight(arbitrary_pb.stats['col3'], "col3 focused")
+        test_descriptor.add_weight(arbitrary_pb.stats['col4'], "col4 focused")
+
+        assert test_descriptor.calculate_value(10) == "col4 focused"
+        assert test_descriptor.calculate_value(14) == "col3 focused"
+
+        # just make sure it doesn't die if they're equal:
+        assert isinstance(test_descriptor.calculate_value(12), str)
+
+    def test_single_thresholds(self, test_descriptor, arbitrary_pb):
+        test_descriptor.add_weight(
+            arbitrary_pb.stats['col3'],
+            {0: "0", 0.15: "0.15", 0.35: "0.35", 0.6: "0.6", 2: "2"}
+        )
+
+        assert test_descriptor.calculate_value(10) == "0.15"
+        assert test_descriptor.calculate_value(14) == "0.6"
+
+    def test_second_order_stats(self, test_descriptor, arbitrary_pb):
+        stat_1 = arbitrary_pb.stats['col3']
+        stat_2 = arbitrary_pb.stats['col4']
+
+        test_descriptor.add_weight(
+            stat_1,
+            {stat_1: "11", stat_2: "12"}
+        )
+        test_descriptor.add_weight(
+            stat_2,
+            {stat_1: "21", stat_2: "22"}
+        )
+
+        # 0.33, 0.66, 1, 0.75, 0.6
+        test_descriptor.secondary_threshold = 0.63
+
+        assert test_descriptor.calculate_value(10) == "22"
+        assert test_descriptor.calculate_value(11) == "21"
+        assert test_descriptor.calculate_value(13) == "12"
+        assert test_descriptor.calculate_value(14) == "11"
+        assert isinstance(test_descriptor.calculate_value(12), str)
+
+    def test_third_order_stats_dict_dict_list(self):
+        # TODO
+        pass
+
+    def test_third_order_stats_dict_x3(self):
+        #TODO
+        pass

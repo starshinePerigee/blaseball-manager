@@ -15,10 +15,7 @@ import pandas as pd
 from numpy.random import normal
 from loguru import logger
 
-from data import playerdata
-from blaseball.stats.statclasses import all_stats, Stat
 from blaseball.stats import traits
-from blaseball.util.descriptors import get_descriptor
 
 
 class Player(Mapping):
@@ -33,14 +30,6 @@ class Player(Mapping):
 
     player_class_id = 1000  # unique ID for each generation of a player,
     # used to verify uniqueness
-
-    @staticmethod
-    def generate_name() -> str:
-        """Creates a random name from the playerdata lists.
-        Guaranteed to be great."""
-        first_name = random.choice(playerdata.PLAYER_FIRST_NAMES)
-        last_name = random.choice(playerdata.PLAYER_LAST_NAMES)
-        return f"{first_name} {last_name}".title()
 
     @staticmethod
     def new_cid() -> int:
@@ -60,21 +49,6 @@ class Player(Mapping):
         for stat in all_stats:
             self[stat.name] = stat.default
         self.traits = []
-
-    def generate_player_number(self) -> int:
-        """dumb fun function to create a player number based partially on CID"""
-        unusual = random.random() < 0.10
-
-        low_thresh = max(random.randrange(-20, 20, 2), (-20 if unusual else 0))
-        high_thresh = random.randrange(45, random.randrange(50, (1000 if unusual else 100)))
-        base = self.cid % 100
-
-        if (base < high_thresh) and (base > low_thresh) and not unusual:
-            return base
-        else:
-            ones = base % 10
-            tens = int(((base % high_thresh) + low_thresh) / 10) * 10
-            return ones + tens
 
     def randomize(self) -> None:
         """Generate random values for applicable stats.

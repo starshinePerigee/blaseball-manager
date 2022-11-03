@@ -121,3 +121,35 @@ given player-level caching:
     >>> s.battingaverage[batter.cid]
     >> else:
     >>> batter.cache[s.battingaverage]
+
+
+OK so really
+What is up with weights / descriptors / categories??
+    - weight:
+        did not used to be stats. used to be their own thing, which was maintained by all_stats.
+        weights was pulled by descriptors.py and used to generate a descriptor
+    - descriptor:
+        a string that describes an aspect of a player. Weight --descriptors.py+playerdescriptors.py--> descriptors
+    - category:
+        a top level stat that summarizes a player's ability in an aspect of blaseball.
+        "isn't that just weight" you might ask?
+        well, yes - but it's processed somewhere else (right now) and displayed as a numeric.
+
+SO
+a "weight" is a stat composed of a ratio of other stats.
+
+so Categories (such as batting, baserunning) and descriptor weights (such as overall_fielding and utility_hitter)
+are both weights.
+
+a Descriptor is a Calculatable. it is based on other stats (specifically descriptor weights) relative to each other.
+Descriptors pulls text from playerdescriptors.py
+
+this is all fine.
+
+
+What is a Rating?
+a rating is a specific type of Stat. It has a base version and a live version.
+Base + modifiers = Live. Modifiers only work on Ratings.
+
+The Base stat is created as an empty stat (just name and kind) and is passed to the Rating for management.
+

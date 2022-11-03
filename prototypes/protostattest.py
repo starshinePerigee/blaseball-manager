@@ -16,4 +16,8 @@ sc = ps.StatClass()
 
 print(sc.stat_four)  # y
 print(sc.stat_five)  # y
-print(sc.stat_six)  #
+print(sc.stat_six)  # broke lol
+
+
+from blaseball.stats import stats as s
+print(s.name)  # does suggest

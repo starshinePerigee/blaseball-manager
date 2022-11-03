@@ -109,6 +109,7 @@ class PlayerBase(MutableMapping):
         return return_str
 
     def __repr__(self) -> str:
+        # TODO - this is broken
         return(f"<{self.__module__}.{self.__class__.__name__} "
                f"[{len(self)} rows x "
                f"{len(self.df.columns)} cols] "
