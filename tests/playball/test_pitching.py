@@ -1,7 +1,7 @@
 import pytest
 import statistics
 
-from blaseball.stats import stats
+from blaseball.stats import statclasses
 from blaseball.playball import pitching
 
 
@@ -321,7 +321,7 @@ class TestPitchIntegrated:
                 group += [result]
 
             print(f"\r\nAll stats at {stat:0.1f}")
-            for tracked in stats.pitch_stats:
+            for tracked in statclasses.pitch_stats:
                 print(f"{tracked.title()}: {pitcher[tracked]:0.2f}")
 
         for group in [difficulties, obscurities, reductions]:

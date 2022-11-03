@@ -6,7 +6,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 
 import pytest
 
-from blaseball.stats import stats
+from blaseball.stats import statclasses
 # from blaseball.stats import players, teams, stadium, lineup
 # from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame, statsmonitor
 # from blaseball.util import messenger

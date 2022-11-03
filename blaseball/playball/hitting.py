@@ -133,7 +133,7 @@ class Swing(Update):
 
 
 if __name__ == "__main__":
-    from blaseball.stats import stats
+    from blaseball.stats import statclasses
 
     from blaseball.util import quickteams
     g = quickteams.game_state
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     test_batter = g.batter()
 
     print(f"Batter: {test_batter}")
-    for s in stats.all_stats['rating']:
+    for s in statclasses.all_stats['rating']:
         if s.category == 'batting':
             print(f"{s}: {test_batter._to_stars(test_batter[s.name])}")
 

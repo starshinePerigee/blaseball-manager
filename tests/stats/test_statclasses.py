@@ -1,41 +1,20 @@
 import pytest
 import pandas as pd
 
-from blaseball.stats import stats, playerbase
+from blaseball.stats import statclasses, playerbase
 
 
 @pytest.fixture
 def playerbase_2():
     pb = playerbase.PlayerBase()
-    stats.Stat("test 1", stats.Kinds.test, 1, pb)
-    stats.Stat("test 2", stats.Kinds.test, 2, pb)
+    statclasses.Stat("test 1", statclasses.Kinds.test, 1, pb)
+    statclasses.Stat("test 2", statclasses.Kinds.test, 2, pb)
     return pb
 
 
 @pytest.fixture
 def stat_1(playerbase_2):
     return playerbase_2.stats["test 1"]
-
-
-class TestStatsBase:
-    def test_stat_creation(self):
-        pb = playerbase.PlayerBase()
-        test_stat = stats.Stat("test stat", stats.Kinds.test, None, pb)
-        assert str(test_stat) == "Test Stat"
-        assert pb.stats['test stat'] is test_stat
-
-        with pytest.raises(KeyError):
-            test_stat_err = stats.Stat("test stat", stats.Kinds.test, None, pb)
-
-    def test_stat_abbreviation(self, playerbase_2):
-        playerbase_2.stats["test 1"].abbreviate("TS1")
-        assert playerbase_2.stats["test 1"].abbreviation == "TS1"
-
-        playerbase_2.stats["test 1"].abbreviate("TS2")
-        assert playerbase_2.stats["test 1"].abbreviation == "TS2"
-
-        with pytest.raises(KeyError):
-            playerbase_2.stats["test 2"].abbreviate("TS2")
 
 
 @pytest.fixture
@@ -51,16 +30,50 @@ def arbitrary_pb():
     )
     pb = playerbase.PlayerBase()
     pb.players = {i: None for i in test_dataframe.index}
-    pd.stats = {name: stats.Stat(name, stats.Kinds.test, None, pb) for name in test_dataframe.columns}
+    pd.stats = {name: statclasses.Stat(name, statclasses.Kinds.test, None, pb) for name in test_dataframe.columns}
     pb.df = test_dataframe
+    for stat in pb.stats.values():
+        stat._linked_dataframe = test_dataframe
     return pb
+
+
+class TestStatsBase:
+    def test_stat_creation(self):
+        pb = playerbase.PlayerBase()
+        test_stat = statclasses.Stat("test stat", statclasses.Kinds.test, None, pb)
+        assert str(test_stat) == "Test Stat"
+        assert pb.stats['test stat'] is test_stat
+
+        with pytest.raises(KeyError):
+            test_stat_err = statclasses.Stat("test stat", statclasses.Kinds.test, None, pb)
+
+    def test_stat_abbreviation(self, playerbase_2):
+        playerbase_2.stats["test 1"].abbreviate("TS1")
+        assert playerbase_2.stats["test 1"].abbreviation == "TS1"
+
+        playerbase_2.stats["test 1"].abbreviate("TS2")
+        assert playerbase_2.stats["test 1"].abbreviation == "TS2"
+
+        with pytest.raises(KeyError):
+            playerbase_2.stats["test 2"].abbreviate("TS2")
+
+    def test_stat_get(self, arbitrary_pb):
+        test_stat = arbitrary_pb.stats['col1']
+        assert test_stat[10] == 1
+        assert test_stat[13] == 4
+
+    def test_stat_hash(self, playerbase_2):
+        assert hash(playerbase_2.stats["test 1"]) != hash(playerbase_2.stats["test 2"])
+        new_pb = playerbase.PlayerBase()
+        new_test_1 = statclasses.Stat("test 1", statclasses.Kinds.test, None, new_pb)
+        assert hash(playerbase_2.stats["test 1"]) != hash(new_pb.stats["test 1"])
 
 
 @pytest.fixture
 def calculatable_1(arbitrary_pb):
-    calculatable = stats.Calculatable(
+    calculatable = statclasses.Calculatable(
         "test c",
-        stats.Kinds.test_dependent,
+        statclasses.Kinds.test_dependent,
         initial_formula=lambda col1: col1,
         value_formula=lambda col2, col3: col2 + col3,
         pb=arbitrary_pb,
@@ -70,7 +83,7 @@ def calculatable_1(arbitrary_pb):
 
 class TestCalculatable:
     def test_calculatable_fixture(self, calculatable_1):
-        assert isinstance(calculatable_1, stats.Calculatable)
+        assert isinstance(calculatable_1, statclasses.Calculatable)
 
     def test_calculate(self, calculatable_1):
         assert calculatable_1.calculate_initial(10) == 1
@@ -79,9 +92,9 @@ class TestCalculatable:
         assert calculatable_1.calculate_value(14) == pytest.approx(10.5)
 
     def test_add(self, arbitrary_pb):
-        new_calc = stats.Calculatable(
+        new_calc = statclasses.Calculatable(
             "new stat",
-            stats.Kinds.test,
+            statclasses.Kinds.test,
             initial_formula=lambda col1, col2: col1 * col2,
             value_formula=lambda col1, col3:  col1 + col3,
             pb=arbitrary_pb
@@ -92,9 +105,9 @@ class TestCalculatable:
 
     def test_add_empty(self):
         pb = playerbase.PlayerBase()
-        stats.Calculatable(
+        statclasses.Calculatable(
             "new stat",
-            stats.Kinds.test,
+            statclasses.Kinds.test,
             pb=pb
         )
 

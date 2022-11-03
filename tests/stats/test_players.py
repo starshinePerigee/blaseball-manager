@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 
 from blaseball.stats.players import Player, PlayerBase
-from blaseball.stats import traits, stats
+from blaseball.stats import traits, statclasses
 
 
 @pytest.fixture
@@ -96,7 +96,7 @@ class TestPlayer:
 
     def test_set_all_stats(self, player_1):
         player_1.set_all_stats(0.3)
-        for stat in stats.all_stats['personality'] + stats.all_stats['rating']:
+        for stat in statclasses.all_stats['personality'] + statclasses.all_stats['rating']:
             assert player_1[stat] == 0.3
 
         assert player_1['pitches seen'] == 0

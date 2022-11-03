@@ -14,7 +14,7 @@ from loguru import logger
 from typing import TYPE_CHECKING, Union, List, Tuple
 if TYPE_CHECKING:
     from blaseball.stats.players import Player
-    from blaseball.stats.stats import Stat, Kinds
+    from blaseball.stats.statclasses import Stat, Kinds
 
 
 class PlayerBase(MutableMapping):
@@ -28,6 +28,7 @@ class PlayerBase(MutableMapping):
     def __init__(self) -> None:
         self.df = pd.DataFrame()
         self.stats = {}  # dict of Stats
+        self.stale_dict = {}  # used by Stats for tracking stale and unstale calculated stats
         self.players = {}  # dict of Players
 
         logger.debug("Initialized new playerbase.")

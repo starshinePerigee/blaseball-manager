@@ -13,7 +13,7 @@ How does this work?
 2. run them through the name grid
 """
 
-from blaseball.stats.stats import all_stats
+from blaseball.stats.statclasses import all_stats
 from data.playerdescriptors import ASPECTS, DESCRIPTOR_DB
 
 weights = all_stats.weights

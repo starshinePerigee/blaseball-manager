@@ -89,6 +89,8 @@ it should be like:
     >>> cache hit: earned_run_average > super().get()
     >>> cache miss: earned_run_average > earned_run_average.calculate_value()
 
+except a lot of player nonsense (such as modifiers) will also update stats? so we really want caching to be on the
+player level. so disregard the above!
 
 something we keep running into:
     *playerbase*
@@ -107,3 +109,15 @@ a stat is a way of accessing playerbase.
 a player is another layer on top, as a way of accessing stats which access playerbase.
 
 other views can lie on top of the same playerbase?
+
+
+so how does getting a stat work?
+
+given player-level caching:
+
+    batter.__getitem__(s.battingaverage)
+    > check batter.stale[s.battingaverage.kind]
+    >> if stale:
+    >>> s.battingaverage[batter.cid]
+    >> else:
+    >>> batter.cache[s.battingaverage]

@@ -16,7 +16,7 @@ from numpy.random import normal
 from loguru import logger
 
 from data import playerdata
-from blaseball.stats.stats import all_stats, Stat
+from blaseball.stats.statclasses import all_stats, Stat
 from blaseball.stats import traits
 from blaseball.util.descriptors import get_descriptor
 

@@ -292,14 +292,14 @@ class Pitch(Update):
 
 
 if __name__ == "__main__":
-    from blaseball.stats import stats
+    from blaseball.stats import statclasses
 
     from blaseball.util import quickteams
     g = quickteams.game_state
 
     test_pitcher = g.defense()['pitcher']
     print(f"Pitcher: {test_pitcher}")
-    for s in stats.all_stats['rating']:
+    for s in statclasses.all_stats['rating']:
         if s.category == 'pitching':
             print(f"{s}: {test_pitcher._to_stars(test_pitcher[s.name])}")
     test_catcher = g.defense()['catcher']
@@ -319,7 +319,7 @@ if __name__ == "__main__":
             Pitch(g, test_pitcher, test_catcher)
 
     def run_game():
-        for stat in stats.all_stats['averaging'] + stats.all_stats['performance']:
+        for stat in statclasses.all_stats['averaging'] + statclasses.all_stats['performance']:
             test_pitcher[stat.name] = 0
             test_catcher[stat.name] = 0
 

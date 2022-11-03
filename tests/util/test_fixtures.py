@@ -2,7 +2,7 @@
 
 import pytest
 # import blaseball
-from blaseball.stats.stats import Stat
+from blaseball.stats.statclasses import Stat
 
 from support import fixturetarget
 
