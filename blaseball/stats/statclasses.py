@@ -99,7 +99,7 @@ class Stat:
                                f"Collision between {stat.name} and {self.name}")
         self.abbreviation = abbreviation
 
-    def weight(self, weight: "Weight", value: Union[float, int]):
+    def weight(self, weight: "Weight", value: float):
         weight.add(self, value)
 
     def __str__(self):
@@ -211,7 +211,7 @@ class Weight(Stat):
     def add(self, stat: Stat, value: Union[float, int]):
         """Add a stat to the total weight.
         To add extra weight, access the attribute directly."""
-        self.stats[stat] = value
+        self.stats[stat] = float(value)
 
     def calculate_initial(self, player_index):
         logger.debug(f"Initial call for Weight {self.name} called!")
@@ -251,74 +251,92 @@ class Descriptor(Stat):
 
         self.weights = {}
         self.secondary_threshold = 0.0  # what percentage of the primary stat the next biggest needs to be counted.
-        self._first_threshold = 0.0  # used to carry between loops if needed
 
     def add_weight(
             self,
             stat: Stat,
-            text: Union[str, Dict]
+            value: Union[str, Dict]
     ):
         """This is how you add a weight. There are a lot of options here!
-
-        First, you get a weight and a 'text'. If this weight is the highest of all weights passed,
-        it's selected. What happens next depends on the text type.
-
-        If text is just a string, we return that.
-        If text is a dictionary, it depends on the contents of the dictionary:
-            if it's float-keyed, we select based on the keys as thresholds.
-            if it's stat-keyed, we re-run this process using the previous one.
-                This recurses!
-                include the same stat for the "the second stat is below the secondary_threshold" value!
+        value can be one of the following:
+        - a string
+        - a float-keyed dict
+        - a stat-keyed dict of dicts
+        -- these second layer dicts must either be strings or float-keyed dicts
         """
-        self.weights[stat] = text
+        self.weights[stat] = value
+
+    @staticmethod
+    def _parse_value_dict(value_dict: Dict[float, str], value: float) -> str:
+        for key in sorted(value_dict.keys()):
+            if value < key:
+                return value_dict[key]
+        raise RuntimeError(f"Could not build a descriptor! "
+                           f"Max threshold value: {value} vs keys: {value_dict}")
 
     def get_descriptor(self, player_index, weights_dict):
-        weight_values = {weight[player_index]: weight for weight in weights_dict}
+        """
+        This crunches through an arbitrarily-nested dict of weights to generate a descriptor.
+        See add_weight() for description on how to format it.
 
-        max_weight_value = max(weight_values)
-        if self._first_threshold is None:
-            self._first_threshold = max_weight_value
+        This works like so:
+        there are four options. The first pass is always going to be a stats: foo dictionary pair.
+        foo is one of several things
+            - if it's a string, find the largest stat and return it's string
+            - if it's a number-keyed dict, call _parse_value_dict() to use the top level value
+            - if it's another stat-keyed dict, find the largest and second largest stat. then,
+            -- if the second largest is above
+        """
+        # first index the top level
+        value_stat_dict = {weight[player_index]: weight for weight in weights_dict}
+        highest_stat_value = max(value_stat_dict)
 
-        max_weight = weight_values.pop(max_weight_value)
-        text_result = self.weights[max_weight]
+        highest_stat = value_stat_dict.pop(highest_stat_value)
+        current_level_result = weights_dict[highest_stat]
 
-        if isinstance(text_result, str):
+        if isinstance(current_level_result, str):
             #  Dict[Stat: str]
-            return text_result
+            return current_level_result
 
-        text_instance = next(iter(text_result))
-        if isinstance(text_instance, Stat):
-            # Dict[Stat: Dict[Stat: xxx]]
-            if len(weight_values) > 0:
-                next_highest_value = max(weight_values)
-                next_highest = weight_values[next_highest_value]
-            else:
-                # this can happen if multiple values are equal; they'll collide when weight_values gets generated.
-                next_highest_value = 0
-                next_highest = max_weight
+        # pull a key at random to check its type
+        result_key_instance = next(iter(current_level_result))
 
-            try:
-                if next_highest_value / self._first_threshold >= self.secondary_threshold:
-                    secondary_key = next_highest
-                else:
-                    secondary_key = max_weight
-            except ZeroDivisionError:
-                secondary_key = max_weight
+        if isinstance(result_key_instance, (int, float)):
+            # this is a value dictionary
+            return self._parse_value_dict(current_level_result, highest_stat_value)
 
-            if isinstance(text_result[secondary_key], str):
-                return text_result[secondary_key]
-            else:
-                self.get_descriptor(player_index, text_result[secondary_key])
+        # if we reach here, current_level_result is a dictionary of stat: value pairs
+        # ie: there's another level
+
+        # first we need to find the second largest stat and value
+
+        # check for size because if multiple values are equal, they'll clobber and we can run out
+        # remember that value_stat_dict gets popped earlier
+        if len(value_stat_dict) > 0:
+            next_highest_value = max(value_stat_dict)
+            next_highest_stat = value_stat_dict[next_highest_value]
         else:
-            # Dict[Stat: Dict[float: str]]
-            for key in sorted(text_result.keys()):
-                if max_weight_value < key:
-                    return text_result[key]
-            raise RuntimeError(f"Could not build a descriptor for {max_weight} and player {player_index}! "
-                   f"Max weight value: {max_weight_value} vs keys: {text_result}")
+            # this can happen if multiple values are equal; they'll collide when weight_values gets generated.
+            next_highest_value = 0
+            next_highest_stat = current_level_result
+
+        # calculate the next highest to top level ratio
+        try:
+            if next_highest_value / highest_stat_value >= self.secondary_threshold:
+                # we are within the ratio, so we're taking the secondary stat fork
+                final_stat = next_highest_stat
+            else:
+                final_stat = highest_stat
+        except ZeroDivisionError:  # can happen if one of the items is 0.
+            final_stat = highest_stat
+
+        second_level_result = current_level_result[final_stat]
+        if isinstance(second_level_result, str):
+            return second_level_result
+        else:
+            return self._parse_value_dict(second_level_result, highest_stat_value)
 
     def calculate_value(self, player_index):
-        self._first_threshold = None
         return self.get_descriptor(player_index, self.weights)
 
 #

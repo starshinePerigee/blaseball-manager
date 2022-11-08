@@ -176,10 +176,86 @@ class TestDescriptor:
         assert test_descriptor.calculate_value(14) == "11"
         assert isinstance(test_descriptor.calculate_value(12), str)
 
-    def test_third_order_stats_dict_dict_list(self):
-        # TODO
-        pass
+    # dict-dict-dict is not supported. If we need it, we can implement it.
+    # def test_third_order_stats_dict_x3(self, test_descriptor, arbitrary_pb):
+    #     stat_1 = arbitrary_pb.stats['col3']
+    #     stat_2 = arbitrary_pb.stats['col4']
+    #     stat_3 = statclasses.Stat(
+    #         'col5',
+    #         statclasses.Kinds.test,
+    #         0.4,
+    #         arbitrary_pb
+    #     )
+    #
+    #     test_descriptor.secondary_threshold = 0.63
+    #
+    #     test_descriptor.add_weight(
+    #         stat_1,
+    #         {
+    #             stat_1: {stat_1: "111", stat_2: "112", stat_3: "113"},
+    #             stat_2: {stat_1: "121", stat_2: "122", stat_3: "123"},
+    #         }
+    #     )
+    #     test_descriptor.add_weight(
+    #         stat_2,
+    #         {
+    #             stat_1: {stat_1: "211", stat_2: "212", stat_3: "213"},
+    #             stat_2: {stat_1: "221", stat_2: "222", stat_3: "223"},
+    #         }
+    #     )
+    #     assert test_descriptor.calculate_value(10) == "223"
+    #     assert test_descriptor.calculate_value(11) == "213"
+    #     assert test_descriptor.calculate_value(13) == "123"
+    #     assert test_descriptor.calculate_value(14) == "111"
+    #     assert isinstance(test_descriptor.calculate_value(12), str)
 
-    def test_third_order_stats_dict_x3(self):
-        #TODO
-        pass
+    def test_third_order_stats_dict_dict_list(self, test_descriptor, arbitrary_pb):
+        col_3 = arbitrary_pb.stats['col3']
+        col_4 = arbitrary_pb.stats['col4']
+
+        test_descriptor.add_weight(
+            col_3,
+            {
+                col_3: {0: "11.0", 0.35: "11.35", 0.6: "11.6"},
+                col_4: {0: "12.0", 0.35: "12.35", 0.6: "12.6"}
+            }
+        )
+        test_descriptor.add_weight(
+            col_4,
+            {
+                col_3: {0: "21.0", 0.35: "21.35", 0.6: "21.6"},
+                col_4: {0: "22.0", 0.35: "22.35", 0.6: "22.6"}
+            }
+        )
+        test_descriptor.secondary_threshold = 0.63
+
+        # reminder:
+        # 'col3': [0.1, 0.2, 0.3, 0.4, 0.5],
+        # 'col4': [0.3, 0.3, 0.3, 0.3, 0.3]
+
+        assert test_descriptor.calculate_value(10) == "22.35"
+        assert test_descriptor.calculate_value(11) == "21.35"
+        assert test_descriptor.calculate_value(13) == "12.6"
+        assert test_descriptor.calculate_value(14) == "11.6"
+        assert isinstance(test_descriptor.calculate_value(12), str)
+
+    def test_all_zeros(self, test_descriptor, arbitrary_pb):
+        col_3 = arbitrary_pb.stats['col3']
+        col_4 = arbitrary_pb.stats['col4']
+        arbitrary_pb.df['col3'] = 0
+        arbitrary_pb.df['col4'] = 0
+        test_descriptor.add_weight(
+            col_3,
+            {
+                col_3: {0: "11.0", 0.35: "11.35", 0.6: "11.6"},
+                col_4: {0: "12.0", 0.35: "12.35", 0.6: "12.6"}
+            }
+        )
+        test_descriptor.add_weight(
+            col_4,
+            {
+                col_3: {0: "21.0", 0.35: "21.35", 0.6: "21.6"},
+                col_4: {0: "22.0", 0.35: "22.35", 0.6: "22.6"}
+            }
+        )
+        assert isinstance(test_descriptor.calculate_value(12), str)
