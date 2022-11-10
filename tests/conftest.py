@@ -10,7 +10,7 @@ from blaseball.stats import statclasses
 # from blaseball.stats import players, teams, stadium, lineup
 # from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame, statsmonitor
 # from blaseball.util import messenger
-# from support.mock_functions import FunctionPatcher
+from support.mock_functions import FunctionPatcher
 # from support.loggercapture import LoggerCapture
 # from data import teamdata
 
@@ -38,25 +38,25 @@ logger.remove()
 #     yield logger_capture
 #     logger.remove(logger_id)
 #
-#
-# @pytest.fixture(scope='function')
-# def patcher(monkeypatch):
-#     return FunctionPatcher(monkeypatch)
-#
-#
-# class RunningSeed:
-#     """Since we're writing to this variable, we can't leave it floating out in the module scope ether.
-#     So it becomes a static member of a singleton class.
-#     There has to be a better way?"""
-#     running_seed = 383  # feather lucky number :3
-#
-#
-# @pytest.fixture(scope='function')
-# def seed_randoms():
-#     numpy.random.seed(RunningSeed.running_seed)
-#     random.seed(RunningSeed.running_seed)
-#     RunningSeed.running_seed += 1
-#
+
+@pytest.fixture(scope='function')
+def patcher(monkeypatch):
+    return FunctionPatcher(monkeypatch)
+
+
+class RunningSeed:
+    """Since we're writing to this variable, we can't leave it floating out in the module scope ether.
+    So it becomes a static member of a singleton class.
+    There has to be a better way?"""
+    running_seed = 383  # feather lucky number :3
+
+
+@pytest.fixture(scope='function')
+def seed_randoms():
+    numpy.random.seed(RunningSeed.running_seed)
+    random.seed(RunningSeed.running_seed)
+    RunningSeed.running_seed += 1
+
 #
 # @pytest.fixture(scope='class')
 # def league_2():

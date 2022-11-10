@@ -16,3 +16,5 @@ class StatClass:
 stat_class = StatClass()
 
 stat_class.stat_six = 6  # does not suggest
+
+stat_seven, stat_eight = (7, 8)  # does suggest

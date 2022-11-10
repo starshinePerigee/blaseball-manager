@@ -33,7 +33,7 @@ class PlayerBase(MutableMapping):
 
         logger.debug("Initialized new playerbase.")
 
-    def __len__(self) -> Tuple[int, int]:
+    def __len__(self) -> int:
         if len(self.players) != len(self.df.index):
             raise RuntimeError(
                 f"Player/df mismatch! "
@@ -46,7 +46,7 @@ class PlayerBase(MutableMapping):
                 f"{len(self.stats)} stats vs "
                 f"{len(self.df.columns)} dataframe columns."
             )
-        return len(self.df.index), len(self.df.columns)
+        return len(self.df.index)
 
     def __getitem__(self, key: Hashable) -> Union['Player', List['Player']]:
         """Get a player or range of players by name(s) or cid(s)"""
@@ -110,7 +110,7 @@ class PlayerBase(MutableMapping):
 
     def __repr__(self) -> str:
         # TODO - this is broken
-        return(f"<{self.__module__}.{self.__class__.__name__} "
+        return(f"PlayerBase: "
                f"[{len(self)} rows x "
                f"{len(self.df.columns)} cols] "
                f"at {hex(id(self))}>")

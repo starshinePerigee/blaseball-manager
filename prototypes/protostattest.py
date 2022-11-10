@@ -12,12 +12,14 @@ print(ps.stat_class.stat_five)  # y
 
 print(ps.stat_class.stat_six)  # n
 
+print(ps.stat_seven)  # y
+print(ps.stat_eight)  # y
+
 sc = ps.StatClass()
 
 print(sc.stat_four)  # y
 print(sc.stat_five)  # y
 print(sc.stat_six)  # broke lol
 
-
-from blaseball.stats import stats as s
-print(s.name)  # does suggest
+# from blaseball.stats import stats as s
+# print(s.name)  # does suggest

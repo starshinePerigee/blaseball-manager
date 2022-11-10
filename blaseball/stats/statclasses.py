@@ -5,12 +5,13 @@ does not handle caching! that's handled in Player. But some of the logic is defi
 """
 
 from enum import Enum, auto
-from typing import Union, Callable, Dict, List
-from blaseball.stats.playerbase import PlayerBase
+from typing import Union, Callable, Dict, Tuple, List, Optional
+from numpy.random import rand
 
 from loguru import logger
 
 from blaseball.util.dfmap import dataframe_map
+from blaseball.stats.playerbase import PlayerBase
 
 
 # this is the default dictionary; which is a big dictionary for indexing / filtering methods
@@ -339,21 +340,76 @@ class Descriptor(Stat):
     def calculate_value(self, player_index):
         return self.get_descriptor(player_index, self.weights)
 
-#
-# class Rating(Calculatable):
-#     def __init__(self, name: str, personality: Stat, category: Stat):
-#         super().__init__(name, Kinds.rating)
-#
-#         self.personality = personality  # the personality stat that governs this stat (applies to ratings)
-#         self.category = category  # the stat category this applies to
-#         self.base_stat = Stat(('base_' + name), Kinds.base_rating)
-#
-#         setattr(all_stats, self.base_stat.name, self.base_stat)
-#
-#         self.formula = self.calculate_rating
-#
-#     def calculate_rating(self, player: 'Player'):
-#         # TODO
-#         return player.pb.df.at[player.cid, self.base_stat.name]
-#
-# #
+
+class Rating(Stat):
+    """A rating is one of a player's "fixed" "core" stats, such as their speed.
+    It is not a Calculatable, becuase it doesn't get updated in the same way.
+    Instead it's meant to handle the overhead that's built into a rating, such as
+    creating it's base_ version, init, and update.
+
+    """
+    def __init__(
+            self,
+            name: str,
+            personality: Stat,
+            category: Stat,
+            base: Stat,
+            pb: PlayerBase = None
+    ):
+        super().__init__(
+            name,
+            Kinds.rating,
+            default=-1,
+            pb=pb
+        )
+
+        self.personality = personality  # the personality stat that governs this stat (applies to ratings)
+        self.category = category  # the stat category this applies to
+        self.base_stat = base
+
+    def calculate_initial(self, player_index):
+        return self._linked_dataframe.at[player_index, self.base_stat.name]
+
+    def calculate_value(self, player_index):
+        return self._linked_dataframe.at[player_index, self.name]
+
+
+class BaseRating(Stat):
+    def __init__(
+            self,
+            name: str,
+            personality: Stat,
+            pb: PlayerBase = None
+    ):
+        super().__init__(
+            name,
+            Kinds.base_rating,
+            default=-1,
+            pb=pb
+        )
+        self.personality = personality
+
+    def calculate_initial(self, player_index):
+        """
+        Rolls this stat based on the relevant personality, and updates the base value.
+        """
+        personality_value = self._linked_dataframe.at[player_index, self.personality.name]
+        scale_factor = max(min(personality_value, 1), 0.5)
+        # traits can result in personalities higher than 1. if this happens, it's cool, so
+        # this bit makes sure you get that bonus
+        if personality_value > 1:
+            return rand() * scale_factor + personality_value - 1
+        else:
+            return rand() * scale_factor
+
+
+def build_rating(
+        name: str,
+        personality: Stat,
+        category: Optional[Stat],
+        pb: PlayerBase = None
+) -> Tuple[Rating, BaseRating]:
+    base_rating = BaseRating("base " + name, personality, pb)
+    rating = Rating(name, personality, category, base_rating, pb)
+    return rating, base_rating
+

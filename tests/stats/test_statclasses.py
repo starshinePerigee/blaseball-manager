@@ -25,7 +25,8 @@ def arbitrary_pb():
             'col2': [6, 7, 8, 9, 10],
             'cola': ['a', 'b', 'c', 'd', 'e'],
             'col3': [0.1, 0.2, 0.3, 0.4, 0.5],
-            'col4': [0.3, 0.3, 0.3, 0.3, 0.3]
+            'col4': [0.3, 0.3, 0.3, 0.3, 0.3],
+            'col5': [0, 0.2, 0.8, 1.6, 2.0]
         },
         index=[10, 11, 12, 13, 14]
     )
@@ -259,3 +260,15 @@ class TestDescriptor:
             }
         )
         assert isinstance(test_descriptor.calculate_value(12), str)
+
+
+class TestRating:
+    @pytest.mark.parametrize(
+        "cid, result",
+        [(10, 0.25), (11, 0.25), (12, 0.4), (13, 1.1), (14, 1.5)]
+    )
+    def test_initial(self, arbitrary_pb, patcher, cid, result):
+        patcher.patch('blaseball.stats.statclasses.rand', lambda: 0.5)
+        personality = arbitrary_pb.stats['col5']
+        test_rating, test_rating_base = statclasses.build_rating('test rating', personality, None, arbitrary_pb)
+        assert test_rating_base.calculate_initial(cid) == pytest.approx(result)

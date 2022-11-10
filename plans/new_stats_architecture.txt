@@ -118,7 +118,7 @@ given player-level caching:
     batter.__getitem__(s.battingaverage)
     > check batter.stale[s.battingaverage.kind]
     >> if stale:
-    >>> s.battingaverage[batter.cid]
+    >>> s.battingaverage[batter.cid] + batter.modifiers[s.battingaverage]
     >> else:
     >>> batter.cache[s.battingaverage]
 
@@ -149,7 +149,6 @@ this is all fine.
 
 What is a Rating?
 a rating is a specific type of Stat. It has a base version and a live version.
-Base + modifiers = Live. Modifiers only work on Ratings.
+Base + modifiers = Live.
 
-The Base stat is created as an empty stat (just name and kind) and is passed to the Rating for management.
 
