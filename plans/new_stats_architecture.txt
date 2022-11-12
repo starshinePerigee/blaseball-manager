@@ -152,3 +152,53 @@ a rating is a specific type of Stat. It has a base version and a live version.
 Base + modifiers = Live.
 
 
+
+What is a modifier/trait?
+
+A big part of blaseball is things that modify a player Some examples:
+- character traits, such as Fiesty, Cold
+- physical traits, such as Really Long Arms
+- moods, such as "angry" or "sad"
+- injuries, such as Sprained Ankle or Broken Wing
+- blaseball things, such as Spicy or Repeating
+- items, such as the Gunblade Bat or Metaphorical Shoes
+
+These affect the following:
+- personalities
+- ratings
+- on-field effects
+- available events
+- player interactions
+
+All of these are Modifiers - things that a player has that have effects. 
+This is vague, which is difficult, but they're bundled together becuase we need to check *all of them* when it comes
+time to read a player's stat. 
+
+These are the primary way for side systems (items, blessings, personality) to *temporarily* affect a player. 
+
+ A player can have have dozens to hundreds of modifiers!
+
+
+ How do these work?
+
+RATINGS:
+ - a player maintains their own modifier list
+ - all modifiers inherit from Modifier
+
+ - calculating a rating involves iterating through the modifier list
+ (modifiers each have their own list of what they make stale)
+ - a modifier *can* have a dict of stats if it needs to modify stats
+
+ PERSONALITIES:
+ - personalities are going to have to be ratings also, with the base/effective split
+ - make sure to apply personality modifiers prior to stat generation, since these affect the BASE stat
+
+ these are pending:
+ ON-FIELD EFFECTS
+ - modifiers *can* subscribe to events (somehow)
+ - these can do function calls or even intercept / prevent normal functions from executing
+ - maybe some chcek modifier system in disambiguate playball?
+
+ AVAILABLE EVENTS / PLAYER INTERATIONS
+ - modifiers will have a list of tags used to affect events / interactions
+ - this is even less specified than on-field effects

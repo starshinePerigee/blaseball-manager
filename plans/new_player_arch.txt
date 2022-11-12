@@ -1,0 +1,53 @@
+This is a summary + expansion of new_stats_architecture.txt
+
+
+Here's where we left off:
+
+    Playerbase: a dataframe wrapper with methods of indexing Stats, meant to hold bulk numeric data.
+    Stat: a way of defining, generating, and calculating a Stat (single column in PlayerBase)
+    Player: a bundle of data meant to handle accessing Playerbase + modifiers + etc.
+    Modifier: not yet defined. Some way of modifying player stats and behavior.
+
+In the main field, your standard usage looks like this:
+    import stats as s
+    ...
+    player[s.sparkle]
+
+What are the open questions?
+
+    how does getting a stat work?
+
+        given player-level caching:
+
+        batter.__getitem__(s.battingaverage)
+        > check batter.stale[s.battingaverage.kind]
+        >> if stale:
+        >>> s.battingaverage[batter.cid] + batter.modifiers[s.battingaverage]
+        >> else:
+        >>> batter.cache[s.battingaverage]
+        
+    how does setting a stat work (given caching, modifiers)
+        batter.__setitem__(s.sparkle)
+        > check if in a dependent category
+        >> if dependent, throw error
+        > else, s.sparkle[batter.cid] = x
+        >> update it's dependent stale flags
+
+    how do you create a player?
+        playerbase maintains a "template row" made up of all the stat defaults  # TODO
+        Player.__init__() creates a new row based on the template row
+        then you have two options:
+        bulk:
+            > PlayerBase.initialize_all()
+            >> iterate through stats in specific order, calling apply(stat.calculate_initial) or w/e
+                to initialize entire columns at once
+            > Player.initialize_stats()
+            >> iterates through stats in specific order, calling each stat's calculate_initial() in turn
+        player then 
+
+    how do you initialize an entire playerbase?
+        > all_base() is the default PlayerBase and is created empty on the first invocation of statclasses.py
+        > stats.py fills out the columns and default list
+        > Player.__init__() creates blank rows
+        > PlayerBase.initialize_all()
+        

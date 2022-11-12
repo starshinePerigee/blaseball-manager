@@ -3,6 +3,7 @@
 import pytest
 # import blaseball
 from blaseball.stats.statclasses import Stat
+from blaseball.stats.playerbase import PlayerBase
 
 from support import fixturetarget
 
@@ -11,27 +12,41 @@ import numpy
 import random
 from loguru import logger
 
-#
-# class TestFixtures:
-#     """This exists to shakedown test fixtures, primarily to make sure they don't throw runtime errors.
-#     Actual testing of most of the functionality gets captured in the test_foo classes later."""
-#
-#     def test_loggercapture_1(self, logger_store):
-#         # this is a bad, overloaded test lol
-#         assert logger_store.level_inventory['INFO'] == 0
-#         logger.info("test 1")
-#         logger.info("test 2")
-#         logger.trace("trace 1")
-#         assert logger_store.level_inventory['INFO'] == 2
-#         assert "test 1" in logger_store[0]
-#         assert "trace 1" in logger_store[-1]
-#         assert len(logger_store) == 3
-#         assert "test 2" in logger_store
-#
-#     def test_loggercapture_persistence(self, logger_store):
-#         # just a little worried because logger has its whole global thing going on
-#         assert logger_store.log == []
-#         assert len(logger_store) == 0
+
+class TestFixtures:
+    """This exists to shakedown test fixtures, primarily to make sure they don't throw runtime errors.
+    Actual testing of most of the functionality gets captured in the test_foo classes later."""
+
+    def test_loggercapture_1(self, logger_store):
+        # this is a bad, overloaded test lol
+        assert logger_store.level_inventory['INFO'] == 0
+        logger.info("test 1")
+        logger.info("test 2")
+        logger.trace("trace 1")
+        assert logger_store.level_inventory['INFO'] == 2
+        assert "test 1" in logger_store[0]
+        assert "trace 1" in logger_store[-1]
+        assert len(logger_store) == 3
+        assert "test 2" in logger_store
+
+    def test_loggercapture_persistence(self, logger_store):
+        # just a little worried because logger has its whole global thing going on
+        assert logger_store.log == []
+        assert len(logger_store) == 0
+
+    def test_arbitrary_pb(self, arbitrary_pb):
+        assert isinstance(arbitrary_pb, PlayerBase)
+        stat_1 = arbitrary_pb.stats['col1']
+        assert isinstance(stat_1, Stat)
+        assert stat_1.name == 'col1'
+        # assert isinstance(arbitrary_pb[10], Player)
+
+    def test_arbitrary_stats(self, arbitrary_pb, stat_1, stat_2):
+        assert isinstance(stat_1, Stat)
+        assert stat_1 is not stat_2
+        assert stat_1.name == 'col1'
+        assert stat_1.name in arbitrary_pb.stats
+
 #
 #     def test_league_2(self, league_2):
 #         assert isinstance(league_2, blaseball.stats.teams.League)

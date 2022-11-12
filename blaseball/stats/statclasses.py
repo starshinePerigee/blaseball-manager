@@ -20,7 +20,7 @@ all_base = PlayerBase()
 
 
 # a stat kind is the relative type of a stat; these are used for categorization and dependencies
-# this is ordered! this is the order these will be generated
+# this is not ordered. Stats are generated in column order (ie: the order they're defined in Stats)
 class Kinds(Enum):
     # the number in this enum
     personality = auto()  # core personality types
@@ -65,17 +65,13 @@ class Stat:
         self._hash = hash(f"{name}_{Stat.running_id}")
         Stat.running_id += 1
 
-        pb.stats[name] = self
-        self._linked_dict = pb.stats
-
-        pb.df[name] = default
-        self.default = default
-        self._linked_dataframe = pb.df
-
         self.kind = kind
-
-        # these are optional stat attributes
         self.abbreviation = None  # the abbreviation for this stat
+        self.default = default
+
+        self._linked_dataframe = pb.df
+        self._linked_dict = pb.stats
+        pb.add_stat(self)
 
     def __getitem__(self, player_index: int):
         return self._linked_dataframe.at[player_index, self.name]

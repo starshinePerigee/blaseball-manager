@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 
 from blaseball.stats.players import Player, PlayerBase
-from blaseball.stats import traits, statclasses
+from blaseball.stats import modifiers, statclasses
 
 
 @pytest.fixture
@@ -103,7 +103,7 @@ class TestPlayer:
     def test_add_remove_trait(self, player_1):
         player_1.set_all_stats(0.5)
         assert player_1['determination'] == 0.5
-        determination_trait = traits.Trait(ratings={'determination': 0.5})
+        determination_trait = modifiers.Trait(ratings={'determination': 0.5})
         player_1.add_trait(determination_trait)
         assert player_1['determination'] == pytest.approx(1.0)
 
@@ -112,9 +112,9 @@ class TestPlayer:
 
     def test_generate_stats(self, player_1, monkeypatch):
         player_1.set_all_stats(0)
-        determination_trait = traits.Trait(ratings={'determination': 0.25})
+        determination_trait = modifiers.Trait(ratings={'determination': 0.25})
         monkeypatch.setattr('random.randrange', lambda start, stop, step=1: 2)
-        monkeypatch.setattr(traits.TraitsList, 'draw', lambda tl: determination_trait)
+        monkeypatch.setattr(modifiers.TraitsList, 'draw', lambda tl: determination_trait)
 
         monkeypatch.setattr('random.random', lambda: 0.5)
         player_1.randomize()

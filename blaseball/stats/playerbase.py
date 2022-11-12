@@ -28,7 +28,7 @@ class PlayerBase(MutableMapping):
     def __init__(self) -> None:
         self.df = pd.DataFrame()
         self.stats = {}  # dict of Stats
-        self.stale_dict = {}  # used by Stats for tracking stale and unstale calculated stats
+        self._default_stat_list = []
         self.players = {}  # dict of Players
 
         logger.debug("Initialized new playerbase.")
@@ -94,8 +94,8 @@ class PlayerBase(MutableMapping):
         self.df.drop(key)
 
     def __str__(self) -> str:
-        return_str = f"PlayerBase {len(self)[0]} players x "
-        return_str += f"{len(self)[1]} stats"
+        return_str = f"PlayerBase {len(self)} players x "
+        return_str += f"{len(self.df.columns)} stats"
 
         if len(self) <= 10:
             for player in self.iloc(range(len(self))):
@@ -109,7 +109,6 @@ class PlayerBase(MutableMapping):
         return return_str
 
     def __repr__(self) -> str:
-        # TODO - this is broken
         return(f"PlayerBase: "
                f"[{len(self)} rows x "
                f"{len(self.df.columns)} cols] "
@@ -117,6 +116,11 @@ class PlayerBase(MutableMapping):
 
     def __iter__(self) -> iter:
         return iter(self.players.values())
+
+    def add_stat(self, stat: 'Stat'):
+        self.stats[stat.name] = stat
+        self.df[stat.name] = stat.default
+        self._default_stat_list += [stat.default]
 
     # stat indexing functions
     def get_stats_with_kind(self, kind: 'Kinds') -> List['Stat']:
@@ -157,7 +161,7 @@ class PlayerBase(MutableMapping):
             return self.get_stats_with_kind(item)
         elif isinstance(item, str):
             if item in self.stats:
-                return stats[item]
+                return self.stats[item]
             else:
                 return self.get_stats_by_name_partial(item)
         else:

@@ -12,33 +12,6 @@ def playerbase_2():
     return pb
 
 
-@pytest.fixture
-def stat_1(playerbase_2):
-    return playerbase_2.stats["test 1"]
-
-
-@pytest.fixture
-def arbitrary_pb():
-    test_dataframe = pd.DataFrame(
-        data={
-            'col1': [1, 2, 3, 4, 5],
-            'col2': [6, 7, 8, 9, 10],
-            'cola': ['a', 'b', 'c', 'd', 'e'],
-            'col3': [0.1, 0.2, 0.3, 0.4, 0.5],
-            'col4': [0.3, 0.3, 0.3, 0.3, 0.3],
-            'col5': [0, 0.2, 0.8, 1.6, 2.0]
-        },
-        index=[10, 11, 12, 13, 14]
-    )
-    pb = playerbase.PlayerBase()
-    pb.players = {i: None for i in test_dataframe.index}
-    pd.stats = {name: statclasses.Stat(name, statclasses.Kinds.test, None, pb) for name in test_dataframe.columns}
-    pb.df = test_dataframe
-    for stat in pb.stats.values():
-        stat._linked_dataframe = test_dataframe
-    return pb
-
-
 class TestStatsBase:
     def test_stat_creation(self):
         pb = playerbase.PlayerBase()
@@ -71,7 +44,7 @@ class TestStatsBase:
         assert hash(playerbase_2.stats["test 1"]) != hash(new_pb.stats["test 1"])
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def calculatable_1(arbitrary_pb):
     calculatable = statclasses.Calculatable(
         "test c",

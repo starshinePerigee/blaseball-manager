@@ -7,13 +7,15 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 import pytest
 
 from blaseball.stats import statclasses
-# from blaseball.stats import players, teams, stadium, lineup
+from blaseball.stats import playerbase
+    # players, teams, stadium, lineup
 # from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame, statsmonitor
 # from blaseball.util import messenger
 from support.mock_functions import FunctionPatcher
-# from support.loggercapture import LoggerCapture
+from support.loggercapture import LoggerCapture
 # from data import teamdata
 
+import pandas as pd
 import numpy
 import random
 from loguru import logger
@@ -24,20 +26,20 @@ import sys
 logger.remove()
 
 
-# @pytest.fixture(scope='function')
-# def logger_print():
-#     logger_id = logger.add(sys.stdout)
-#     yield
-#     logger.remove(logger_id)
-#
-#
-# @pytest.fixture(scope='function')
-# def logger_store():
-#     logger_capture = LoggerCapture()
-#     logger_id = logger.add(logger_capture.receive, level="TRACE")
-#     yield logger_capture
-#     logger.remove(logger_id)
-#
+@pytest.fixture(scope='function')
+def logger_print():
+    logger_id = logger.add(sys.stdout)
+    yield
+    logger.remove(logger_id)
+
+
+@pytest.fixture(scope='function')
+def logger_store():
+    logger_capture = LoggerCapture()
+    logger_id = logger.add(logger_capture.receive, level="TRACE")
+    yield logger_capture
+    logger.remove(logger_id)
+
 
 @pytest.fixture(scope='function')
 def patcher(monkeypatch):
@@ -56,6 +58,45 @@ def seed_randoms():
     numpy.random.seed(RunningSeed.running_seed)
     random.seed(RunningSeed.running_seed)
     RunningSeed.running_seed += 1
+
+
+@pytest.fixture(scope='function')
+def arbitrary_pb():
+    test_dataframe = pd.DataFrame(
+        data={
+            'col0': [0, 0, 0, 0, 0],
+            'col1': [1, 2, 3, 4, 5],
+            'col2': [6, 7, 8, 9, 10],
+            'cola': ['a', 'b', 'c', 'd', 'e'],
+            'col3': [0.1, 0.2, 0.3, 0.4, 0.5],
+            'col4': [0.3, 0.3, 0.3, 0.3, 0.3],
+            'col5': [0, 0.2, 0.8, 1.6, 2.0]
+        },
+        index=[10, 11, 12, 13, 14]
+    )
+    pb = playerbase.PlayerBase()
+    pb.players = {i: None for i in test_dataframe.index}
+    pd.stats = {name: statclasses.Stat(name, statclasses.Kinds.test, None, pb) for name in test_dataframe.columns}
+    pb.df = test_dataframe
+    for stat in pb.stats.values():
+        stat._linked_dataframe = test_dataframe
+    return pb
+
+
+@pytest.fixture(scope='function')
+def stat_1(arbitrary_pb):
+    return arbitrary_pb.stats['col1']
+
+
+@pytest.fixture(scope='function')
+def stat_2(arbitrary_pb):
+    return arbitrary_pb.stats['col2']
+
+
+@pytest.fixture(scope='function')
+def stat_3(arbitrary_pb):
+    return arbitrary_pb.stats['col3']
+
 
 #
 # @pytest.fixture(scope='class')
