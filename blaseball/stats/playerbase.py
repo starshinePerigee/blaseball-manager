@@ -91,7 +91,8 @@ class PlayerBase(MutableMapping):
         If the value player is in the playerbase, that player will be duplicated!
         Take care with this function!
         """
-        self[key].assign(value)
+        # self[key].assign(value
+        raise NotImplementedError("MERP")
 
     def __delitem__(self, key: Hashable) -> None:
         del self.players[key]
@@ -122,6 +123,7 @@ class PlayerBase(MutableMapping):
         return iter(self.players.values())
 
     def add_stat(self, stat: 'Stat'):
+        """This adds a stat to the playerbase. This is called by the Stat's init method!!"""
         self.stats[stat.name] = stat
         self.df[stat.name] = stat.default
         self._default_stat_list += [stat.default]

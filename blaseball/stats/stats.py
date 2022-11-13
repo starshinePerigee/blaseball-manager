@@ -16,7 +16,7 @@ def _generate_name(df, cid) -> str:
     return f"{first_name} {last_name}".title()
 
 
-name = statclasses.Stat('name', statclasses.Kinds.character, _generate_name)
+name = statclasses.Stat('name', statclasses.Kinds.character, "WYATT MASON", _generate_name)
 name.abbreviate("NAME")
 
 
@@ -36,7 +36,7 @@ def _generate_number(df, cid) -> int:
         return ones + tens
 
 
-number = statclasses.Stat('number', statclasses.Kinds.character, _generate_number)
+number = statclasses.Stat('number', statclasses.Kinds.character, -100, _generate_number)
 number.abbreviate("#")
 
 

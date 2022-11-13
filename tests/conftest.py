@@ -6,8 +6,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 
 import pytest
 
-from blaseball.stats import statclasses
-from blaseball.stats import playerbase
+from blaseball.stats import statclasses, playerbase, stats, players
     # players, teams, stadium, lineup
 # from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame, statsmonitor
 # from blaseball.util import messenger
@@ -76,7 +75,7 @@ def arbitrary_pb():
     )
     pb = playerbase.PlayerBase()
     pb.players = {i: None for i in test_dataframe.index}
-    pd.stats = {name: statclasses.Stat(name, statclasses.Kinds.test, None, pb) for name in test_dataframe.columns}
+    pd.stats = {name: statclasses.Stat(name, statclasses.Kinds.test, -1, None, pb) for name in test_dataframe.columns}
     pb.df = test_dataframe
     for stat in pb.stats.values():
         stat._linked_dataframe = test_dataframe
@@ -116,12 +115,17 @@ def stat_3(arbitrary_pb):
 # def team_1(league_2):
 #     return league_2[0]
 #
-#
-# @pytest.fixture(scope='function')
-# def player_1():
-#     playerbase = players.PlayerBase(1)
-#     player = list(playerbase.players.values())[0]
-#     return player
+
+@pytest.fixture(scope='function')
+def empty_all_base():
+    stats.pb.df.drop(stats.pb.df.index)
+    stats.pb.players = {}
+
+@pytest.fixture(scope='function')
+def player_1(empty_all_base):
+    player = players.Player(stats.pb)
+    player.initialize()
+    return player
 #
 #
 # @pytest.fixture(scope='class')

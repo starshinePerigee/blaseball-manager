@@ -11,12 +11,11 @@ import random
 from collections.abc import Mapping
 from typing import Union, List
 
-# import pandas as pd
+import pandas as pd
 # from numpy.random import normal
 # from loguru import logger
 
-from blaseball.stats.playerbase import PlayerBase
-from blaseball.stats.modifiers import Modifier, default_personality_deck
+from blaseball.stats import playerbase, statclasses, modifiers
 from blaseball.stats import stats as s
 
 
@@ -38,8 +37,9 @@ class Player(Mapping):
         Player.player_class_id += 1
         return Player.player_class_id
 
-    def __init__(self, pb: PlayerBase) -> None:
+    def __init__(self, pb: playerbase.PlayerBase) -> None:
         self.cid = Player.new_cid()  # players "Character ID", a unique identifier
+        self._stale_dict = statclasses.create_blank_stale_dict(True)
         self.pb = pb  # pointer to the playerbase containing this player's stats
         self.pb.new_player(self)
         self.modifiers = self.roll_traits()
@@ -47,18 +47,22 @@ class Player(Mapping):
         # you MUST call initialize after this.
 
     @staticmethod
-    def roll_traits() -> List[Modifier]:
+    def roll_traits() -> List[modifiers.Modifier]:
         trait_list = []
         for i in range(0, random.randrange(3, 6)):
-            trait_list += [default_personality_deck.draw()]
+            trait_list += [modifiers.default_personality_deck.draw()]
         return trait_list
 
     def initialize(self):
         """Initialize/roll all stats for this player. This duplicates playerbase.initialize_all!"""
-        for stat in self.pb.stats:
+        for stat in self.pb.stats.values():
             self[stat] = stat.calculate_initial(self.cid)
 
-
+    def recalculate(self):
+        for stat in s.pb.stats.values():
+            if self._stale_dict[stat.kind]:
+                self[stat] = stat.calculate_value(self.cid)
+        self._stale_dict = {kind: False for kind in self._stale_dict.keys()}
 
     # def randomize(self) -> None:
     #     """Generate random values for applicable stats.
@@ -160,12 +164,8 @@ class Player(Mapping):
     #     for key in keys:
     #         self[key] = values[key]
     #
-    # def stat_row(self) -> pd.Series:
-    #     if self.pb is None:
-    #         raise RuntimeError(f"{self} not linked to a valid PlayerBase! Call player.initialize"
-    #                            f"before using this player!")
-    #     else:
-    #         return self.pb.df.loc[self.cid]
+    def stat_row(self) -> pd.Series:
+        return self.pb.df.loc[self.cid]
     #
     # def df_index(self) -> int:
     #     """get the CID / dataframe index of this player."""
@@ -186,18 +186,42 @@ class Player(Mapping):
     # #     # update stale flags
     # #     for dependent in dependents[self.kind]:
     # #         stale_flags[dependent][player.cid] = True
-    #
-    # def __getitem__(self, item: Union[Stat, str]) -> Union[float, str]:
-    #     if isinstance(item, Stat):
-    #         return item.get(self)
-    #     elif item == 'cid':
-    #         return self.cid
-    #     else:
-    #         raise KeyError(f"Invalid indexer provided to Player: {item} of type {type(item)}")
-    #
-    # def __setitem__(self, item: Stat, value: object) -> None:
-    #     item.set(self.cid, self.pb, value)
-    #
+
+    def __getitem__(self, item: Union[statclasses.Stat, str]) -> Union[float, int, str]:
+        if isinstance(item, statclasses.Stat):
+            if self._stale_dict[item.kind]:
+                # cached value is stale
+                if item.kind == statclasses.Kinds.rating:
+                    # if this is a rating, we have to check modifiers
+                    base_value = item.calculate_value(self.cid)
+                    # this is really junk performance, but we can optimize when we know how frequent
+                    # cache misses are.
+                    modifier_value = sum([mod[item] for mod in self.modifiers])
+                    return base_value + modifier_value
+                else:
+                    return item.calculate_value(self.cid)
+            else:
+                return self.pb.df.at[self.cid, item.name]
+        elif item == 'cid':
+            return self.cid
+        elif isinstance(item, str):
+            try:
+                possible_stats = s.pb.get_stats_by_name(item)
+                if len(possible_stats) > 1:
+                    raise KeyError(f"Ambiguous lookup key provided!"
+                                   f" {item} returned {len(possible_stats)} results.")
+                else:
+                    return self[possible_stats[0]]
+            except KeyError:
+                raise KeyError(f"No results found via string lookup for {item}")
+        else:
+            raise KeyError(f"Invalid indexer provided to Player: {item} of type {type(item)}")
+
+    def __setitem__(self, item: statclasses.Stat, value) -> None:
+        self.pb.df.at[self.cid, item.name] = value
+        for kind in statclasses.dependents[item.kind]:
+            self._stale_dict[kind] = True
+
     # def add_average(self, item: Union[List, str], value: Union[List, Union[int, float]]) -> None:
     #     """Updates a stat which is a running average, such as batting average. Pass one or more stats and values in
     #     and it'll update the linked counting stat and the averages."""
@@ -213,12 +237,12 @@ class Player(Mapping):
     #     for i, v in zip(item, value):
     #         self[i] += (v - self[i]) / self[count_stat]
     #
-    # def __iter__(self) -> iter:
-    #     return iter(self.stat_row())
-    #
-    # def __len__(self) -> int:
-    #     return len(self.stat_row())
-    #
+    def __iter__(self) -> iter:
+        return iter(self.stat_row())
+
+    def __len__(self) -> int:
+        return len(self.stat_row())
+
     # def __eq__(self, other: Union['Player', pd.Series, dict,]) -> bool:
     #     if isinstance(other, Player):
     #         return self == other.stat_row()

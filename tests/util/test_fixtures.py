@@ -1,17 +1,19 @@
 """This class is meant to test fixtures and the mock functions."""
 
 import pytest
-# import blaseball
-from blaseball.stats.statclasses import Stat
-from blaseball.stats.playerbase import PlayerBase
-
-from support import fixturetarget
 
 from scipy.stats import norm
 import numpy
 import random
 from loguru import logger
 
+# import blaseball
+from blaseball.stats.stats import pb
+from blaseball.stats.statclasses import Stat
+from blaseball.stats.playerbase import PlayerBase
+from blaseball.stats.players import Player
+
+from support import fixturetarget
 
 class TestFixtures:
     """This exists to shakedown test fixtures, primarily to make sure they don't throw runtime errors.
@@ -53,9 +55,13 @@ class TestFixtures:
 #
 #     def test_team_1(self, team_1):
 #         assert isinstance(team_1, blaseball.stats.teams.Team)
-#
-#     def test_player_1(self, player_1):
-#         assert isinstance(player_1, blaseball.stats.players.Player)
+
+    def test_player_1(self, player_1):
+        assert isinstance(player_1, Player)
+        # assert isinstance(player_1, blaseball.stats.players.Player)
+
+    def test_empty_all_base(self, empty_all_base):
+        assert len(pb) == 0
 #
 #     def test_stadium_a(self, stadium_a):
 #         assert isinstance(stadium_a, blaseball.stats.stadium.Stadium)

@@ -53,14 +53,15 @@ class Stat:
             name: str,
             kind: Kinds,
             default=None,
-            pb: PlayerBase = None
+            initial_function=None,
+            playerbase: PlayerBase = None
     ):
         self.name = name
 
-        if pb is None:
-            pb = all_base
+        if playerbase is None:
+            playerbase = all_base
 
-        if name in pb.stats:
+        if name in playerbase.stats:
             raise KeyError(f"Stat {name} already defined!")
 
         self._hash = hash(f"{name}_{Stat.running_id}")
@@ -69,10 +70,11 @@ class Stat:
         self.kind = kind
         self.abbreviation = None  # the abbreviation for this stat
         self.default = default
+        self.initial_function = initial_function
 
-        self._linked_dataframe = pb.df
-        self._linked_dict = pb.stats
-        pb.add_stat(self)
+        self._linked_dataframe = playerbase.df
+        self._linked_dict = playerbase.stats
+        playerbase.add_stat(self)
 
     def __getitem__(self, player_index: int):
         return self._linked_dataframe.at[player_index, self.name]
@@ -80,8 +82,8 @@ class Stat:
     def calculate_initial(self, player_index):
         """Calculate the initial value for this based on its default value.
         Default can be function with parameters 'playerbase df' and 'cid'"""
-        if isinstance(self.default, Callable):
-            return self.default(self._linked_dataframe, player_index)
+        if self.initial_function is not None:
+            return self.initial_function(self._linked_dataframe, player_index)
         else:
             return self.default
 
@@ -135,19 +137,28 @@ BASE_DEPENDENCIES = {
     Kinds.test_dependent: [Kinds.test]
 }
 
-recalculation_order = BASE_DEPENDENCIES.keys()
-
-dependencies = BASE_DEPENDENCIES
+dependencies = {}
 # fill in everything that's not a dependent
 for kind_ in Kinds:
-    if kind_ not in dependencies:
+    if kind_ not in BASE_DEPENDENCIES:
         dependencies[kind_] = []
+        # this comment is only here to fix a pycharm bug lol
+    else:
+        dependencies[kind_] = BASE_DEPENDENCIES[kind_]
 
-# invert the array so we know what to look up / set the stale flag for when we write
+# invert the array, so we know what to look up / set the stale flag for when we write
 dependents = {kind: [] for kind in Kinds}
 for kind_ in Kinds:
     for dependency in dependencies[kind_]:
         dependents[dependency] += [kind_]
+
+
+def create_blank_stale_dict(state=True):
+    stale_dict = {kind: False for kind in Kinds}
+    if state:
+        for kind in BASE_DEPENDENCIES.keys():
+            stale_dict[kind] = True
+    return stale_dict
 
 
 class Calculatable(Stat):
@@ -161,9 +172,9 @@ class Calculatable(Stat):
             kind: Kinds,
             initial_formula: Callable = None,
             value_formula: Callable = None,
-            pb: PlayerBase = None,
+            playerbase: PlayerBase = None,
     ):
-        super().__init__(name, kind, None, pb)
+        super().__init__(name, kind, -1, None, playerbase)
 
         # default and value should either be a mappable callable (via dfmap), constant, or None
         if initial_formula is not None:
@@ -200,9 +211,9 @@ class Weight(Stat):
             self,
             name: str,
             kind: Kinds = Kinds.weight,
-            pb: PlayerBase = None
+            playerbase: PlayerBase = None
     ):
-        super().__init__(name, kind, -1, pb)
+        super().__init__(name, kind, -1, None, playerbase)
 
         self.stats = {}
         self.extra_weight = 0
@@ -244,9 +255,9 @@ class Descriptor(Stat):
             self,
             name: str,
             kind: Kinds = Kinds.descriptor,
-            pb: PlayerBase = None
+            playerbase: PlayerBase = None
     ):
-        super().__init__(name, kind, f"{name.upper()}_DEFAULT", pb)
+        super().__init__(name, kind, f"{name.upper()}_DEFAULT", None, playerbase)
 
         self.weights = {}
         self.secondary_threshold = 0.0  # what percentage of the primary stat the next biggest needs to be counted.
@@ -352,13 +363,14 @@ class Rating(Stat):
             base: Stat,
             personality: Stat = None,
             category: Stat = None,
-            pb: PlayerBase = None
+            playerbase: PlayerBase = None
     ):
         super().__init__(
             name,
             Kinds.rating,
             default=-1,
-            pb=pb
+            initial_function=None,
+            playerbase=playerbase
         )
 
         self.personality = personality  # the personality stat that governs this stat (applies to ratings)
@@ -377,13 +389,14 @@ class BaseRating(Stat):
             self,
             name: str,
             personality: Stat,
-            pb: PlayerBase = None
+            playerbase: PlayerBase = None
     ):
         super().__init__(
             name,
             Kinds.base_rating,
             default=-1,
-            pb=pb
+            initial_function=None,
+            playerbase=playerbase
         )
         self.personality = personality
 
@@ -405,10 +418,10 @@ def build_rating(
         name: str,
         personality: Stat,
         category: Optional[Stat],
-        pb: PlayerBase = None
+        playerbase: PlayerBase = None
 ) -> Tuple[Rating, BaseRating]:
-    base_rating = BaseRating("base " + name, personality, pb)
-    rating = Rating(name, base_rating, personality, category, pb)
+    base_rating = BaseRating("base " + name, personality, playerbase)
+    rating = Rating(name, base_rating, personality, category, playerbase)
     return rating, base_rating
 
 
@@ -416,13 +429,14 @@ class BasePersonality(Stat):
     def __init__(
             self,
             name: str,
-            pb: PlayerBase = None
+            playerbase: PlayerBase = None
     ):
         super().__init__(
             name,
             Kinds.base_personality,
             default=-1,
-            pb=pb
+            initial_function=None,
+            playerbase=playerbase
         )
 
     def calculate_initial(self, player_index):

@@ -25,6 +25,16 @@ class TestStatInitialization:
         assert isinstance(stats.base_stability, statclasses.Stat)
         assert statclasses.all_base.stats['base determination'] is stats.base_determination
 
+
+class TestAllBase:
+    def test_existence(self):
+        assert "name" in stats.pb.stats
+
+    def test_default_dict(self):
+        assert len(stats.pb.stats) == len(stats.pb._default_stat_list)
+        for stat, default in zip(stats.pb.stats.values(), stats.pb._default_stat_list):
+            assert stat.default == default
+
 #
 # class TestAllStats:
 #     stat_param_ids = "name, default"

@@ -110,3 +110,7 @@ class TestPlayerBaseStats:
         assert len(arbitrary_pb.get_stats_by_name("col")) == 7
         assert len(arbitrary_pb.get_stats_by_name("cola")) == 1
         assert arbitrary_pb.get_stats_by_name("cola")[0] is arbitrary_pb.stats["cola"]
+
+    def test_default_stat_list(self, arbitrary_pb):
+        for i in range(len(arbitrary_pb.stats)):
+            assert arbitrary_pb._default_stat_list[i] == -1

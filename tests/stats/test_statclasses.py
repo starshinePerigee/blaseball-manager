@@ -1,5 +1,4 @@
 import pytest
-import pandas as pd
 
 from blaseball.stats import statclasses, playerbase
 
@@ -7,20 +6,29 @@ from blaseball.stats import statclasses, playerbase
 @pytest.fixture
 def playerbase_2():
     pb = playerbase.PlayerBase()
-    statclasses.Stat("test 1", statclasses.Kinds.test, 1, pb)
-    statclasses.Stat("test 2", statclasses.Kinds.test, 2, pb)
+    statclasses.Stat("test 1", statclasses.Kinds.test, 1, None, pb)
+    statclasses.Stat("test 2", statclasses.Kinds.test, 2, None, pb)
     return pb
+
+
+@pytest.mark.parametrize("state", [True, False])
+def test_create_blank_stale_dict(state):
+    test_dict = statclasses.create_blank_stale_dict(state)
+    assert len(test_dict) > 5
+    assert not test_dict[statclasses.Kinds.test]
+    assert test_dict[statclasses.Kinds.test_dependent] == state
+
 
 
 class TestStatsBase:
     def test_stat_creation(self):
         pb = playerbase.PlayerBase()
-        test_stat = statclasses.Stat("test stat", statclasses.Kinds.test, None, pb)
+        test_stat = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, pb)
         assert str(test_stat) == "Test Stat"
         assert pb.stats['test stat'] is test_stat
 
         with pytest.raises(KeyError):
-            test_stat_err = statclasses.Stat("test stat", statclasses.Kinds.test, None, pb)
+            test_stat_err = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, pb)
 
     def test_stat_abbreviation(self, playerbase_2):
         playerbase_2.stats["test 1"].abbreviate("TS1")
@@ -40,7 +48,7 @@ class TestStatsBase:
     def test_stat_hash(self, playerbase_2):
         assert hash(playerbase_2.stats["test 1"]) != hash(playerbase_2.stats["test 2"])
         new_pb = playerbase.PlayerBase()
-        new_test_1 = statclasses.Stat("test 1", statclasses.Kinds.test, None, new_pb)
+        new_test_1 = statclasses.Stat("test 1", statclasses.Kinds.test, None, None, new_pb)
         assert hash(playerbase_2.stats["test 1"]) != hash(new_pb.stats["test 1"])
 
 
@@ -51,7 +59,7 @@ def calculatable_1(arbitrary_pb):
         statclasses.Kinds.test_dependent,
         initial_formula=lambda col1: col1,
         value_formula=lambda col2, col3: col2 + col3,
-        pb=arbitrary_pb,
+        playerbase=arbitrary_pb,
     )
     return calculatable
 
@@ -72,7 +80,7 @@ class TestCalculatable:
             statclasses.Kinds.test,
             initial_formula=lambda col1, col2: col1 * col2,
             value_formula=lambda col1, col3:  col1 + col3,
-            pb=arbitrary_pb
+            playerbase=arbitrary_pb
         )
 
         assert arbitrary_pb.df["new stat"][10] == 6
@@ -83,7 +91,7 @@ class TestCalculatable:
         statclasses.Calculatable(
             "new stat",
             statclasses.Kinds.test,
-            pb=pb
+            playerbase=pb
         )
 
         assert "new stat" in pb.stats
@@ -92,12 +100,12 @@ class TestCalculatable:
 
 class TestWeight:
     def test_weighting(self, arbitrary_pb):
-        test_weight = statclasses.Weight("test weight", pb=arbitrary_pb)
+        test_weight = statclasses.Weight("test weight", playerbase=arbitrary_pb)
 
-        stat_1 = statclasses.Stat("s1", statclasses.Kinds.test, 0.5, arbitrary_pb)
+        stat_1 = statclasses.Stat("s1", statclasses.Kinds.test, 0.5, None, arbitrary_pb)
         stat_1.weight(test_weight, 2)
 
-        stat_2 = statclasses.Stat("s2", statclasses.Kinds.test, 1, arbitrary_pb)
+        stat_2 = statclasses.Stat("s2", statclasses.Kinds.test, 1, None, arbitrary_pb)
         stat_2.weight(test_weight, 1)
 
         assert test_weight.calculate_value(10) == pytest.approx((0.5 * 2 + 1) / 3)
@@ -105,7 +113,7 @@ class TestWeight:
 
 @pytest.fixture
 def test_descriptor(arbitrary_pb):
-    return statclasses.Descriptor("test descriptor", pb=arbitrary_pb)
+    return statclasses.Descriptor("test descriptor", playerbase=arbitrary_pb)
 
 
 class TestDescriptor:

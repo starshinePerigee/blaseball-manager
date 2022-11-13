@@ -51,4 +51,17 @@ What are the open questions?
         > stats.py fills out the columns and default list
         > Player.__init__() creates blank rows
         > PlayerBase.initialize_all()
-        
+
+
+How exactly does caching work?
+- all stats have a kind
+- each kind has some or no dependencies
+- these dependencies are listed in statclasses.BASE_DEPENDENCIES
+    - statclasses.dependencies shows dependencies for every stat kind
+    - statclasses.dependents show who depends on each stat kind (inverted dependencies)
+
+ reading happens more than writing, so you should update the stale flags on write
+
+ each player has a kind:boolean lookup, where kind: is all the base dependents
+ when you write a stat, you update all the values in that stale dict, based on dependents
+ when you read a stat, you check that dict
