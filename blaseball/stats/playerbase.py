@@ -33,6 +33,10 @@ class PlayerBase(MutableMapping):
 
         logger.debug("Initialized new playerbase.")
 
+    def new_player(self, player: 'Player'):
+        self.players[player.cid] = player
+        self.df.loc[player.cid] = self._default_stat_list
+
     def __len__(self) -> int:
         if len(self.players) != len(self.df.index):
             raise RuntimeError(
@@ -141,28 +145,31 @@ class PlayerBase(MutableMapping):
             raise KeyError(f"Could not locate any stats with category {category}!")
         return stats
 
-    def get_stats_by_name_partial(self, identifier: str) -> List['Stat']:
+    def get_stats_by_name(self, identifier: str) -> List['Stat']:
+        if identifier in self.stats:
+            return [self.stats[identifier]]
+
         stats = [x for x in self.stats.values() if x.abbreviation == identifier]
         if len(stats) == 0:
             stats = [self.stats[x] for x in self.stats if identifier in x]
             if len(stats) == 0:
                 raise KeyError(f"Could not locate any stats with identifier {identifier}!")
         return stats
-
-    def get_stats(self, item: Union['Stat', 'Kinds', str]) -> Union['Stat', List['Stat']]:
-        """Get stats that match a criteria.
-        Do not use this in core loops, index by dot directly."""
-        if isinstance(item, Stat):
-            if item.kind is Kinds.personality:
-                return self.get_stats_with_personality(item)
-            elif item.kind is Kinds.category:
-                return self.get_stats_with_category(item)
-        elif isinstance(item, Kinds):
-            return self.get_stats_with_kind(item)
-        elif isinstance(item, str):
-            if item in self.stats:
-                return self.stats[item]
-            else:
-                return self.get_stats_by_name_partial(item)
-        else:
-            raise KeyError(f"Invalid key! Key '{item}' with type {type(item)}")
+    #
+    # def get_stats(self, item: Union['Stat', 'Kinds', str]) -> Union['Stat', List['Stat']]:
+    #     """Get stats that match a criteria.
+    #     Do not use this in core loops, index by dot directly."""
+    #     if isinstance(item, Stat):
+    #         if item.kind is Kinds.personality:
+    #             return self.get_stats_with_personality(item)
+    #         elif item.kind is Kinds.category:
+    #             return self.get_stats_with_category(item)
+    #     elif isinstance(item, Kinds):
+    #         return self.get_stats_with_kind(item)
+    #     elif isinstance(item, str):
+    #         if item in self.stats:
+    #             return self.stats[item]
+    #         else:
+    #             return self.get_stats_by_name_partial(item)
+    #     else:
+    #         raise KeyError(f"Invalid key! Key '{item}' with type {type(item)}")

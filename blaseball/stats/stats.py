@@ -1,9 +1,13 @@
 import random
 
-from blaseball.stats.statclasses import Stat, Calculatable, Kinds
+from blaseball.stats import statclasses
 from data import playerdata
 
 
+pb = statclasses.all_base
+
+
+# CORE PLAYER STATS
 def _generate_name(df, cid) -> str:
     """Creates a random name from the playerdata lists.
     Guaranteed to be great."""
@@ -12,7 +16,7 @@ def _generate_name(df, cid) -> str:
     return f"{first_name} {last_name}".title()
 
 
-name = Stat('name', Kinds.character, _generate_name)
+name = statclasses.Stat('name', statclasses.Kinds.character, _generate_name)
 name.abbreviate("NAME")
 
 
@@ -32,38 +36,48 @@ def _generate_number(df, cid) -> int:
         return ones + tens
 
 
-number = Stat('number', Kinds.character, _generate_number)
+number = statclasses.Stat('number', statclasses.Kinds.character, _generate_number)
 number.abbreviate("#")
 
 
-# # alias:
-# s = all_stats
-#
+# THE PERSONALITY FOUR
+
+base_determination = statclasses.BasePersonality("base determination")
+determination = statclasses.Rating(
+    "determination",
+    base_determination,
+)
+determination.abbreviate("DTR")
+
+base_enthusiasm = statclasses.BasePersonality("base enthusiasm")
+enthusiasm = statclasses.Rating(
+    "enthusiasm",
+    base_enthusiasm
+)
+enthusiasm.abbreviate("ENT")
+
+base_stability = statclasses.BasePersonality("base stability")
+stability = statclasses.Rating(
+    "stability",
+    base_stability
+)
+stability.abbreviate("STB")
+
+base_insight = statclasses.BasePersonality("base insight")
+insight = statclasses.Rating(
+    "insight",
+    base_insight
+)
+insight.abbreviate("INS")
+
+
+
+
 # # personality descriptor weights:
 # s.weight_determination = Weight("determination weight")
 # s.weight_enthusiasm = Weight("enthusiasm weight")
 # s.weight_stability = Weight("stability weight")
 # s.weight_insight = Weight("insight weight")
-#
-# # personality four
-# s.determination = Stat("determination", Kinds.personality)
-# s.determination.abbreviate("DTR")
-# s.determination.weight(s.weight_determination, 1)
-#
-# s.enthusiasm = Stat("enthusiasm", Kinds.personality)
-# s.enthusiasm.abbreviate("ENT")
-# s.enthusiasm.weight(s.weight_enthusiasm, 1)
-#
-# s.stability = Stat("stability", Kinds.personality)
-# s.stability.abbreviate("STB")
-# s.stability.weight(s.weight_stability, 1)
-#
-# s.insight = Stat("insight", Kinds.personality)
-# s.insight.abbreviate("INS")
-# s.insight.weight(s.weight_insight, 1)
-#
-# for stat_ in s[Kinds.personality]:
-#     stat_.default = 0
 #
 #
 # # top level ultimate summary weights
