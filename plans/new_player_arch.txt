@@ -34,11 +34,12 @@ What are the open questions?
         >> update it's dependent stale flags
 
     how do you create a player?
-        playerbase maintains a "template row" made up of all the stat defaults  # TODO
+        playerbase maintains a "template row" made up of all the stat defaults
         Player.__init__() creates a new row based on the template row
         then you have two options:
         bulk:
             > PlayerBase.initialize_all()
+            >> pings player.initialize_first()
             >> iterate through stats in specific order, calling apply(stat.calculate_initial) or w/e
                 to initialize entire columns at once
             > Player.initialize_stats()

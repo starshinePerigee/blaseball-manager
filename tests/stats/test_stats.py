@@ -1,6 +1,6 @@
 import pytest
 
-from blaseball.stats import stats
+from blaseball.stats import stats, statclasses
 
 
 class TestCharacterStats:
@@ -17,6 +17,13 @@ class TestCharacterStats:
         # TODO
 
 
+class TestStatInitialization:
+    def test_personality_init(self):
+        assert isinstance(stats.determination, statclasses.Stat)
+        assert statclasses.all_base.stats['determination'] is stats.determination
+
+        assert isinstance(stats.base_stability, statclasses.Stat)
+        assert statclasses.all_base.stats['base determination'] is stats.base_determination
 
 #
 # class TestAllStats:

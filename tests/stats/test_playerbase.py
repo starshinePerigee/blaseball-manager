@@ -1,7 +1,9 @@
 import pytest
 
+from blaseball.stats.statclasses import Stat, PlayerBase, Kinds
 
-# class TestPlayerBase:
+
+# class TestPlayerBasePlayers:
 #     def test_generate(self):
 #         pb = PlayerBase()
 #         assert len(pb) == 0
@@ -88,3 +90,23 @@ import pytest
 #             count += 1
 #             assert isinstance(player, Player)
 #         assert count == len(playerbase_10)
+
+
+class TestPlayerBaseStats:
+    def test_init(self, arbitrary_pb):
+        stat_1 = arbitrary_pb.stats['col1']
+        assert isinstance(stat_1, Stat)
+        assert 'col1' in arbitrary_pb.df.columns
+
+    def test_add_stat(self, arbitrary_pb):
+        test_stat = Stat("test stat", Kinds.test_dependent, default=5)
+        assert test_stat not in arbitrary_pb.stats
+        arbitrary_pb.add_stat(test_stat)
+        assert test_stat in arbitrary_pb.stats.values()
+        assert arbitrary_pb.df.at[10, 'test stat'] == 5
+
+    def test_get_stats_with(self, arbitrary_pb):
+        assert len(arbitrary_pb.get_stats_with_kind(Kinds.test)) == 7
+        assert len(arbitrary_pb.get_stats_by_name("col")) == 7
+        assert len(arbitrary_pb.get_stats_by_name("cola")) == 1
+        assert arbitrary_pb.get_stats_by_name("cola")[0] is arbitrary_pb.stats["cola"]

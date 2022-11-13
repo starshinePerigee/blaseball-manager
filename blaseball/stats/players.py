@@ -15,7 +15,9 @@ import pandas as pd
 from numpy.random import normal
 from loguru import logger
 
-from blaseball.stats import modifiers
+from blaseball.stats.playerbase import PlayerBase
+from blaseball.stats.modifiers import Modifier
+from blaseball.stats import stats as s
 
 
 class Player(Mapping):
@@ -36,11 +38,24 @@ class Player(Mapping):
         Player.player_class_id += 1
         return Player.player_class_id
 
-    def __init__(self, pb: PlayerBase, ) -> None:
+    def __init__(self, pb: PlayerBase) -> None:
         self.cid = Player.new_cid()  # players "Character ID", a unique identifier
-        self.pb = None  # pointer to the playerbase containing this player's stats
-        self.traits = []
+        self.pb = pb  # pointer to the playerbase containing this player's stats
+        self.pb.new_player(self)
+        self.modifiers = self.roll_traits()
+
         # you MUST call initialize after this.
+
+    @staticmethod
+    def roll_traits() -> List[Modifier]:
+        pass
+
+    def initialize(self):
+        """Initialize/roll all stats for this player. This duplicates playerbase.initialize_all!"""
+
+        for stat in self.pb.stats:
+            self[stat] = stat.calculate_initial(self.cid)
+
     #
     # def initialize(self, playerbase: 'PlayerBase') -> None:
     #     """Create / reset all stats to default values.

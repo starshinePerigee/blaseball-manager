@@ -23,10 +23,11 @@ all_base = PlayerBase()
 # this is not ordered. Stats are generated in column order (ie: the order they're defined in Stats)
 class Kinds(Enum):
     # the number in this enum
+    base_personality = auto()
     personality = auto()  # core personality types
     category = auto()  # stat categories, like "batting"
-    rating = auto()  # 0-2 numeric ratings that govern a player's ball ability
     base_rating = auto()  # a base value for a player's rating, before modifiers or effects
+    rating = auto()  # 0-2 numeric ratings that govern a player's ball ability
     weight = auto()  # a weight is a stat representing a summary of several other stats.
     descriptor = auto()  # english derived stat descriptors based on a weight
     total_weight = auto()  # a summary weight that depends on other weights
@@ -122,6 +123,7 @@ class Stat:
 BASE_DEPENDENCIES = {
     # make sure you include all dependencies, include dependencies of dependencies.
     # Listed in recalculation order!
+    Kinds.personality: [Kinds.base_personality],
     Kinds.rating: [Kinds.base_rating],
     Kinds.category: [Kinds.rating, Kinds.base_rating],
     Kinds.weight: [Kinds.rating, Kinds.base_rating, Kinds.category],
@@ -347,9 +349,9 @@ class Rating(Stat):
     def __init__(
             self,
             name: str,
-            personality: Stat,
-            category: Stat,
             base: Stat,
+            personality: Stat = None,
+            category: Stat = None,
             pb: PlayerBase = None
     ):
         super().__init__(
@@ -406,6 +408,25 @@ def build_rating(
         pb: PlayerBase = None
 ) -> Tuple[Rating, BaseRating]:
     base_rating = BaseRating("base " + name, personality, pb)
-    rating = Rating(name, personality, category, base_rating, pb)
+    rating = Rating(name, base_rating, personality, category, pb)
     return rating, base_rating
 
+
+class BasePersonality(Stat):
+    def __init__(
+            self,
+            name: str,
+            pb: PlayerBase = None
+    ):
+        super().__init__(
+            name,
+            Kinds.base_personality,
+            default=-1,
+            pb=pb
+        )
+
+    def calculate_initial(self, player_index):
+        """
+        Rolls this stat based on the relevant personality, and updates the base value.
+        """
+        return rand()

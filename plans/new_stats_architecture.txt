@@ -202,3 +202,11 @@ RATINGS:
  AVAILABLE EVENTS / PLAYER INTERATIONS
  - modifiers will have a list of tags used to affect events / interactions
  - this is even less specified than on-field effects
+
+
+ Can we review how the personality four work?
+
+1. they're affected by modifiers, which means they need base_ versions
+2. they're randomly generated, unlike ratings
+3. are these ratings with a custom base?
+(sure)
