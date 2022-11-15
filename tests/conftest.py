@@ -74,7 +74,7 @@ def arbitrary_pb():
         index=[10, 11, 12, 13, 14]
     )
     pb = playerbase.PlayerBase()
-    pb.players = {i: None for i in test_dataframe.index}
+    pb.players = {i: players.Player(pb, cid=i) for i in test_dataframe.index}
     pd.stats = {name: statclasses.Stat(name, statclasses.Kinds.test, -1, None, pb) for name in test_dataframe.columns}
     pb.df = test_dataframe
     for stat in pb.stats.values():
@@ -95,6 +95,15 @@ def stat_2(arbitrary_pb):
 @pytest.fixture(scope='function')
 def stat_3(arbitrary_pb):
     return arbitrary_pb.stats['col3']
+
+
+@pytest.fixture(scope='function')
+def playerbase_10():
+    for __ in range(10):
+        new_player = players.Player(stats.pb)
+        stats.pb.new_player(new_player)
+    yield stats.pb
+    stats.pb.clear_players()
 
 
 #
@@ -125,7 +134,11 @@ def empty_all_base():
 def player_1(empty_all_base):
     player = players.Player(stats.pb)
     player.initialize()
-    return player
+    player.modifiers = []
+    player.recalculate()
+    yield player
+    del stats.pb[player.cid]
+
 #
 #
 # @pytest.fixture(scope='class')

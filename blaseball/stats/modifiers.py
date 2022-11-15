@@ -98,7 +98,7 @@ class PersonalityTraitDeck:
         This scales from (-20)-(+20) to (-2)-(+2)!"""
         modifier_dict = {}
         for stat_str in trait.keys():
-            modifier_dict[self.pb.get_stats_by_name(stat_str)[0]] = trait[stat_str] / 10
+            modifier_dict[self.pb.stats[stat_str]] = trait[stat_str] / 10
         return Modifier(
             name,
             modifier_dict

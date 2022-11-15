@@ -37,11 +37,16 @@ class Player(Mapping):
         Player.player_class_id += 1
         return Player.player_class_id
 
-    def __init__(self, pb: playerbase.PlayerBase) -> None:
-        self.cid = Player.new_cid()  # players "Character ID", a unique identifier
-        self._stale_dict = statclasses.create_blank_stale_dict(True)
+    def __init__(self, pb: playerbase.PlayerBase, cid: int = None) -> None:
         self.pb = pb  # pointer to the playerbase containing this player's stats
-        self.pb.new_player(self)
+        if cid is None:
+            self.cid = Player.new_cid()  # players "Character ID", a unique identifier
+            self.pb.new_player(self)
+        else:
+            # this player was already created as a row
+            self.cid = cid
+
+        self._stale_dict = statclasses.create_blank_stale_dict(True)
         self.modifiers = self.roll_traits()
 
         # you MUST call initialize after this.
@@ -57,12 +62,26 @@ class Player(Mapping):
         """Initialize/roll all stats for this player. This duplicates playerbase.initialize_all!"""
         for stat in self.pb.stats.values():
             self[stat] = stat.calculate_initial(self.cid)
+        for kind in self._stale_dict:
+            self._stale_dict[kind] = False
 
     def recalculate(self):
         for stat in s.pb.stats.values():
             if self._stale_dict[stat.kind]:
-                self[stat] = stat.calculate_value(self.cid)
-        self._stale_dict = {kind: False for kind in self._stale_dict.keys()}
+                if isinstance(stat.kind, statclasses.Rating):
+                    self[stat] = self.calculate_rating(stat)
+                else:
+                    self[stat] = stat.calculate_value(self.cid)
+        for kind in self._stale_dict:
+            self._stale_dict[kind] = False
+
+    def calculate_rating(self, rating: statclasses.Rating) -> float:
+        """Calculate the value of a rating after modifiers"""
+        base_value = rating.base_stat.calculate_value(self.cid)
+        # this is really junk performance, but we can optimize when we know how frequent
+        # cache misses are.
+        modifier_value = sum([mod[rating] for mod in self.modifiers])
+        return base_value + modifier_value
 
     # def randomize(self) -> None:
     #     """Generate random values for applicable stats.
@@ -151,53 +170,30 @@ class Player(Mapping):
     #             self[stat] -= trait[stat]
     #     self.traits.remove(trait)
     #     self.derive()
-    #
-    # def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
-    #     if isinstance(values, Player):
-    #         self.assign(values.stat_row())
-    #         return
-    #     elif isinstance(values, pd.Series):
-    #         keys = values.index
-    #     else:
-    #         keys = values.keys()
-    #
-    #     for key in keys:
-    #         self[key] = values[key]
-    #
+
+    def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
+        """Update multiple stats from another plyaer, series, or dictionary"""
+        if isinstance(values, Player):
+            self.assign(values.stat_row())
+            return
+        elif isinstance(values, pd.Series):
+            keys = values.index
+        else:
+            keys = values.keys()
+
+        for key in keys:
+            self[key] = values[key]
+
     def stat_row(self) -> pd.Series:
         return self.pb.df.loc[self.cid]
-    #
-    # def df_index(self) -> int:
-    #     """get the CID / dataframe index of this player."""
-    #     if self.stat_row().name == self.cid:
-    #         return self.cid
-    #     else:
-    #         raise RuntimeError(f"Warning! Playerbase Dataframe index {self.stat_row().name} "
-    #                            f"does not match player CID {self.cid}, likely playerbase corruption.")
-    #
-    # # this code is from the old Stat class
-    # # it probably belongs here instead:
-    # # def get(self, player: 'Player') -> Union[float, str]:
-    # #     return player.pb.df.at[player.cid, self.name]
-    # #
-    # # def set(self, player: 'Player', value: object) -> None:
-    # #     # set value
-    # #     player.pb.df.at[player.cid, self.name] = value
-    # #     # update stale flags
-    # #     for dependent in dependents[self.kind]:
-    # #         stale_flags[dependent][player.cid] = True
 
     def __getitem__(self, item: Union[statclasses.Stat, str]) -> Union[float, int, str]:
         if isinstance(item, statclasses.Stat):
             if self._stale_dict[item.kind]:
                 # cached value is stale
-                if item.kind == statclasses.Kinds.rating:
+                if isinstance(item, statclasses.Rating):
                     # if this is a rating, we have to check modifiers
-                    base_value = item.calculate_value(self.cid)
-                    # this is really junk performance, but we can optimize when we know how frequent
-                    # cache misses are.
-                    modifier_value = sum([mod[item] for mod in self.modifiers])
-                    return base_value + modifier_value
+                    return self.calculate_rating(item)
                 else:
                     return item.calculate_value(self.cid)
             else:
@@ -206,61 +202,47 @@ class Player(Mapping):
             return self.cid
         elif isinstance(item, str):
             try:
-                possible_stats = s.pb.get_stats_by_name(item)
-                if len(possible_stats) > 1:
-                    raise KeyError(f"Ambiguous lookup key provided!"
-                                   f" {item} returned {len(possible_stats)} results.")
-                else:
-                    return self[possible_stats[0]]
+                return s.pb.stats[item]
             except KeyError:
                 raise KeyError(f"No results found via string lookup for {item}")
         else:
             raise KeyError(f"Invalid indexer provided to Player: {item} of type {type(item)}")
 
-    def __setitem__(self, item: statclasses.Stat, value) -> None:
-        self.pb.df.at[self.cid, item.name] = value
-        for kind in statclasses.dependents[item.kind]:
-            self._stale_dict[kind] = True
+    def __setitem__(self, item: Union[statclasses.Stat, str], value) -> None:
+        if isinstance(item, statclasses.Stat):
+            self.pb.df.at[self.cid, item.name] = value
+            for kind in statclasses.dependents[item.kind]:
+                self._stale_dict[kind] = True
+        else:
+            self[self.pb.stats[item]] = value
 
-    # def add_average(self, item: Union[List, str], value: Union[List, Union[int, float]]) -> None:
-    #     """Updates a stat which is a running average, such as batting average. Pass one or more stats and values in
-    #     and it'll update the linked counting stat and the averages."""
-    #     if isinstance(item, list):
-    #         count_stat = all_stats[item[0]].total_stat
-    #     else:
-    #         count_stat = all_stats[item].total_stat
-    #         item = [item]
-    #         value = [value]
-    #
-    #     self[count_stat] += 1
-    #
-    #     for i, v in zip(item, value):
-    #         self[i] += (v - self[i]) / self[count_stat]
-    #
     def __iter__(self) -> iter:
         return iter(self.stat_row())
 
     def __len__(self) -> int:
         return len(self.stat_row())
 
-    # def __eq__(self, other: Union['Player', pd.Series, dict,]) -> bool:
-    #     if isinstance(other, Player):
-    #         return self == other.stat_row()
-    #     if isinstance(other, pd.Series):
-    #         keys = other.index
-    #     elif isinstance(other, dict):
-    #         keys = other.keys()
-    #     else:
-    #         raise TypeError(f"Invalid type comparison: Player vs {type(other)} (other: {other})")
-    #
-    #     for stat in keys:
-    #         try:
-    #             if self[stat] != other[stat]:
-    #                 return False
-    #         except (KeyError, TypeError):
-    #             return False
-    #     return True
-    #
+    def __eq__(self, other: Union['Player', pd.Series, dict,]) -> bool:
+        if isinstance(other, Player):
+            return self == other.stat_row()
+        if isinstance(other, pd.Series):
+            keys = other.index
+        elif isinstance(other, dict):
+            keys = other.keys()
+        else:
+            raise TypeError(f"Invalid type comparison: Player vs {type(other)} (other: {other})")
+
+        for stat in keys:
+            try:
+                if self[stat] != other[stat]:
+                    return False
+            except (KeyError, TypeError):
+                return False
+        return True
+
+    def __hash__(self):
+        return self.cid
+
     # @staticmethod
     # def _to_stars(stat: float) -> str:
     #     """converts a 0 - 2 float number into a star string"""
@@ -328,7 +310,7 @@ class Player(Mapping):
     def __str__(self) -> str:
         return(f"[{self.cid}] "
                f"'{self['name']}' ({self['team']}) "
-               f"{self.total_stars()}"
+               # f"{self.total_stars()}"
                )
 
     def __repr__(self) -> str:
@@ -336,62 +318,6 @@ class Player(Mapping):
                 f"[{self.cid}] "
                 f"'{self['name']}' "
                 f"(c{self.cid}) at {hex(id(self))}>")
-
-# lost PlayerBase methods:
-
-    #
-    # def new_players(self, num_players: int) -> List[Player]:
-    #     """batch create new players. Returns the new players as a list
-    #     of Player"""
-    #
-    #     finished_players = []
-    #     for i in range(num_players):
-    #         # create a set of new players:
-    #         player = Player()
-    #         self.df.loc[player.cid] = None  # noqa - this is the one time we're setting _cid
-    #         player.initialize(self)
-    #         player.randomize()
-    #
-    #         self.players[player.df_index()] = player
-    #
-    #         finished_players.append(player)
-    #     return finished_players
-    #
-    # def verify_players(self) -> bool:
-    #     """Because we have a dataframe with player stats, and a separate
-    #     list of player objects that are linked, it's important to make sure
-    #     these two data sources don't get out of sync with each other.
-    #
-    #     This function performs a validation to make sure that each Player
-    #     links to a valid dataframe row and each dataframe row has a valid
-    #     Player.
-    #     """
-    #     try:
-    #         for key in self.players.keys():
-    #             if self.players[key].cid != key:
-    #                 raise RuntimeError(
-    #                     f"Player CID and key mismatch:"
-    #                     f"key {key}, "
-    #                     f"player {self.players[key]}"
-    #                 )
-    #             if self[key] != self.players[key]:
-    #                 raise RuntimeError(
-    #                     f"Player verification failure! "
-    #                     f"Player {key} mismatch: "
-    #                     f"{self[key]} vs {self.players[key]}"
-    #                 )
-    #         for key in self.df.index:
-    #             if self.players[key] != self.df.loc[key]:
-    #                 raise RuntimeError(
-    #                     f"Player verification failure! "
-    #                     f"Dataframe row key {key} mismatch: "
-    #                     f"{self.df.loc[key]['name']} "
-    #                     f"vs {self.players[key]}"
-    #                 )
-    #     except KeyError as e:
-    #         raise RuntimeError(f"KeyError during verification: {e}")
-    #     return True
-
 
 #
 #

@@ -49,6 +49,13 @@ class TestFixtures:
         assert stat_1.name == 'col1'
         assert stat_1.name in arbitrary_pb.stats
 
+    def test_playerbase_10(self, playerbase_10):
+        assert len(pb) == 10
+        assert isinstance(pb.iloc(0), Player)
+
+    def test_playerbase_10_clear(self):
+        assert len(pb) == 0
+
 #
 #     def test_league_2(self, league_2):
 #         assert isinstance(league_2, blaseball.stats.teams.League)

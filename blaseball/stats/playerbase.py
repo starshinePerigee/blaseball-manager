@@ -37,6 +37,10 @@ class PlayerBase(MutableMapping):
         self.players[player.cid] = player
         self.df.loc[player.cid] = self._default_stat_list
 
+    def clear_players(self):
+        self.players = {}
+        self.df = self.df.drop(self.df.index)
+
     def __len__(self) -> int:
         if len(self.players) != len(self.df.index):
             raise RuntimeError(
@@ -94,9 +98,12 @@ class PlayerBase(MutableMapping):
         # self[key].assign(value
         raise NotImplementedError("MERP")
 
-    def __delitem__(self, key: Hashable) -> None:
-        del self.players[key]
-        self.df.drop(key)
+    def __delitem__(self, key: Union[int, 'Player']) -> None:
+        try:
+            del self[key.cid]
+        except AttributeError:
+            del self.players[key]
+            self.df.drop(key, inplace=True)
 
     def __str__(self) -> str:
         return_str = f"PlayerBase {len(self)} players x "
@@ -157,21 +164,32 @@ class PlayerBase(MutableMapping):
             if len(stats) == 0:
                 raise KeyError(f"Could not locate any stats with identifier {identifier}!")
         return stats
-    #
-    # def get_stats(self, item: Union['Stat', 'Kinds', str]) -> Union['Stat', List['Stat']]:
-    #     """Get stats that match a criteria.
-    #     Do not use this in core loops, index by dot directly."""
-    #     if isinstance(item, Stat):
-    #         if item.kind is Kinds.personality:
-    #             return self.get_stats_with_personality(item)
-    #         elif item.kind is Kinds.category:
-    #             return self.get_stats_with_category(item)
-    #     elif isinstance(item, Kinds):
-    #         return self.get_stats_with_kind(item)
-    #     elif isinstance(item, str):
-    #         if item in self.stats:
-    #             return self.stats[item]
-    #         else:
-    #             return self.get_stats_by_name_partial(item)
-    #     else:
-    #         raise KeyError(f"Invalid key! Key '{item}' with type {type(item)}")
+
+    def verify(self) -> None:
+        """Checks the stat and player indicies and throws an error if discrepancies are found."""
+        try:
+            # check self.players
+            for player_cid in self.players.keys():
+                # make sure all players are listed in the right index:
+                if self.players[player_cid].cid != player_cid:
+                    raise RuntimeError(f"Player CID and key mismatch: key {player_cid}, "
+                                       f"player {self.players[player_cid]}")
+                # make sure player is in the dataframe:
+                if player_cid not in self.df.index:
+                    raise RuntimeError(f"Player {player_cid} not listed in df index!")
+            # check df index
+            for index_cid in self.df.index:
+                if index_cid not in self.players.keys():
+                    raise RuntimeError(f"Player index {index_cid} not in player listing!")
+            # check self.stats
+            for stat_name in self.stats.keys():
+                if self.stats[stat_name].name != stat_name:
+                    raise RuntimeError(f"Stat key and name mismatch!"
+                                       f"key {stat_name}, stat {self.stats[stat_name]}")
+                if stat_name not in self.df.columns:
+                    raise RuntimeError(f"Stat {stat_name} not in df columns!")
+            for column_name in self.df.columns:
+                if column_name not in self.stats:
+                    raise RuntimeError(f"Column {stat_name} not in stats listing!")
+        except KeyError as e:
+            raise RuntimeError(f"KeyError during verification: {e}")

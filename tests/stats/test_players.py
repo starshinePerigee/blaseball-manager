@@ -5,7 +5,7 @@ from blaseball.stats import stats as s
 from blaseball.stats.stats import pb
 
 
-class TestPlayer:
+class TestPlayerIndexing:
     def test_init(self):
         player = players.Player(pb)
         assert player.cid in pb.df.index
@@ -16,34 +16,65 @@ class TestPlayer:
         assert isinstance(pb.df.at[player.cid, "name"], str)
         assert pb.df.at[player.cid, "name"] != 'WYATT MASON'
 
-    def test_recalculate(self):
-        pass
-
     def test_index_fresh(self, player_1):
+        p1_insight = pb.df.at[player_1.cid, "insight"]
+        assert not player_1._stale_dict[s.insight.kind]
+        assert player_1[s.insight] == p1_insight
+
+    def test_index_cid(self, player_1):
+        assert player_1['cid'] == player_1.cid
+
+    def test_index_string(self, player_1):
+        assert player_1['insight'] == player_1[s.insight]
+
+    def test_set(self, player_1):
+        player_1[s.insight] = 1.33
+        assert player_1[s.insight] == 1.33
+        for kind in statclasses.dependents[s.insight.kind]:
+            assert player_1._stale_dict[kind]
+            player_1._stale_dict[kind] = False  # reset this
+        assert not any(player_1._stale_dict.values())  # make sure no others got set
+
+    def test_index_stale(self, player_1):
+        player_1[s.base_insight] = 1.0
+        assert player_1._stale_dict[s.insight.kind]
+        assert player_1[s.insight] == player_1[s.base_insight]
+        assert player_1.pb.df.at[player_1.cid, s.insight.name] != player_1[s.insight]
+
+    def test_recalculate(self, player_1):
+        player_1[s.base_insight] = 1.0
+        player_1.recalculate()
+
+        assert player_1[s.base_insight] == 1.0
+        assert player_1[s.insight] == 1.0
+
+        player_1[s.base_insight] = 1.33
+        assert player_1[s.insight] == 1.33  # cache miss
+        assert player_1.pb.df.at[player_1.cid, s.insight.name] == 1.0
+        player_1.recalculate()
+        assert player_1[s.insight] == 1.33
+        assert player_1.pb.df.at[player_1.cid, s.insight.name] == 1.33
+
+    def test_player_modifiers(self, player_1):
         pass
 
-    # def test_index_get(self, player_1):
-    #     assert isinstance(player_1["name"], str)
-    #     assert isinstance(player_1["power"], float)
-    #
-    # def test_index_set(self, player_1):
-    #     player_1["name"] = "Test Player"
-    #     assert player_1["name"] == "Test Player"
-    #     player_1["power"] = 0.5
-    #     assert player_1["power"] == 0.5
-    #
-    # stat_dict = {"name": "Test Player2", "contact": 0.75}
-    #
-    # def test_assign_dict(self, player_1):
-    #     player_1.assign(TestPlayer.stat_dict)
-    #     assert player_1["name"] == "Test Player2"
-    #     assert player_1["contact"] == 0.75
-    #
-    # def test_assign_series(self, player_1):
-    #     stat_series = pd.Series(TestPlayer.stat_dict)
-    #     player_1.assign(stat_series)
-    #     assert player_1["name"] == "Test Player2"
-    #     assert player_1["contact"] == 0.75
+
+class TestPlayerOther:
+    def test_strings(self, player_1):
+        assert isinstance(str(player_1), str)
+        assert player_1[s.name] in str(player_1).lower()
+        assert isinstance(repr(player_1), str)
+
+    def test_eq_assign(self, player_1):
+        player_2 = players.Player(s.pb)
+        player_2.initialize()
+        player_2.modifiers = []
+        player_2.recalculate()
+
+        assert player_1 != player_2
+        player_2.assign(player_1)
+        assert player_1 == player_2
+
     #
     # def test_eq(self, playerbase_10):
     #     p1 = playerbase_10.iloc(0)

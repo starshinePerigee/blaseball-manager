@@ -47,10 +47,16 @@ class TestStatsBase:
 
     def test_stat_hash(self, playerbase_2):
         assert hash(playerbase_2.stats["test 1"]) != hash(playerbase_2.stats["test 2"])
-        new_pb = playerbase.PlayerBase()
-        new_test_1 = statclasses.Stat("test 1", statclasses.Kinds.test, None, None, new_pb)
-        assert hash(playerbase_2.stats["test 1"]) != hash(new_pb.stats["test 1"])
+        # new_pb = playerbase.PlayerBase()
+        # new_test_1 = statclasses.Stat("test 1", statclasses.Kinds.test, None, None, new_pb)
+        # assert hash(playerbase_2.stats["test 1"]) != hash(new_pb.stats["test 1"])
 
+    def test_hash_access(self, stat_1, stat_2, stat_3, arbitrary_pb):
+        d = {stat_1: 1}
+        assert d["col1"] == 1
+        d[stat_2] = 2
+        assert d[stat_2] == 2
+        assert len(arbitrary_pb.df[stat_3]) == len(arbitrary_pb.players)
 
 @pytest.fixture(scope='function')
 def calculatable_1(arbitrary_pb):

@@ -46,8 +46,6 @@ class Stat:
     This is not a abstract base class, but it does have some abstract functions and members.
 
     """
-    running_id = 0
-
     def __init__(
             self,
             name: str,
@@ -64,12 +62,11 @@ class Stat:
         if name in playerbase.stats:
             raise KeyError(f"Stat {name} already defined!")
 
-        self._hash = hash(f"{name}_{Stat.running_id}")
-        Stat.running_id += 1
-
         self.kind = kind
         self.abbreviation = None  # the abbreviation for this stat
-        self.default = default
+        self.default = default  # default sets the default value of this column.
+        # Default also sets the default TYPE of that column! Don't use an int default if you're going to put
+        # floats in it later!!
         self.initial_function = initial_function
 
         self._linked_dataframe = playerbase.df
@@ -106,10 +103,17 @@ class Stat:
         return self.name.title()
 
     def __repr__(self):
-        return f"{type(self).__name__}({self.name}, {self.kind.name}) x{self._hash}"
+        return f"{type(self).__name__}({self.name}, {self.kind.name})"
+
+    def __eq__(self, other):
+        if isinstance(other, Stat):
+            return self.name == other.name
+        else:
+            return self.name == other
 
     def __hash__(self):
-        return self._hash
+        # this lets us index dataframes by stat or by name
+        return hash(self.name)
 
 
 # A "dependency" is a list of all kinds that a kind depends on.
@@ -174,7 +178,7 @@ class Calculatable(Stat):
             value_formula: Callable = None,
             playerbase: PlayerBase = None,
     ):
-        super().__init__(name, kind, -1, None, playerbase)
+        super().__init__(name, kind, -1.0, None, playerbase)
 
         # default and value should either be a mappable callable (via dfmap), constant, or None
         if initial_formula is not None:
@@ -213,7 +217,7 @@ class Weight(Stat):
             kind: Kinds = Kinds.weight,
             playerbase: PlayerBase = None
     ):
-        super().__init__(name, kind, -1, None, playerbase)
+        super().__init__(name, kind, -1.0, None, playerbase)
 
         self.stats = {}
         self.extra_weight = 0
@@ -363,12 +367,13 @@ class Rating(Stat):
             base: Stat,
             personality: Stat = None,
             category: Stat = None,
-            playerbase: PlayerBase = None
+            playerbase: PlayerBase = None,
+            kind: Kinds = Kinds.rating
     ):
         super().__init__(
             name,
-            Kinds.rating,
-            default=-1,
+            kind,
+            default=-1.0,
             initial_function=None,
             playerbase=playerbase
         )
@@ -381,7 +386,8 @@ class Rating(Stat):
         return self._linked_dataframe.at[player_index, self.base_stat.name]
 
     def calculate_value(self, player_index):
-        return self._linked_dataframe.at[player_index, self.name]
+        """Modifiers are calculated and saved by the player class!"""
+        return self._linked_dataframe.at[player_index, self.base_stat.name]
 
 
 class BaseRating(Stat):
@@ -394,7 +400,7 @@ class BaseRating(Stat):
         super().__init__(
             name,
             Kinds.base_rating,
-            default=-1,
+            default=-1.0,
             initial_function=None,
             playerbase=playerbase
         )
@@ -434,7 +440,7 @@ class BasePersonality(Stat):
         super().__init__(
             name,
             Kinds.base_personality,
-            default=-1,
+            default=-1.0,
             initial_function=None,
             playerbase=playerbase
         )

@@ -46,27 +46,31 @@ base_determination = statclasses.BasePersonality("base determination")
 determination = statclasses.Rating(
     "determination",
     base_determination,
+    kind=statclasses.Kinds.personality
 )
 determination.abbreviate("DTR")
 
 base_enthusiasm = statclasses.BasePersonality("base enthusiasm")
 enthusiasm = statclasses.Rating(
     "enthusiasm",
-    base_enthusiasm
+    base_enthusiasm,
+    kind=statclasses.Kinds.personality
 )
 enthusiasm.abbreviate("ENT")
 
 base_stability = statclasses.BasePersonality("base stability")
 stability = statclasses.Rating(
     "stability",
-    base_stability
+    base_stability,
+    kind=statclasses.Kinds.personality
 )
 stability.abbreviate("STB")
 
 base_insight = statclasses.BasePersonality("base insight")
 insight = statclasses.Rating(
     "insight",
-    base_insight
+    base_insight,
+    kind=statclasses.Kinds.personality
 )
 insight.abbreviate("INS")
 
