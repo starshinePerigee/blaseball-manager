@@ -39,14 +39,10 @@ class Modifier(Mapping):
 
     def __getitem__(self, item) -> Union[bool, float]:
         if item in self.stat_effects:
+            # reminder that stats hash to their name's hash, so you can index stat_effects by name or by stat
             return self.stat_effects[item]
         elif item in self.tags:
             return True
-
-        for stat in self.stat_effects:
-            if item == stat.name:
-                return self.stat_effects[stat]
-
         return False
 
     def __iter__(self):

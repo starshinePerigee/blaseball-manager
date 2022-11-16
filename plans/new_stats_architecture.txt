@@ -210,3 +210,28 @@ RATINGS:
 2. they're randomly generated, unlike ratings
 3. are these ratings with a custom base?
 (sure)
+
+
+
+question about ratings:
+base rating + modifiers = rating
+rating represents a cache, effectively. But we could just have ratings and modifiers, and update the rating
+whenever a modifiers changes.
+If you need the base rating, you can reverse-calculate it.
+
+pros:
+- simpler
+- less dealing with cache chains
+- unlike performance stats, where they're written far more often than they're read, ratings are read constantly
+- less memory
+
+cons:
+- you have to be careful about removing modifiers
+- modifier interactions get dumb?
+
+would you ever need the base modifiers?
+- sorting by base stats?
+-
+
+
+... we should pull the base split.

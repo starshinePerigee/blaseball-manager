@@ -141,6 +141,9 @@ BASE_DEPENDENCIES = {
     Kinds.test_dependent: [Kinds.test]
 }
 
+# TODO: calculation order?
+# some weights depend on later weights especially
+
 dependencies = {}
 # fill in everything that's not a dependent
 for kind_ in Kinds:
