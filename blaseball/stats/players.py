@@ -81,81 +81,22 @@ class Player(Mapping):
     def recalculate(self) -> None:
         for stat in s.pb.stats.values():
             if self._stale_dict[stat.kind]:
-                if isinstance(stat.kind, statclasses.Rating):
-                    self[stat] = self.calculate_rating(stat)
-                else:
-                    self[stat] = stat.calculate_value(self.cid)
+                self[stat] = stat.calculate_value(self.cid)
         for kind in self._stale_dict:
             self._stale_dict[kind] = False
 
     def get_modifier_total(self, stat: Union[str, statclasses.Stat]):
         return sum([mod[stat] for mod in self.modifiers])
 
-    # def randomize(self) -> None:
-    #     """Generate random values for applicable stats.
-    #     Call initialize() first.
-    #     Counts as a new player."""
-    #     self["name"] = Player.generate_name()
-    #     self["number"] = self.generate_player_number()
-    #
-    #     for stat in all_stats['personality']:
-    #         self[stat.name] = random.random()
-    #
-    #     self['clutch'] = random.random()
-    #     handedness = random.choice([55, 55, 55, 45])
-    #     while 0 < self['pull'] < 90:
-    #         self['pull'] = normal(handedness, 10)
-    #
-    #     self["element"] = get_descriptor(self, 'element', extras=False)
-    #
-    #     for stat in all_stats['rating']:
-    #         self[stat.name] = random.random() * max(min(self[stat.personality], 1), 0.5)
-    #         # traits can result in personalities higher than 1. if this happens, it's cool, so
-    #         # this bit makes sure you get that bonus
-    #         if self[stat.personality] > 1:
-    #             self[stat.name] += self[stat.personality] - 1
-    #
-    #     self.derive()
-    #
-    # def get_weight(self, weight: str) -> float:
-    #     return all_stats.weights[weight].calculate_weighted(self)
-    #
-    # def write_descriptors(self) -> None:
-    #     """Updates the descriptor fields for this player"""
-    #
-    #     self["overall descriptor"] = get_descriptor(self, 'overall', False)
-    #     self["offense descriptor"] = get_descriptor(self, 'offense')
-    #     if self["is pitcher"]:
-    #         self["defense descriptor"] = get_descriptor(self, 'pitching')
-    #     else:
-    #         self["defense descriptor"] = get_descriptor(self, 'fielding')
-    #     self['personality descriptor'] = get_descriptor(self, 'personality')
-    #
-    # def derive(self) -> None:
-    #     for stat in ["batting", "baserunning", "defense", "pitching", "edge",
-    #                  "vitality", "social", "total_offense", "total_off_field"]:
-    #         self[stat] = all_stats.weights[stat].calculate_weighted(self)
-    #
-    #     self["is pitcher"] = self["pitching"] > self["defense"] * 1.1
-    #
-    #     if self["is pitcher"]:
-    #         self['total defense'] = all_stats.weights['total_defense_pitching'].calculate_weighted(self)
-    #     else:
-    #         self['total defense'] = all_stats.weights['total_defense_fielding'].calculate_weighted(self)
-    #
-    #     self['total offense'] = all_stats.weights['total_offense'].calculate_weighted(self)
-    #
-    #     self.write_descriptors()
-    #
-    #     self["fingers"] += 1
-    #
-    # def set_all_stats(self, value):
-    #     for stat in all_stats['personality'] + all_stats['rating']:
-    #         self[stat.name] = value
-    #     self['clutch'] = value
-    #     self.traits = []
-    #     self.derive()
-    #
+    def set_all_stats(self, value):
+        all_stats = s.pb.get_stats_with_kind(statclasses.Kinds.personality)
+        all_stats += s.pb.get_stats_with_kind(statclasses.Kinds.rating)
+        # self['clutch'] = value
+        for stat in all_stats:
+            self[stat] = value
+        self.modifiers = []
+        self.recalculate()
+
     # def reset_tracking(self):
     #     """Reset all tracking stats to 0"""
     #     for stat in all_stats['performance'] + all_stats['averaging']:
@@ -228,7 +169,7 @@ class Player(Mapping):
 
     def __eq__(self, other: Union['Player', pd.Series, dict,]) -> bool:
         if isinstance(other, Player):
-            return self == other.stat_row()
+            return self.cid == other.cid
         if isinstance(other, pd.Series):
             keys = other.index
         elif isinstance(other, dict):
@@ -247,22 +188,22 @@ class Player(Mapping):
     def __hash__(self):
         return self.cid
 
-    # @staticmethod
-    # def _to_stars(stat: float) -> str:
-    #     """converts a 0 - 2 float number into a star string"""
-    #     stars = int(stat * 5)
-    #     half = (stat * 5) % 1 >= 0.5
-    #     star_string = "*" * stars + ('-' if half else '')
-    #     if len(star_string) > 5:
-    #         star_string = star_string[0:5] + " " + star_string[5:]
-    #     elif len(star_string) == 0:
-    #         return "0"
-    #     return star_string
-    #
-    # def total_stars(self) -> str:
-    #     # """Return a string depiction of this player's stars"""
-    #     return self._to_stars((self["total offense"] + self["total defense"]) / 2)
-    #
+    @staticmethod
+    def _to_stars(value: float) -> str:
+        """converts a 0 - 2 float number into a star string"""
+        stars = int(value * 5)
+        half = (value * 5) % 1 >= 0.5
+        star_string = "*" * stars + ('-' if half else '')
+        if len(star_string) > 5:
+            star_string = star_string[0:5] + " " + star_string[5:]
+        elif len(star_string) == 0:
+            return "0"
+        return star_string
+
+    def total_stars(self) -> str:
+        # """Return a string depiction of this player's stars"""
+        return self._to_stars((self["total offense"] + self["total defense"]) / 2)
+
     # def text_breakdown(self) -> str:
     #     text = (
     #         f"{self['name']} {self.total_stars()}\r\n"

@@ -76,15 +76,24 @@ class TestPlayerBaseStats:
         assert 'col1' in arbitrary_pb.df.columns
 
     def test_add_stat(self, arbitrary_pb):
-        test_stat = statclasses.Stat("test stat", statclasses.Kinds.test_dependent, default=5)
+        temp_pb = PlayerBase()
+        test_stat = statclasses.Stat("test stat", statclasses.Kinds.test_dependent, default=5, playerbase=temp_pb)
         assert test_stat not in arbitrary_pb.stats
         arbitrary_pb.add_stat(test_stat)
         assert test_stat in arbitrary_pb.stats.values()
         assert arbitrary_pb.df.at[10, 'test stat'] == 5
 
+    def test_remove_stat(self, arbitrary_pb):
+        test_stat_2 = statclasses.Stat("test stat 2", statclasses.Kinds.test, playerbase=arbitrary_pb)
+        assert test_stat_2 in arbitrary_pb.stats.values()
+        arbitrary_pb.remove_stat(test_stat_2)
+        assert test_stat_2 not in arbitrary_pb.stats.values()
+        assert test_stat_2.name not in arbitrary_pb.df.columns
+
     def test_get_stats_with(self, arbitrary_pb):
-        assert len(arbitrary_pb.get_stats_with_kind(statclasses.Kinds.test)) == 7
-        assert len(arbitrary_pb.get_stats_by_name("col")) == 7
+        arbitrary_len = len(arbitrary_pb.df.columns)
+        assert len(arbitrary_pb.get_stats_with_kind(statclasses.Kinds.test)) == arbitrary_len
+        assert len(arbitrary_pb.get_stats_by_name("col")) == arbitrary_len - 2
         assert len(arbitrary_pb.get_stats_by_name("cola")) == 1
         assert arbitrary_pb.get_stats_by_name("cola")[0] is arbitrary_pb.stats["cola"]
 

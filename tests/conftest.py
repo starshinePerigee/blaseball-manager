@@ -63,6 +63,8 @@ def seed_randoms():
 def arbitrary_pb():
     test_dataframe = pd.DataFrame(
         data={
+            'name': ["A A", "B B", "C C", "D D", "E E"],
+            'team': ["RIV"] * 5,
             'col0': [0, 0, 0, 0, 0],
             'col1': [1, 2, 3, 4, 5],
             'col2': [6, 7, 8, 9, 10],

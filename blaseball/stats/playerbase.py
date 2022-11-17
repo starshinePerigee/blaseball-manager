@@ -135,6 +135,12 @@ class PlayerBase(MutableMapping):
         self.df[stat.name] = stat.default
         self._default_stat_list += [stat.default]
 
+    def remove_stat(self, stat: 'Stat'):
+        del self.stats[stat.name]
+        column_pos = list(self.df.columns).index(stat.name)
+        self.df.drop(columns=[stat.name], inplace=True)
+        self._default_stat_list.pop(column_pos)
+
     # stat indexing functions
     def get_stats_with_kind(self, kind: 'Kinds') -> List['Stat']:
         stats = [x for x in self.stats.values() if x.kind == kind]
@@ -143,10 +149,11 @@ class PlayerBase(MutableMapping):
         return stats
 
     def get_stats_with_personality(self, personality: 'Stat') -> List['Stat']:
-        stats = [x for x in self.stats.values() if x.personality == personality]
-        if len(stats) == 0:
+        # this lazily evaluates so we should only call x.personality if it has it:
+        ratings = [x for x in self.stats.values() if hasattr(x, 'personality') and x.personality == personality]
+        if len(ratings) == 0:
             raise KeyError(f"Could not locate any stats with personality {personality}!")
-        return stats
+        return ratings
 
     def get_stats_with_category(self, category: 'Stat') -> List['Stat']:
         stats = [x for x in self.stats.values() if x.category == category]

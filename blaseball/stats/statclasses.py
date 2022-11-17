@@ -231,6 +231,9 @@ class Weight(Stat):
 
     def calculate_value(self, player_index):
         weight = sum(self.stats.values()) + self.extra_weight
+        if weight == 0:
+            return self.default
+
         total = sum([self._linked_playerbase.df.at[player_index, stat.name] * self.stats[stat] for stat in self.stats])
         return total / weight
 
@@ -257,9 +260,12 @@ class Descriptor(Stat):
             self,
             name: str,
             kind: Kinds = Kinds.descriptor,
+            default: str = None,
             playerbase: PlayerBase = None
     ):
-        super().__init__(name, kind, f"{name.upper()}_DEFAULT", None, playerbase)
+        if default is None:
+            default = f"{name.upper()}_DEFAULT"
+        super().__init__(name, kind, default, None, playerbase)
 
         self.weights = {}
         self.secondary_threshold = 0.0  # what percentage of the primary stat the next biggest needs to be counted.
@@ -349,7 +355,10 @@ class Descriptor(Stat):
             return self._parse_value_dict(second_level_result, highest_stat_value)
 
     def calculate_value(self, player_index):
-        return self.get_descriptor(player_index, self.weights)
+        if len(self.weights) == 0:
+            return self.default  # return default if uninitialized descriptor
+        else:
+            return self.get_descriptor(player_index, self.weights)
 
 
 class Rating(Stat):
