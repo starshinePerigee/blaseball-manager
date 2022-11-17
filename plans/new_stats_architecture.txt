@@ -65,7 +65,6 @@ What is up with weights / descriptors / categories??
         "isn't that just weight" you might ask?
         well, yes - but it's processed somewhere else (right now) and displayed as a numeric.
 
-# TODO: this needs to get hashed out
 
 ok open question:
 what's the actual chain for indexing?

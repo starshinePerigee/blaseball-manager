@@ -47,8 +47,9 @@ class Player(Mapping):
             self.cid = cid
 
         self._stale_dict = statclasses.create_blank_stale_dict(True)
+        # this does not use self.add_modifier! This is called before stats get initialized - the personality four
+        # use Personality which looks backwards at this list to retroactively calculate the effects of traits
         self.modifiers = self.roll_traits()
-
         # you MUST call initialize after this.
 
     @staticmethod
@@ -58,14 +59,26 @@ class Player(Mapping):
             trait_list += [modifiers.default_personality_deck.draw()]
         return trait_list
 
-    def initialize(self):
+    def add_modifier(self, modifier: modifiers.Modifier) -> None:
+        for stat in modifier.stat_effects:
+            self[stat] += modifier[stat]
+        self.modifiers += [modifier]
+
+    def remove_modifier(self, modifier: modifiers.Modifier):
+        if modifier not in self.modifiers:
+            raise KeyError(f"Modifier {modifier} not present in modifier list for {self}!")
+        for stat in modifier.stat_effects:
+            self[stat] -= modifier[stat]
+        self.modifiers.remove(modifier)
+
+    def initialize(self) -> None:
         """Initialize/roll all stats for this player. This duplicates playerbase.initialize_all!"""
         for stat in self.pb.stats.values():
             self[stat] = stat.calculate_initial(self.cid)
         for kind in self._stale_dict:
             self._stale_dict[kind] = False
 
-    def recalculate(self):
+    def recalculate(self) -> None:
         for stat in s.pb.stats.values():
             if self._stale_dict[stat.kind]:
                 if isinstance(stat.kind, statclasses.Rating):
@@ -75,13 +88,8 @@ class Player(Mapping):
         for kind in self._stale_dict:
             self._stale_dict[kind] = False
 
-    def calculate_rating(self, rating: statclasses.Rating) -> float:
-        """Calculate the value of a rating after modifiers"""
-        base_value = rating.base_stat.calculate_value(self.cid)
-        # this is really junk performance, but we can optimize when we know how frequent
-        # cache misses are.
-        modifier_value = sum([mod[rating] for mod in self.modifiers])
-        return base_value + modifier_value
+    def get_modifier_total(self, stat: Union[str, statclasses.Stat]):
+        return sum([mod[stat] for mod in self.modifiers])
 
     # def randomize(self) -> None:
     #     """Generate random values for applicable stats.
@@ -191,18 +199,14 @@ class Player(Mapping):
         if isinstance(item, statclasses.Stat):
             if self._stale_dict[item.kind]:
                 # cached value is stale
-                if isinstance(item, statclasses.Rating):
-                    # if this is a rating, we have to check modifiers
-                    return self.calculate_rating(item)
-                else:
-                    return item.calculate_value(self.cid)
+                return item.calculate_value(self.cid)
             else:
                 return self.pb.df.at[self.cid, item.name]
         elif item == 'cid':
             return self.cid
         elif isinstance(item, str):
             try:
-                return s.pb.stats[item]
+                return self[s.pb.stats[item]]
             except KeyError:
                 raise KeyError(f"No results found via string lookup for {item}")
         else:

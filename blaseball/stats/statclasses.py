@@ -23,10 +23,8 @@ all_base = PlayerBase()
 # this is not ordered. Stats are generated in column order (ie: the order they're defined in Stats)
 class Kinds(Enum):
     # the number in this enum
-    base_personality = auto()
     personality = auto()  # core personality types
     category = auto()  # stat categories, like "batting"
-    base_rating = auto()  # a base value for a player's rating, before modifiers or effects
     rating = auto()  # 0-2 numeric ratings that govern a player's ball ability
     weight = auto()  # a weight is a stat representing a summary of several other stats.
     descriptor = auto()  # english derived stat descriptors based on a weight
@@ -69,28 +67,27 @@ class Stat:
         # floats in it later!!
         self.initial_function = initial_function
 
-        self._linked_dataframe = playerbase.df
-        self._linked_dict = playerbase.stats
+        self._linked_playerbase = playerbase
         playerbase.add_stat(self)
 
     def __getitem__(self, player_index: int):
-        return self._linked_dataframe.at[player_index, self.name]
+        return self._linked_playerbase.df.at[player_index, self]
 
     def calculate_initial(self, player_index):
         """Calculate the initial value for this based on its default value.
         Default can be function with parameters 'playerbase df' and 'cid'"""
         if self.initial_function is not None:
-            return self.initial_function(self._linked_dataframe, player_index)
+            return self.initial_function(self._linked_playerbase, player_index)
         else:
             return self.default
 
     def calculate_value(self, player_index):
         """Calculate the current value for this stat based on its current value"""
-        logger.debug(f"abstract calculate_value called for {self.name}")
-        return self._linked_dataframe.at[player_index, self.name]
+        logger.debug(f"abstract calculate_value called for {self}")
+        return self._linked_playerbase.df.at[player_index, self]
 
     def abbreviate(self, abbreviation: str):
-        for stat in self._linked_dict.values():
+        for stat in self._linked_playerbase.stats.values():
             if stat.abbreviation == abbreviation:
                 raise KeyError(f"Duplicate Abbreviation {abbreviation}! "
                                f"Collision between {stat.name} and {self.name}")
@@ -129,13 +126,11 @@ class Stat:
 BASE_DEPENDENCIES = {
     # make sure you include all dependencies, include dependencies of dependencies.
     # Listed in recalculation order!
-    Kinds.personality: [Kinds.base_personality],
-    Kinds.rating: [Kinds.base_rating],
-    Kinds.category: [Kinds.rating, Kinds.base_rating],
-    Kinds.weight: [Kinds.rating, Kinds.base_rating, Kinds.category],
-    Kinds.total_weight: [Kinds.rating, Kinds.base_rating, Kinds.category,
+    Kinds.category: [Kinds.rating],
+    Kinds.weight: [Kinds.rating, Kinds.category],
+    Kinds.total_weight: [Kinds.rating, Kinds.category,
                          Kinds.weight],
-    Kinds.descriptor: [Kinds.rating, Kinds.base_rating, Kinds.character, Kinds.category,
+    Kinds.descriptor: [Kinds.rating, Kinds.character, Kinds.category,
                        Kinds.weight, Kinds.total_weight],
     Kinds.averaging: [Kinds.performance],
     Kinds.test_dependent: [Kinds.test]
@@ -185,19 +180,19 @@ class Calculatable(Stat):
 
         # default and value should either be a mappable callable (via dfmap), constant, or None
         if initial_formula is not None:
-            self._wrapped_initial = dataframe_map(initial_formula, self._linked_dataframe)
+            self._wrapped_initial = dataframe_map(initial_formula, self._linked_playerbase.df)
         else:
-            self._wrapped_initial = dataframe_map(lambda: None, self._linked_dataframe)
+            self._wrapped_initial = dataframe_map(lambda: None, self._linked_playerbase.df)
 
         if value_formula is not None:
-            self._wrapped_value = dataframe_map(value_formula, self._linked_dataframe)
+            self._wrapped_value = dataframe_map(value_formula, self._linked_playerbase.df)
         else:
-            self._wrapped_value = dataframe_map(lambda: None, self._linked_dataframe)
+            self._wrapped_value = dataframe_map(lambda: None, self._linked_playerbase.df)
 
-        if len(self._linked_dataframe) > 0:
+        if len(self._linked_playerbase.df) > 0:
             # create default values
-            initial_values = [self.calculate_initial(i) for i in self._linked_dataframe.index]
-            self._linked_dataframe[name] = initial_values
+            initial_values = [self.calculate_initial(i) for i in self._linked_playerbase.df.index]
+            self._linked_playerbase.df[name] = initial_values
 
     def calculate_initial(self, player_index):
         return self._wrapped_initial(player_index)
@@ -236,7 +231,7 @@ class Weight(Stat):
 
     def calculate_value(self, player_index):
         weight = sum(self.stats.values()) + self.extra_weight
-        total = sum([self._linked_dataframe.at[player_index, stat.name] * self.stats[stat] for stat in self.stats])
+        total = sum([self._linked_playerbase.df.at[player_index, stat.name] * self.stats[stat] for stat in self.stats])
         return total / weight
 
     def nice_string(self) -> str:
@@ -367,7 +362,6 @@ class Rating(Stat):
     def __init__(
             self,
             name: str,
-            base: Stat,
             personality: Stat = None,
             category: Stat = None,
             playerbase: PlayerBase = None,
@@ -383,38 +377,13 @@ class Rating(Stat):
 
         self.personality = personality  # the personality stat that governs this stat (applies to ratings)
         self.category = category  # the stat category this applies to
-        self.base_stat = base
-
-    def calculate_initial(self, player_index):
-        return self._linked_dataframe.at[player_index, self.base_stat.name]
-
-    def calculate_value(self, player_index):
-        """Modifiers are calculated and saved by the player class!"""
-        return self._linked_dataframe.at[player_index, self.base_stat.name]
-
-
-class BaseRating(Stat):
-    def __init__(
-            self,
-            name: str,
-            personality: Stat,
-            playerbase: PlayerBase = None
-    ):
-        super().__init__(
-            name,
-            Kinds.base_rating,
-            default=-1.0,
-            initial_function=None,
-            playerbase=playerbase
-        )
-        self.personality = personality
 
     def calculate_initial(self, player_index):
         """
         Rolls this stat based on the relevant personality, and updates the base value.
         """
-        personality_value = self._linked_dataframe.at[player_index, self.personality.name]
-        scale_factor = max(min(personality_value, 1), 0.5)
+        personality_value = self._linked_playerbase.df.at[player_index, self.personality.name]
+        scale_factor = max(min(personality_value, 1.0), 0.5)
         # traits can result in personalities higher than 1. if this happens, it's cool, so
         # this bit makes sure you get that bonus
         if personality_value > 1:
@@ -422,34 +391,6 @@ class BaseRating(Stat):
         else:
             return rand() * scale_factor
 
-
-def build_rating(
-        name: str,
-        personality: Stat,
-        category: Optional[Stat],
-        playerbase: PlayerBase = None
-) -> Tuple[Rating, BaseRating]:
-    base_rating = BaseRating("base " + name, personality, playerbase)
-    rating = Rating(name, base_rating, personality, category, playerbase)
-    return rating, base_rating
-
-
-class BasePersonality(Stat):
-    def __init__(
-            self,
-            name: str,
-            playerbase: PlayerBase = None
-    ):
-        super().__init__(
-            name,
-            Kinds.base_personality,
-            default=-1.0,
-            initial_function=None,
-            playerbase=playerbase
-        )
-
-    def calculate_initial(self, player_index):
-        """
-        Rolls this stat based on the relevant personality, and updates the base value.
-        """
-        return rand()
+    def calculate_value(self, player_index):
+        """Modifiers are calculated and saved by the player class!"""
+        return self._linked_playerbase.df.at[player_index, self]

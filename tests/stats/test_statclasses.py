@@ -19,7 +19,6 @@ def test_create_blank_stale_dict(state):
     assert test_dict[statclasses.Kinds.test_dependent] == state
 
 
-
 class TestStatsBase:
     def test_stat_creation(self):
         pb = playerbase.PlayerBase()
@@ -28,7 +27,7 @@ class TestStatsBase:
         assert pb.stats['test stat'] is test_stat
 
         with pytest.raises(KeyError):
-            test_stat_err = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, pb)
+            test_stat_err = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, pb)  # noqa
 
     def test_stat_abbreviation(self, playerbase_2):
         playerbase_2.stats["test 1"].abbreviate("TS1")
@@ -56,7 +55,8 @@ class TestStatsBase:
         assert d["col1"] == 1
         d[stat_2] = 2
         assert d[stat_2] == 2
-        assert len(arbitrary_pb.df[stat_3]) == len(arbitrary_pb.players)
+        assert len(arbitrary_pb.df[stat_3]) == len(arbitrary_pb.playerss)
+
 
 @pytest.fixture(scope='function')
 def calculatable_1(arbitrary_pb):
@@ -81,7 +81,7 @@ class TestCalculatable:
         assert calculatable_1.calculate_value(14) == pytest.approx(10.5)
 
     def test_add(self, arbitrary_pb):
-        new_calc = statclasses.Calculatable(
+        statclasses.Calculatable(
             "new stat",
             statclasses.Kinds.test,
             initial_formula=lambda col1, col2: col1 * col2,
