@@ -46,7 +46,7 @@ class Player(Mapping):
             # this player was already created as a row
             self.cid = cid
 
-        self._stale_dict = statclasses.create_blank_stale_dict(True)
+        self._stale_dict = statclasses.create_blank_stale_dict()
         # this does not use self.add_modifier! This is called before stats get initialized - the personality four
         # use Personality which looks backwards at this list to retroactively calculate the effects of traits
         self.modifiers = self.roll_traits()
@@ -74,14 +74,19 @@ class Player(Mapping):
     def initialize(self) -> None:
         """Initialize/roll all stats for this player. This duplicates playerbase.initialize_all!"""
         for stat in self.pb.stats.values():
-            self[stat] = stat.calculate_initial(self.cid)
-        for kind in self._stale_dict:
-            self._stale_dict[kind] = False
+            if not self._stale_dict[stat.kind]:
+                self[stat] = stat.calculate_initial(self.cid)
+        self.recalculate()
 
     def recalculate(self) -> None:
-        for stat in s.pb.stats.values():
-            if self._stale_dict[stat.kind]:
-                self[stat] = stat.calculate_value(self.cid)
+        for kind in statclasses.RECALCULATION_ORDER:
+            if self._stale_dict[kind]:
+                try:
+                    for stat in s.pb.get_stats_with_kind(kind):
+                        self[stat] = stat.calculate_value(self.cid)
+                except KeyError:
+                    # TODO: once we don't have any dummy kinds, we can remove this.
+                    pass
         for kind in self._stale_dict:
             self._stale_dict[kind] = False
 
@@ -102,23 +107,6 @@ class Player(Mapping):
     #     for stat in all_stats['performance'] + all_stats['averaging']:
     #         self[stat.name] = 0
     #
-    # def add_trait(self, trait: traits.Trait, derive=True) -> None:
-    #     # TODO: stale out stats
-    #     self.traits += [trait]
-    #     for stat in trait:
-    #         self[stat] += trait[stat]
-    #     if derive:
-    #         self.derive()
-    #
-    # def remove_trait(self, trait: traits.Trait) -> None:
-    #     # TODO: stale out stats
-    #     if trait not in self.traits:
-    #         raise KeyError(f"Trait {trait} not on player {self}")
-    #     else:
-    #         for stat in trait:
-    #             self[stat] -= trait[stat]
-    #     self.traits.remove(trait)
-    #     self.derive()
 
     def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
         """Update multiple stats from another plyaer, series, or dictionary"""
@@ -202,55 +190,54 @@ class Player(Mapping):
 
     def total_stars(self) -> str:
         # """Return a string depiction of this player's stars"""
-        return self._to_stars((self["total offense"] + self["total defense"]) / 2)
+        return self._to_stars((self[s.total_offense] + self[s.total_defense]) / 2)
 
-    # def text_breakdown(self) -> str:
-    #     text = (
-    #         f"{self['name']} {self.total_stars()}\r\n"
-    #         f"\r\n~ ~ ~ ~ ~ \r\n\r\n"
-    #         f"{self['number']}: {self['name']}\r\n"
-    #         f"{self.total_stars()} {self['overall descriptor']}\r\n"
-    #         f"{self['offense position']}\r\n{self['defense position']}\r\n"
-    #         f"RBI: ?? OPS: ???\r\nERA: --- WHIP: ---\r\n\r\n"
-    #         f"Personality: {self['personality descriptor']}\r\n"
-    #         f"Offense: {self._to_stars(self['total offense'])} {self['offense descriptor']}\r\n"
-    #         f"Defense: {self._to_stars(self['total defense'])} {self['defense descriptor']}\r\n"
-    #         f"Off-Field: {self._to_stars(self['total off-field'])}\r\n"
-    #         f"Element: {self['element'].title()}\r\n"
-    #         f"\r\n"
-    #         f"Vibes: {self['vibes']}\r\n"
-    #         f"\r\n~ ~ ~ ~ ~\r\n\r\n"
-    #     )
-    #     text += "Key Ratings\r\n\r\n"
-    #     text += "\r\n".join(
-    #         [f"{r.title()}: {self[r] * 100:.0f}%" for r in ["stamina", "mood", "soul"]])
-    #     text += "\r\n\r\n"
-    #     text += "\r\n".join(
-    #         [f"{r.title()}: {self._to_stars(self[r])}" for r in [
-    #             "batting", "baserunning", "defense", "pitching", "edge", "vitality", "social"
-    #         ]]
-    #     )
-    #     text += "\r\n\r\n"
-    #     text += "\r\n".join(
-    #         [f"{r}: {self._to_stars(self[r.name])}" for r in all_stats['personality']]
-    #     )
-    #     text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
-    #     text += "Traits and Conditions\r\n\r\n"
-    #     text += "\r\n".join([
-    #         trait.nice_string() for trait in self.traits
-    #     ])
-    #     text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
-    #     text += "Deep Ratings\r\n"
-    #
-    #     for category in all_stats['category']:
-    #         if 'total' in category.name:
-    #             continue
-    #         text += f"\r\n{category}:\r\n"
-    #         for rating in all_stats['rating']:
-    #             if rating.category == category.name:
-    #                 text += f"{rating} {self._to_stars(self[rating.name])}\r\n"
-    #
-    #     return text
+    def text_breakdown(self) -> str:
+        text = (
+            f"{self[s.name]} {self.total_stars()}\r\n"
+            f"\r\n~ ~ ~ ~ ~ \r\n\r\n"
+            f"{self[s.number]}: {self[s.name]}\r\n"
+            f"{self.total_stars()} {self[s.overall_descriptor]}\r\n"
+            # f"{self['offense position']}\r\n{self['defense position']}\r\n"
+            f"RBI: ?? OPS: ???\r\nERA: --- WHIP: ---\r\n\r\n"
+            # f"Personality: {self[s.personality]}\r\n"
+            f"Offense: {self._to_stars(self[s.total_offense])} {self[s.offense_descriptor]}\r\n"
+            f"Defense: {self._to_stars(self[s.total_defense])} {self[s.defense_descriptor]}\r\n"
+            f"Off-Field: {self._to_stars(self[s.total_off_field])}\r\n"
+            f"Element: {self[s.element].title()}\r\n"
+            f"\r\n"
+            f"Vibes: {self[s.vibes]}\r\n"
+            f"\r\n~ ~ ~ ~ ~\r\n\r\n"
+        )
+        text += "Key Ratings\r\n\r\n"
+        text += "\r\n".join(
+            [f"{r.name.title()}: {self[r] * 100:.0f}%" for r in [s.stamina, s.mood, s.soul]])
+        text += "\r\n\r\n"
+        text += "\r\n".join(
+            [f"{r.name.title()}: {self._to_stars(self[r])}" for r in [
+                s.batting, s.baserunning, s.defense, s.pitching, s.edge, s.vitality, s.social
+            ]]
+        )
+        text += "\r\n\r\n"
+        text += "\r\n".join(
+            [f"{r}: {self._to_stars(self[r])}" for r in s.pb.get_stats_with_kind(statclasses.Kinds.personality)]
+        )
+        text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
+        text += "Traits and Conditions\r\n\r\n"
+        text += "\r\n".join([
+            modifier.nice_string() for modifier in self.modifiers
+        ])
+        text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
+        text += "Deep Ratings\r\n"
+
+        for category in s.pb.get_stats_with_kind(statclasses.Kinds.category):
+            if 'total' in category.name:
+                continue
+            text += f"\r\n{category}:\r\n"
+            for rating in s.pb.get_stats_with_category(category):
+                text += f"{rating} {self._to_stars(self[rating.name])}\r\n"
+
+        return text
 
     def __str__(self) -> str:
         return(f"[{self.cid}] "
@@ -264,12 +251,16 @@ class Player(Mapping):
                 f"'{self['name']}' "
                 f"(c{self.cid}) at {hex(id(self))}>")
 
-#
-#
-# if __name__ == "__main__":
-#     pb = PlayerBase(10)
-#     print(pb)
-#     print(pb[1001].text_breakdown())
-#
-#     for p in pb:
-#         print(p)
+
+
+if __name__ == "__main__":
+    for __ in range(10):
+        p = Player(s.pb)
+        p.initialize()
+
+    print(s.pb)
+    print(s.pb[1001].text_breakdown())
+    print("\r\n")
+
+    for p in s.pb:
+        print(p)

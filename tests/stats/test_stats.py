@@ -1,6 +1,7 @@
 import pytest
 
 from blaseball.stats import stats, statclasses
+from blaseball.stats import stats as s
 
 
 class TestCharacterStats:
@@ -12,9 +13,25 @@ class TestCharacterStats:
         assert stats._generate_name(None, None)[0].isupper()
         assert stats._generate_name(None, None)[1].islower()
 
-    def test_generate_cid(self):
+    def test_generate_number(self):
         assert isinstance(stats._generate_number(None, 10), int)
-        # TODO
+
+    def test_elements(self, player_1):
+        player_1.set_all_stats(0.0)
+        player_1[s.enthusiasm] = 1.0
+        assert player_1[s.element] == "wind"
+        player_1[s.determination] = 0.5
+        assert player_1[s.element] == "wind"
+        player_1[s.determination] = 0.9
+        assert player_1[s.element] == "electric"
+
+    def test_descriptors(self, player_1):
+        player_1.set_all_stats(0.1)
+        assert player_1[s.offense_descriptor] == "Garbage"
+        player_1['power'] = 2.0
+        assert player_1[s.offense_descriptor] == "Slugger"
+        player_1.set_all_stats(1.5)
+        assert player_1[s.offense_descriptor] == "All-Rounder"
 
 
 class TestAllBase:

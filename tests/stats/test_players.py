@@ -24,12 +24,13 @@ class TestPlayerIndexing:
     def test_init(self):
         player = players.Player(s.pb)
         assert player.cid in s.pb.df.index
-        assert s.pb.df.at[player.cid, "name"] == 'WYATT MASON'
+        assert s.pb.df.at[player.cid, "name"] == 'Wyatt Mason'
         assert len(player.modifiers) > 2
 
         player.initialize()
         assert isinstance(s.pb.df.at[player.cid, "name"], str)
-        assert s.pb.df.at[player.cid, "name"] != 'WYATT MASON'
+        assert s.pb.df.at[player.cid, "name"] != 'Wyatt Mason'
+        assert s.pb.df.at[player.cid, "element"] != "basic"
 
     def test_index_fresh(self, player_1):
         p1_insight = s.pb.df.at[player_1.cid, "insight"]
@@ -115,4 +116,10 @@ class TestPlayerOther:
         assert player_1[s.determination] == 0.66
         assert player_1[s.speed] == 0.66
         assert len(player_1.modifiers) == 0
-        # TODO: weights
+        assert player_1[s.defense] == 0.66
+
+    def test_get_total_stars(self, player_1):
+        player_1.set_all_stats(0.0)
+        assert player_1.total_stars() == "0"
+        player_1.set_all_stats("1.0")
+        assert player_1.total_stars() == "*****"

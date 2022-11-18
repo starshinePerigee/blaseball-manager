@@ -55,7 +55,7 @@ class TestStatsBase:
         assert d["col1"] == 1
         d[stat_2] = 2
         assert d[stat_2] == 2
-        assert len(arbitrary_pb.df[stat_3]) == len(arbitrary_pb.playerss)
+        assert len(arbitrary_pb.df[stat_3]) == len(arbitrary_pb.players)
 
 
 @pytest.fixture(scope='function')
@@ -164,6 +164,29 @@ class TestDescriptor:
         assert test_descriptor.calculate_value(14) == "11"
         assert isinstance(test_descriptor.calculate_value(12), str)
 
+    def test_all(self, test_descriptor, arbitrary_pb):
+        stat_1 = arbitrary_pb.stats['col3']
+        stat_2 = arbitrary_pb.stats['col4']
+
+        test_descriptor.add_weight(
+            stat_1,
+            {stat_1: "11", stat_2: "12"}
+        )
+        test_descriptor.add_weight(
+            stat_2,
+            {stat_1: "21", stat_2: "22"}
+        )
+        test_descriptor.add_all(
+            {stat_1: "all_1", stat_2: "all_2"}
+        )
+        test_descriptor.secondary_threshold = 0.6
+
+        assert test_descriptor.calculate_value(10) == "22"
+        assert test_descriptor.calculate_value(11) == "all_2"
+        assert "all" in test_descriptor.calculate_value(12)
+        assert test_descriptor.calculate_value(13) == "all_1"
+        assert test_descriptor.calculate_value(14) == "12"
+
     # dict-dict-dict is not supported. If we need it, we can implement it.
     # def test_third_order_stats_dict_x3(self, test_descriptor, arbitrary_pb):
     #     stat_1 = arbitrary_pb.stats['col3']
@@ -257,5 +280,5 @@ class TestRating:
     def test_initial(self, arbitrary_pb, patcher, cid, result):
         patcher.patch('blaseball.stats.statclasses.rand', lambda: 0.5)
         personality = arbitrary_pb.stats['col5']
-        test_rating, test_rating_base = statclasses.build_rating('test rating', personality, None, arbitrary_pb)
-        assert test_rating_base.calculate_initial(cid) == pytest.approx(result)
+        test_rating = statclasses.Rating('test rating', personality, None, arbitrary_pb)
+        assert test_rating.calculate_initial(cid) == pytest.approx(result)

@@ -3,7 +3,7 @@ from numpy.random import normal as numpy_normal
 import functools
 
 from blaseball.stats import statclasses
-from data import playerdata
+from data import playerdata, playerdescriptors
 
 
 pb = statclasses.all_base
@@ -88,12 +88,20 @@ insight.abbreviate("INS")
 total_offense = statclasses.Weight('total offense', statclasses.Kinds.total_weight)
 total_offense.abbreviate("TOF")
 
-total_defense = statclasses.Weight('total defense', statclasses.Kinds.total_weight)
-total_defense.abbreviate("TDE")
+# these are named with underscores so we can use them in a calculatable
+total_defense_pitching = statclasses.Weight("total_pitching_defense", statclasses.Kinds.total_weight)
+total_defense_pitching.display_name = "total defence - pitching"
 
-total_defense_pitching = statclasses.Weight("total pitching defense", statclasses.Kinds.total_weight)
-total_defense_fielding = statclasses.Weight("total fielding defense", statclasses.Kinds.total_weight)
+total_defense_fielding = statclasses.Weight("total_fielding_defense", statclasses.Kinds.total_weight)
+total_defense_fielding.display_name = "total defence - fielding"
 # no abbreviations because these are internal stats
+
+total_defense = statclasses.Calculatable(
+    'total defense', statclasses.Kinds.total_weight,
+    value_formula=lambda total_pitching_defense, total_fielding_defense:
+        max(total_pitching_defense, total_fielding_defense)
+)
+total_defense.abbreviate("TDE")
 
 total_off_field = statclasses.Weight('total field', statclasses.Kinds.total_weight)
 total_off_field.abbreviate("TFD")
@@ -163,7 +171,7 @@ slugger = statclasses.Weight("slugging")
 reliable_hitter = statclasses.Weight("contact hitter")
 manufacturer = statclasses.Weight("runs manufacturer")
 utility_hitter = statclasses.Weight("utility hitter")
-utility_hitter.extra_weight = 0.25
+# utility_hitter.extra_weight = 0.25
 
 # pitching weights
 pitcher_speed = statclasses.Weight("fastball pitcher")
@@ -386,17 +394,20 @@ teaching.weight(overall_captaincy, 1)
 
 # Descriptors
 
-overall_descriptor = statclasses.Descriptor('overall descriptor', default="The Observed")
-
 offense_descriptor = statclasses.Descriptor('offense descriptor', default="Unevaluated Hitter")
+playerdescriptors.describe_offense(offense_descriptor)
 
 defense_descriptor = statclasses.Descriptor('defense descriptor', default="Unable To Catch A Cold")
+playerdescriptors.describe_defense(defense_descriptor)
 
-personality_descriptor = statclasses.Descriptor('personality descriptor', default="Smol Bean")
+# personality_descriptor = statclasses.Descriptor('personality descriptor', default="Smol Bean")
 
-offense_position = statclasses.Descriptor('offense position', default="Bench")
+overall_descriptor = statclasses.Descriptor('overall descriptor', default="The Observed")
+playerdescriptors.describe_overall(overall_descriptor)
 
-defense_position = statclasses.Descriptor('defense position', default="Bullpen")
+# offense_position = statclasses.Descriptor('offense position', default="Bench")
+#
+# defense_position = statclasses.Descriptor('defense position', default="Bullpen")
 
 
 # other stats
@@ -414,8 +425,6 @@ soul = statclasses.Stat('soul', statclasses.Kinds.condition, 1.0)
 soul.abbreviate("SOL")
 
 fingers = statclasses.Stat('fingers', statclasses.Kinds.character, 9)
-
-is_pitcher = statclasses.Stat('is pitcher', statclasses.Kinds.character, False)
 
 
 def _roll_clutch(pb_, cid):
@@ -436,7 +445,8 @@ def _roll_pull(pb_, cid):
 
 pull = statclasses.Stat('pull', statclasses.Kinds.character, -1, initial_function=_roll_pull)
 
-element = statclasses.Descriptor('element', statclasses.Kinds.character, "Basic")
+element = statclasses.Descriptor('element', statclasses.Kinds.descriptor, "Basic")
+playerdescriptors.describe_element(element)
 element.abbreviate("ELE")
 
 

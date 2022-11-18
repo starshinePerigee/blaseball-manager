@@ -156,7 +156,7 @@ class PlayerBase(MutableMapping):
         return ratings
 
     def get_stats_with_category(self, category: 'Stat') -> List['Stat']:
-        stats = [x for x in self.stats.values() if x.category == category]
+        stats = [x for x in self.stats.values() if hasattr(x, 'category') and x.category == category]
         if len(stats) == 0:
             raise KeyError(f"Could not locate any stats with category {category}!")
         return stats

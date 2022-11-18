@@ -20,17 +20,16 @@ all_base = PlayerBase()
 
 
 # a stat kind is the relative type of a stat; these are used for categorization and dependencies
-# this is not ordered. Stats are generated in column order (ie: the order they're defined in Stats)
 class Kinds(Enum):
     # the number in this enum
+    character = auto()  # a player's character stats, such as name and fingers
     personality = auto()  # core personality types
     category = auto()  # stat categories, like "batting"
     rating = auto()  # 0-2 numeric ratings that govern a player's ball ability
     weight = auto()  # a weight is a stat representing a summary of several other stats.
-    descriptor = auto()  # english derived stat descriptors based on a weight
     total_weight = auto()  # a summary weight that depends on other weights
+    descriptor = auto()  # english derived stat descriptors based on a weight
     condition = auto()  # a player's condition stats, such as mood and soul
-    character = auto()  # a player's character stats, such as name and fingers
     performance = auto()  # a tracked performance metric, such as number of hits
     averaging = auto()  # tracked metric that is a running average, such as batting average
     test = auto()  # stats in the test group are only for use in testing and shouldn't be used anywehre else.
@@ -60,6 +59,8 @@ class Stat:
         if name in playerbase.stats:
             raise KeyError(f"Stat {name} already defined!")
 
+        self.display_name = None
+
         self.kind = kind
         self.abbreviation = None  # the abbreviation for this stat
         self.default = default  # default sets the default value of this column.
@@ -71,7 +72,7 @@ class Stat:
         playerbase.add_stat(self)
 
     def __getitem__(self, player_index: int):
-        return self._linked_playerbase.df.at[player_index, self]
+        return self._linked_playerbase[player_index][self]
 
     def calculate_initial(self, player_index):
         """Calculate the initial value for this based on its default value.
@@ -97,7 +98,10 @@ class Stat:
         weight.add(self, value)
 
     def __str__(self):
-        return self.name.title()
+        if self.display_name is None:
+            return self.name.title()
+        else:
+            return self.display_name.title()
 
     def __repr__(self):
         return f"{type(self).__name__}({self.name}, {self.kind.name})"
@@ -130,14 +134,27 @@ BASE_DEPENDENCIES = {
     Kinds.weight: [Kinds.rating, Kinds.category],
     Kinds.total_weight: [Kinds.rating, Kinds.category,
                          Kinds.weight],
-    Kinds.descriptor: [Kinds.rating, Kinds.character, Kinds.category,
+    Kinds.descriptor: [Kinds.rating, Kinds.character, Kinds.personality, Kinds.category,
                        Kinds.weight, Kinds.total_weight],
     Kinds.averaging: [Kinds.performance],
     Kinds.test_dependent: [Kinds.test]
 }
 
-# TODO: calculation order?
-# some weights depend on later weights especially
+# recalculation goes in this order, then column order
+RECALCULATION_ORDER = [
+    Kinds.character,
+    Kinds.personality,
+    Kinds.rating,
+    Kinds.category,
+    Kinds.weight,
+    Kinds.total_weight,
+    Kinds.descriptor,
+    Kinds.condition,
+    Kinds.performance,
+    Kinds.averaging,
+    Kinds.test,
+    Kinds.test_dependent
+]
 
 dependencies = {}
 # fill in everything that's not a dependent
@@ -268,6 +285,7 @@ class Descriptor(Stat):
         super().__init__(name, kind, default, None, playerbase)
 
         self.weights = {}
+        self.all = None
         self.secondary_threshold = 0.0  # what percentage of the primary stat the next biggest needs to be counted.
 
     def add_weight(
@@ -284,6 +302,10 @@ class Descriptor(Stat):
         """
         self.weights[stat] = value
 
+    def add_all(self, value: Union[str, Dict]):
+        """Add an 'all stats' weight option"""
+        self.all = value
+
     @staticmethod
     def _parse_value_dict(value_dict: Dict[float, str], value: float) -> str:
         for key in sorted(value_dict.keys()):
@@ -292,7 +314,7 @@ class Descriptor(Stat):
         raise RuntimeError(f"Could not build a descriptor! "
                            f"Max threshold value: {value} vs keys: {value_dict}")
 
-    def get_descriptor(self, player_index, weights_dict):
+    def get_descriptor(self, player_index):
         """
         This crunches through an arbitrarily-nested dict of weights to generate a descriptor.
         See add_weight() for description on how to format it.
@@ -306,11 +328,16 @@ class Descriptor(Stat):
             -- if the second largest is above
         """
         # first index the top level
-        value_stat_dict = {weight[player_index]: weight for weight in weights_dict}
+        # check for the 'all' condition
+        value_stat_dict = {weight[player_index]: weight for weight in self.weights}
         highest_stat_value = max(value_stat_dict)
 
-        highest_stat = value_stat_dict.pop(highest_stat_value)
-        current_level_result = weights_dict[highest_stat]
+        if self.all is not None and min(value_stat_dict) / highest_stat_value > self.secondary_threshold:
+            highest_stat = 'all'
+            current_level_result = self.all
+        else:
+            highest_stat = value_stat_dict.pop(highest_stat_value)
+            current_level_result = self.weights[highest_stat]
 
         if isinstance(current_level_result, str):
             #  Dict[Stat: str]
@@ -326,23 +353,22 @@ class Descriptor(Stat):
         # if we reach here, current_level_result is a dictionary of stat: value pairs
         # ie: there's another level
 
-        # first we need to find the second largest stat and value
+        # first we need to find the second level largest stat and value
+        second_level_value_stat_dict = {weight[player_index]: weight for weight in current_level_result}
+        highest_second_level_value = max(second_level_value_stat_dict)
 
-        # check for size because if multiple values are equal, they'll clobber and we can run out
-        # remember that value_stat_dict gets popped earlier
-        if len(value_stat_dict) > 0:
-            next_highest_value = max(value_stat_dict)
-            next_highest_stat = value_stat_dict[next_highest_value]
+        if second_level_value_stat_dict[highest_second_level_value] is highest_stat and \
+                len(second_level_value_stat_dict) > 1:
+            second_level_value_stat_dict.pop(highest_second_level_value)
+            next_highest_value = max(second_level_value_stat_dict)
         else:
-            # this can happen if multiple values are equal; they'll collide when weight_values gets generated.
-            next_highest_value = 0
-            next_highest_stat = current_level_result
+            next_highest_value = highest_second_level_value
 
         # calculate the next highest to top level ratio
         try:
             if next_highest_value / highest_stat_value >= self.secondary_threshold:
                 # we are within the ratio, so we're taking the secondary stat fork
-                final_stat = next_highest_stat
+                final_stat = second_level_value_stat_dict[next_highest_value]
             else:
                 final_stat = highest_stat
         except ZeroDivisionError:  # can happen if one of the items is 0.
@@ -358,7 +384,7 @@ class Descriptor(Stat):
         if len(self.weights) == 0:
             return self.default  # return default if uninitialized descriptor
         else:
-            return self.get_descriptor(player_index, self.weights)
+            return self.get_descriptor(player_index)
 
 
 class Rating(Stat):
