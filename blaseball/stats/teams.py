@@ -49,10 +49,13 @@ class League(Sequence):
     def __init__(self, pb: playerbase.PlayerBase, team_names: [str] = None) -> None:
         self.teams = []
         for team_name in team_names:
-            self.teams.append(Team(
-                team_name,
-                pb.new_players(Settings.players_per_team))
-            )
+            team_comp = []
+            for __ in range(Settings.players_per_team):
+                new_player = players.Player(pb)
+                new_player.initialize()
+                team_comp += [new_player]
+            self.teams += [Team(team_name, team_comp)]
+        pb.recalculate_all()
 
     def __len__(self) -> int:
         return len(self.teams)
@@ -80,10 +83,9 @@ class League(Sequence):
 
 
 if __name__ == "__main__":
-    from blaseball.stats import players
+    from blaseball.stats import stats as s
     from data import teamdata
-    pb = players.PlayerBase()
-    l = League(pb, teamdata.TEAMS_99)
+    l = League(s.pb, teamdata.TEAMS_99)
     print(l)
-    for p in pb:
+    for p in s.pb:
         print(p)

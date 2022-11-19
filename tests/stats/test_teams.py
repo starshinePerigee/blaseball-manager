@@ -2,13 +2,17 @@ import pytest
 
 from blaseball.stats.teams import Team, League
 from blaseball.stats import players
+from blaseball.stats import stats as s
 
 
 class TestTeam:
-    def test_init(self):
-        pb = players.PlayerBase()
-        pb.new_players(10)
-        team = Team("test team 1", list(pb.players.values()))
+    def test_init(self, empty_all_base):
+        team_comp = []
+        for __ in range(10):
+            new_player = players.Player(s.pb)
+            new_player.initialize()
+            team_comp += [new_player]
+        team = Team("Test Crew", team_comp)
         assert len(team) == 10
 
     def test_team_strings(self, team_1):
@@ -17,11 +21,10 @@ class TestTeam:
 
 
 class TestLeague:
-    def test_init(self):
-        pb = players.PlayerBase()
-        league = League(pb, ["test team 1", "test team 2"])
+    def test_init(self, empty_all_base):
+        league = League(s.pb, ["test team 1", "test team 2"])
         assert len(league) == 2
-        assert pb.verify_players()
+        s.pb.verify()
 
     def test_league_strings(self, league_2):
         assert isinstance(repr(league_2), str)

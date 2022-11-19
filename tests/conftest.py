@@ -6,13 +6,14 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 
 import pytest
 
-from blaseball.stats import statclasses, playerbase, stats, players
-    # players, teams, stadium, lineup
+from blaseball.stats import statclasses, playerbase, stats, players, teams
+    # stadium, lineup
 # from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame, statsmonitor
 # from blaseball.util import messenger
 from support.mock_functions import FunctionPatcher
 from support.loggercapture import LoggerCapture
-# from data import teamdata
+from data import teamdata
+from blaseball.stats import stats as s
 
 import pandas as pd
 import numpy
@@ -108,34 +109,32 @@ def playerbase_10():
     stats.pb.clear_players()
 
 
-#
-# @pytest.fixture(scope='class')
-# def league_2():
-#     playerbase = players.PlayerBase()
-#     league = teams.League(playerbase, teamdata.TEAMS_99[0:2])
-#     for i, player in enumerate(league[0]):
-#         player["name"] = f"Test{i} Bobson"
-#         player.set_all_stats(1)
-#     for i, player in enumerate(league[1]):
-#         player["name"] = f"Test{i} Johnson"
-#         player.set_all_stats(1)
-#     return league
-#
-#
-# @pytest.fixture(scope='class')
-# def team_1(league_2):
-#     return league_2[0]
-#
+@pytest.fixture(scope='class')
+def league_2():
+    league = teams.League(s.pb, teamdata.TEAMS_99[0:2])
+    for i, player in enumerate(league[0]):
+        player["name"] = f"Test{i} Bobson"
+        player.set_all_stats(1)
+    for i, player in enumerate(league[1]):
+        player["name"] = f"Test{i} Johnson"
+        player.set_all_stats(1)
+    return league
+
+
+@pytest.fixture(scope='class')
+def team_1(league_2):
+    return league_2[0]
+
 
 @pytest.fixture(scope='function')
 def empty_all_base():
-    stats.pb.df.drop(stats.pb.df.index)
-    stats.pb.players = {}
+    s.pb.df.drop(s.pb.df.index, inplace=True)
+    s.pb.players = {}
 
 
 @pytest.fixture(scope='function')
 def player_1(empty_all_base):
-    player = players.Player(stats.pb)
+    player = players.Player(s.pb)
     player.initialize()
     player.modifiers = []
     player.recalculate()
