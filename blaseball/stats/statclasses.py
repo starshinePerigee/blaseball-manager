@@ -232,11 +232,13 @@ class Weight(Stat):
 
     def calculate_value(self, player_index):
         weight = sum(self.stats.values()) + self.extra_weight
-        if weight == 0:
+        total = sum([self._linked_playerbase[player_index][stat] * self.stats[stat] for stat in self.stats])
+        if total == 0:
+            return 0
+        elif weight == 0:
             return self.default
-
-        total = sum([self._linked_playerbase.df.at[player_index, stat.name] * self.stats[stat] for stat in self.stats])
-        return total / weight
+        else:
+            return total / weight
 
     def nice_string(self) -> str:
         nice = self.name + ":"
@@ -315,8 +317,15 @@ class Descriptor(Stat):
         # check for the 'all' condition
         value_stat_dict = {weight[player_index]: weight for weight in self.weights}
         highest_stat_value = max(value_stat_dict)
-
-        if self.all is not None and min(value_stat_dict) / highest_stat_value > self.secondary_threshold:
+        if highest_stat_value == 0:
+            # avoid a div/0 error
+            if self.all is not None:
+                highest_stat = 'all'
+                current_level_result = self.all
+            else:
+                highest_stat = list(value_stat_dict.values())[0]
+                current_level_result = self.weights[highest_stat]
+        elif self.all is not None and min(value_stat_dict) / highest_stat_value > self.secondary_threshold:
             highest_stat = 'all'
             current_level_result = self.all
         else:

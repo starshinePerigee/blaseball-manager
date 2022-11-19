@@ -12,8 +12,10 @@ from blaseball.stats.stats import pb
 from blaseball.stats.statclasses import Stat
 from blaseball.stats.playerbase import PlayerBase
 from blaseball.stats.players import Player
+from blaseball.stats import stadium, teams, lineup
 
 from support import fixturetarget
+
 
 class TestFixtures:
     """This exists to shakedown test fixtures, primarily to make sure they don't throw runtime errors.
@@ -56,12 +58,11 @@ class TestFixtures:
     def test_playerbase_10_clear(self):
         assert len(pb) == 0
 
-#
-#     def test_league_2(self, league_2):
-#         assert isinstance(league_2, blaseball.stats.teams.League)
-#
-#     def test_team_1(self, team_1):
-#         assert isinstance(team_1, blaseball.stats.teams.Team)
+    def test_league_2(self, league_2):
+        assert isinstance(league_2, teams.League)
+
+    def test_team_1(self, team_1):
+        assert isinstance(team_1, teams.Team)
 
     def test_player_1(self, player_1):
         assert isinstance(player_1, Player)
@@ -69,18 +70,18 @@ class TestFixtures:
 
     def test_empty_all_base(self, empty_all_base):
         assert len(pb) == 0
-#
-#     def test_stadium_a(self, stadium_a):
-#         assert isinstance(stadium_a, blaseball.stats.stadium.Stadium)
-#
-#     def test_compare_stadiums(self, stadium_a, stadium_cut_lf):
-#         assert stadium_cut_lf.polygon.area > stadium_a.polygon.area
-#         print(f"Stadium a: {stadium_a.polygon.area:.0f} sqft, stadium cut lf: {stadium_cut_lf.polygon.area:.0f} sqft")
-#         print(f"Delta: {stadium_cut_lf.polygon.area - stadium_a.polygon.area:.0f} sqft")
-#
-#     def test_lineup_1(self, lineup_1):
-#         assert isinstance(lineup_1, blaseball.stats.lineup.Lineup)
-#
+
+    def test_stadium_a(self, stadium_a):
+        assert isinstance(stadium_a, stadium.Stadium)
+
+    def test_compare_stadiums(self, stadium_a, stadium_cut_lf):
+        assert stadium_cut_lf.polygon.area > stadium_a.polygon.area
+        print(f"Stadium a: {stadium_a.polygon.area:.0f} sqft, stadium cut lf: {stadium_cut_lf.polygon.area:.0f} sqft")
+        print(f"Delta: {stadium_cut_lf.polygon.area - stadium_a.polygon.area:.0f} sqft")
+
+    def test_lineup_1(self, lineup_1):
+        assert isinstance(lineup_1, lineup.Lineup)
+
 #     def test_defense_1(self, defense_1):
 #         assert isinstance(defense_1, blaseball.stats.lineup.Defense)
 #

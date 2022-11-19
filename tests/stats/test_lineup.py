@@ -25,9 +25,9 @@ class TestDefense:
     def test_add(self, team_1):
         test_d = lineup.Defense()
         assert len(test_d) == 0
-        test_d.add('catcher', team_1[0])
+        test_d.add('catcher', team_1.players[0])
         assert len(test_d) == 1
-        assert test_d['catcher'].player == team_1[0]
+        assert test_d['catcher'].player == team_1.players[0]
 
     def test_all_players(self, defense_1):
         all_players = defense_1.all_players()

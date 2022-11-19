@@ -6,8 +6,7 @@ if this gets huge, check https://gist.github.com/peterhurford/09f7dcda0ab04b95c0
 
 import pytest
 
-from blaseball.stats import statclasses, playerbase, stats, players, teams
-    # stadium, lineup
+from blaseball.stats import statclasses, playerbase, stats, players, teams, stadium, lineup
 # from blaseball.playball import gamestate, pitching, basepaths, inplay, pitchmanager, ballgame, statsmonitor
 # from blaseball.util import messenger
 from support.mock_functions import FunctionPatcher
@@ -141,27 +140,25 @@ def player_1(empty_all_base):
     yield player
     del stats.pb[player.cid]
 
-#
-#
-# @pytest.fixture(scope='class')
-# def stadium_a():
-#     angels_coords = stadium.ANGELS_STADIUM
-#     return stadium.Stadium(angels_coords)
-#
-# @pytest.fixture(scope='class')
-# def stadium_cut_lf():
-#     return stadium.Stadium([300, 400, 400, 400, 400])
-#
-# @pytest.fixture(scope='class')
-# def lineup_1(team_1):
-#     test_lineup = lineup.Lineup("Test Lineup")
-#     test_lineup.generate(team_1, in_order=True)
-#     return test_lineup
-#
-# @pytest.fixture(scope='class')
-# def defense_1(lineup_1):
-#     return lineup_1.defense
-#
+@pytest.fixture(scope='class')
+def stadium_a():
+    angels_coords = stadium.ANGELS_STADIUM
+    return stadium.Stadium(angels_coords)
+
+@pytest.fixture(scope='class')
+def stadium_cut_lf():
+    return stadium.Stadium([300, 400, 400, 400, 400])
+
+@pytest.fixture(scope='class')
+def lineup_1(team_1):
+    test_lineup = lineup.Lineup("Test Lineup")
+    test_lineup.generate(team_1, in_order=True)
+    return test_lineup
+
+@pytest.fixture(scope='class')
+def defense_1(lineup_1):
+    return lineup_1.defense
+
 # @pytest.fixture(scope='function')
 # def ballgame_1(league_2, stadium_cut_lf, messenger_1):
 #     null_messenger = messenger.Messenger()

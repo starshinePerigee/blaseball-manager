@@ -103,7 +103,7 @@ total_defense = statclasses.Calculatable(
 )
 total_defense.abbreviate("TDE")
 
-total_off_field = statclasses.Weight('total field', statclasses.Kinds.total_weight)
+total_off_field = statclasses.Weight('total off-field', statclasses.Kinds.total_weight)
 total_off_field.abbreviate("TFD")
 
 # # categories and category weights

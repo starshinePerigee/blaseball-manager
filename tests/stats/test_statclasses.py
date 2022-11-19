@@ -98,7 +98,7 @@ class TestCalculatable:
 
 class TestWeight:
     def test_weighting(self, arbitrary_pb):
-        test_weight = statclasses.Weight("test weight", playerbase=arbitrary_pb)
+        test_weight = statclasses.Weight("test weight", kind=statclasses.Kinds.test_dependent, playerbase=arbitrary_pb)
 
         stat_1 = statclasses.Stat("s1", statclasses.Kinds.test, 0.5, None, arbitrary_pb)
         stat_1.weight(test_weight, 2)
@@ -111,7 +111,7 @@ class TestWeight:
 
 @pytest.fixture
 def test_descriptor(arbitrary_pb):
-    return statclasses.Descriptor("test descriptor", playerbase=arbitrary_pb)
+    return statclasses.Descriptor("test descriptor", kind=statclasses.Kinds.test_dependent, playerbase=arbitrary_pb)
 
 
 class TestDescriptor:
@@ -272,5 +272,5 @@ class TestRating:
     def test_initial(self, arbitrary_pb, patcher, cid, result):
         patcher.patch('blaseball.stats.statclasses.rand', lambda: 0.5)
         personality = arbitrary_pb.stats['col5']
-        test_rating = statclasses.Rating('test rating', personality, None, arbitrary_pb)
+        test_rating = statclasses.Rating('test rating', personality, None, arbitrary_pb, statclasses.Kinds.test)
         assert test_rating.calculate_initial(cid) == pytest.approx(result)

@@ -73,7 +73,7 @@ class TestAllStats:
         assert len(p_stats) > 2
         for stat in p_stats:
             assert stat.default == 1.0
-            assert stat.kind == 'personality'
+            assert stat.kind == statclasses.Kinds.personality
 
     def test_get_personality(self):
         d_stats = stats.pb.get_stats_with_personality(stats.determination)
