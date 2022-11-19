@@ -14,11 +14,6 @@ from blaseball.util.dfmap import dataframe_map
 from blaseball.stats.playerbase import PlayerBase
 
 
-# this is the default dictionary; which is a big dictionary for indexing / filtering methods
-# if you need a second dictionary you can create and pass one.
-all_base = PlayerBase()
-
-
 # a stat kind is the relative type of a stat; these are used for categorization and dependencies
 class Kinds(Enum):
     # the number in this enum
@@ -34,6 +29,58 @@ class Kinds(Enum):
     averaging = auto()  # tracked metric that is a running average, such as batting average
     test = auto()  # stats in the test group are only for use in testing and shouldn't be used anywehre else.
     test_dependent = auto()  # a test that depends on test
+
+
+# A "dependency" is a list of all kinds that a kind depends on.
+# ie: a rating stat depends on its base_rating.
+# note that this is for live updates. So even though a base_rating is generated based on the personality,
+# that stat doesn't update if personality later updates, and thus base_rating doesn't depend on personality.
+#
+# When a stat is updated, all stats that depend on that stat get their stale flags flipped.
+# when defining a get method, only pull from stats in their dependency.
+# to handle order, we manually define a recalculation order for each kind. (this could be automatically managed
+# but that sounds like a ton of work! stats without dependencies do not need to be recalculated.
+
+BASE_DEPENDENCIES_GLOBAL = {
+    # make sure you include all dependencies, include dependencies of dependencies.
+    # Listed in recalculation order!
+    Kinds.category: [Kinds.rating],
+    Kinds.weight: [Kinds.rating, Kinds.category],
+    Kinds.total_weight: [Kinds.rating, Kinds.category,
+                         Kinds.weight],
+    Kinds.descriptor: [Kinds.rating, Kinds.character, Kinds.personality, Kinds.category,
+                       Kinds.weight, Kinds.total_weight],
+    Kinds.averaging: [Kinds.performance],
+}
+
+BASE_DEPENDENCIES_TEST = {
+    Kinds.test_dependent: [Kinds.test]
+}
+
+RECALCULATION_ORDER_GLOBAL = [
+    Kinds.character,
+    Kinds.personality,
+    Kinds.rating,
+    Kinds.category,
+    Kinds.weight,
+    Kinds.total_weight,
+    Kinds.descriptor,
+    Kinds.condition,
+    Kinds.performance,
+    Kinds.averaging,
+    Kinds.test,
+    Kinds.test_dependent
+]
+
+RECALCULATION_ORDER_TEST = [
+    Kinds.test,
+    Kinds.test_dependent
+]
+
+
+# this is the default dictionary; which is a big dictionary for indexing / filtering methods
+# if you need a second dictionary you can create and pass one.
+all_base = PlayerBase(RECALCULATION_ORDER_GLOBAL, BASE_DEPENDENCIES_GLOBAL)
 
 
 class Stat:
@@ -115,69 +162,6 @@ class Stat:
     def __hash__(self):
         # this lets us index dataframes by stat or by name
         return hash(self.name)
-
-
-# A "dependency" is a list of all kinds that a kind depends on.
-# ie: a rating stat depends on its base_rating.
-# note that this is for live updates. So even though a base_rating is generated based on the personality,
-# that stat doesn't update if personality later updates, and thus base_rating doesn't depend on personality.
-#
-# When a stat is updated, all stats that depend on that stat get their stale flags flipped.
-# when defining a get method, only pull from stats in their dependency.
-# to handle order, we manually define a recalculation order for each kind. (this could be automatically managed
-# but that sounds like a ton of work! stats without dependencies do not need to be recalculated.
-
-BASE_DEPENDENCIES = {
-    # make sure you include all dependencies, include dependencies of dependencies.
-    # Listed in recalculation order!
-    Kinds.category: [Kinds.rating],
-    Kinds.weight: [Kinds.rating, Kinds.category],
-    Kinds.total_weight: [Kinds.rating, Kinds.category,
-                         Kinds.weight],
-    Kinds.descriptor: [Kinds.rating, Kinds.character, Kinds.personality, Kinds.category,
-                       Kinds.weight, Kinds.total_weight],
-    Kinds.averaging: [Kinds.performance],
-    Kinds.test_dependent: [Kinds.test]
-}
-
-# recalculation goes in this order, then column order
-RECALCULATION_ORDER = [
-    Kinds.character,
-    Kinds.personality,
-    Kinds.rating,
-    Kinds.category,
-    Kinds.weight,
-    Kinds.total_weight,
-    Kinds.descriptor,
-    Kinds.condition,
-    Kinds.performance,
-    Kinds.averaging,
-    Kinds.test,
-    Kinds.test_dependent
-]
-
-dependencies = {}
-# fill in everything that's not a dependent
-for kind_ in Kinds:
-    if kind_ not in BASE_DEPENDENCIES:
-        dependencies[kind_] = []
-        # this comment is only here to fix a pycharm bug lol
-    else:
-        dependencies[kind_] = BASE_DEPENDENCIES[kind_]
-
-# invert the array, so we know what to look up / set the stale flag for when we write
-dependents = {kind: [] for kind in Kinds}
-for kind_ in Kinds:
-    for dependency in dependencies[kind_]:
-        dependents[dependency] += [kind_]
-
-
-def create_blank_stale_dict(state=True):
-    stale_dict = {kind: False for kind in Kinds}
-    if state:
-        for kind in BASE_DEPENDENCIES.keys():
-            stale_dict[kind] = True
-    return stale_dict
 
 
 class Calculatable(Stat):

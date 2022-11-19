@@ -5,23 +5,15 @@ from blaseball.stats import statclasses, playerbase
 
 @pytest.fixture
 def playerbase_2():
-    pb = playerbase.PlayerBase()
+    pb = playerbase.PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
     statclasses.Stat("test 1", statclasses.Kinds.test, 1, None, pb)
     statclasses.Stat("test 2", statclasses.Kinds.test, 2, None, pb)
     return pb
 
 
-@pytest.mark.parametrize("state", [True, False])
-def test_create_blank_stale_dict(state):
-    test_dict = statclasses.create_blank_stale_dict(state)
-    assert len(test_dict) > 5
-    assert not test_dict[statclasses.Kinds.test]
-    assert test_dict[statclasses.Kinds.test_dependent] == state
-
-
 class TestStatsBase:
     def test_stat_creation(self):
-        pb = playerbase.PlayerBase()
+        pb = playerbase.PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
         test_stat = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, pb)
         assert str(test_stat) == "Test Stat"
         assert pb.stats['test stat'] is test_stat
@@ -93,7 +85,7 @@ class TestCalculatable:
         assert arbitrary_pb.df["new stat"][14] == 50
 
     def test_add_empty(self):
-        pb = playerbase.PlayerBase()
+        pb = playerbase.PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
         statclasses.Calculatable(
             "new stat",
             statclasses.Kinds.test,

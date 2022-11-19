@@ -6,10 +6,10 @@ from blaseball.stats import stats as s
 
 @pytest.fixture
 def player_dependent(player_1):
-    independent = statclasses.Stat("independent", statclasses.Kinds.test, -2.0)
+    independent = statclasses.Stat("independent", statclasses.Kinds.rating, -2.0)
     dependent = statclasses.Calculatable(
         "dependent",
-        statclasses.Kinds.test_dependent,
+        statclasses.Kinds.weight,
         None,
         lambda independent: independent * 2,  # noqa - of course this shadows, that's intentional
     )
@@ -46,7 +46,7 @@ class TestPlayerIndexing:
     def test_set(self, player_1):
         player_1[s.insight] = 1.33
         assert player_1[s.insight] == 1.33
-        for kind in statclasses.dependents[s.insight.kind]:
+        for kind in s.pb.dependents[s.insight.kind]:
             assert player_1._stale_dict[kind]
             player_1._stale_dict[kind] = False  # reset this
         assert not any(player_1._stale_dict.values())  # make sure no others got set
@@ -58,7 +58,7 @@ class TestPlayerIndexing:
     def test_index_stale(self, player_dependent):
         assert player_dependent['dependent'] == pytest.approx(1.0)
         player_dependent['independent'] = 1.0
-        assert player_dependent._stale_dict[statclasses.Kinds.test_dependent]
+        assert player_dependent._stale_dict[statclasses.Kinds.weight]
         assert player_dependent['dependent'] == pytest.approx(2.0)
         assert player_dependent.pb.df.at[player_dependent.cid, 'dependent'] == pytest.approx(1.0)
 
@@ -109,7 +109,8 @@ class TestPlayerOther:
 
         assert player_1 != player_2
         player_2.assign(player_1)
-        assert player_1 == player_2
+        assert player_1 != player_2
+        assert list(player_1.stat_row()) == list(player_2.stat_row())
 
     def test_set_all_stats(self, player_1):
         player_1.set_all_stats(0.66)

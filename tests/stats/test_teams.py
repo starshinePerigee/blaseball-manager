@@ -11,18 +11,6 @@ class TestTeam:
         team = Team("test team 1", list(pb.players.values()))
         assert len(team) == 10
 
-    indexes = [0, 2, 9]
-
-    @pytest.mark.parametrize("player_index", indexes)
-    def test_get_player_index(self, team_1, player_index):
-        test_player = team_1.players[player_index]
-        assert team_1.get_player_index(test_player) == player_index
-        assert team_1.get_player_index(test_player["name"]) == player_index
-
-    def test_get_player_index_miss(self, team_1):
-        with pytest.raises(KeyError):
-            assert team_1.get_player_index("Not A Player") == 0
-
     def test_team_strings(self, team_1):
         assert isinstance(repr(team_1), str)
         assert isinstance(str(team_1), str)

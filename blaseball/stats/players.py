@@ -46,7 +46,7 @@ class Player(Mapping):
             # this player was already created as a row
             self.cid = cid
 
-        self._stale_dict = statclasses.create_blank_stale_dict()
+        self._stale_dict = self.pb.create_blank_stale_dict()
         # this does not use self.add_modifier! This is called before stats get initialized - the personality four
         # use Personality which looks backwards at this list to retroactively calculate the effects of traits
         self.modifiers = self.roll_traits()
@@ -79,7 +79,7 @@ class Player(Mapping):
         self.recalculate()
 
     def recalculate(self) -> None:
-        for kind in statclasses.RECALCULATION_ORDER:
+        for kind in self.pb.recalculation_order:
             if self._stale_dict[kind]:
                 try:
                     for stat in s.pb.get_stats_with_kind(kind):
@@ -144,7 +144,7 @@ class Player(Mapping):
     def __setitem__(self, item: Union[statclasses.Stat, str], value) -> None:
         if isinstance(item, statclasses.Stat):
             self.pb.df.at[self.cid, item.name] = value
-            for kind in statclasses.dependents[item.kind]:
+            for kind in self.pb.dependents[item.kind]:
                 self._stale_dict[kind] = True
         else:
             self[self.pb.stats[item]] = value

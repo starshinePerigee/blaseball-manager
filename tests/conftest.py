@@ -75,7 +75,7 @@ def arbitrary_pb():
         },
         index=[10, 11, 12, 13, 14]
     )
-    pb = playerbase.PlayerBase()
+    pb = playerbase.PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
     pb.players = {i: players.Player(pb, cid=i) for i in test_dataframe.index}
     pd.stats = {name: statclasses.Stat(name, statclasses.Kinds.test, -1, None, pb) for name in test_dataframe.columns}
     pb.df = test_dataframe
@@ -131,6 +131,7 @@ def playerbase_10():
 def empty_all_base():
     stats.pb.df.drop(stats.pb.df.index)
     stats.pb.players = {}
+
 
 @pytest.fixture(scope='function')
 def player_1(empty_all_base):

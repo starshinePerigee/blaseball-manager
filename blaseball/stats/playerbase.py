@@ -11,10 +11,9 @@ import pandas as pd
 from numpy import integer
 from loguru import logger
 
-from typing import TYPE_CHECKING, Union, List, Tuple
+from typing import TYPE_CHECKING, Union, List, Dict
 if TYPE_CHECKING:
-    from blaseball.stats.players import Player
-    from blaseball.stats.statclasses import Stat, Kinds
+    from blaseball.stats import statclasses, players
 
 
 class PlayerBase(MutableMapping):
@@ -25,15 +24,44 @@ class PlayerBase(MutableMapping):
         with players as rows and stats as columns,
     and players, a dict indext by CID which contains pointers to the Players objects.
     """
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            recalculation_order: List['statclasses.Kinds'],
+            base_dependencies: Dict['statclasses.Kinds', List['statclasses.Kinds']]
+    ) -> None:
         self.df = pd.DataFrame()
         self.stats = {}  # dict of Stats
         self._default_stat_list = []
         self.players = {}  # dict of Players
 
+        self.recalculation_order = recalculation_order
+
+        self._base_dependencies = base_dependencies
+        self.dependencies = {}
+        # fill in everything that's not a dependent
+        for kind in self.recalculation_order:
+            if kind not in base_dependencies:
+                self.dependencies[kind] = []
+            else:
+                self.dependencies[kind] = base_dependencies[kind]
+
+        self.dependents = {kind: [] for kind in self.recalculation_order}
+        for kind in self.recalculation_order:
+            for dependency in self.dependencies[kind]:
+                self.dependents[dependency] += [kind]
+
         logger.debug("Initialized new playerbase.")
 
-    def new_player(self, player: 'Player'):
+    def create_blank_stale_dict(self, state=True):
+        """Creates a fresh blank stale dictionary. If state is True, this dict starts entirely stale.
+        Otherwise, it starts fresh."""
+        stale_dict = {kind: False for kind in self.recalculation_order}
+        if state:
+            for kind in self._base_dependencies.keys():
+                stale_dict[kind] = True
+        return stale_dict
+
+    def new_player(self, player: 'players.Player'):
         self.players[player.cid] = player
         self.df.loc[player.cid] = self._default_stat_list
 
@@ -56,7 +84,7 @@ class PlayerBase(MutableMapping):
             )
         return len(self.df.index)
 
-    def __getitem__(self, key: Hashable) -> Union['Player', List['Player']]:
+    def __getitem__(self, key: Hashable) -> Union['players.Player', List['players.Player']]:
         """Get a player or range of players by name(s) or cid(s)"""
         if isinstance(key, str):
             item_row = self.df.loc[self.df['name'] == key.title()]
@@ -72,7 +100,7 @@ class PlayerBase(MutableMapping):
         else:
             raise KeyError(f"Could not index by type {type(key)}, expected CID int or name string.")
 
-    def iloc(self, key: Union[int, slice, range]) -> Union['Player', List['Player']]:
+    def iloc(self, key: Union[int, slice, range]) -> Union['players.Player', List['players.Player']]:
         """
         You should not be able to do this. This is a mapping, so order doesn't matter.
         But dang it, sometimes you just need a player or a handful, and you don't care who you get.
@@ -90,7 +118,7 @@ class PlayerBase(MutableMapping):
             return_players.append(self[cid])
         return return_players
 
-    def __setitem__(self, key: Hashable, value: Union['Player', pd.Series]) -> None:
+    def __setitem__(self, key: Hashable, value: Union['players.Player', pd.Series]) -> None:
         """
         If the value player is in the playerbase, that player will be duplicated!
         Take care with this function!
@@ -98,7 +126,7 @@ class PlayerBase(MutableMapping):
         # self[key].assign(value
         raise NotImplementedError("MERP")
 
-    def __delitem__(self, key: Union[int, 'Player']) -> None:
+    def __delitem__(self, key: Union[int, 'players.Player']) -> None:
         try:
             del self[key.cid]
         except AttributeError:
@@ -129,39 +157,52 @@ class PlayerBase(MutableMapping):
     def __iter__(self) -> iter:
         return iter(self.players.values())
 
-    def add_stat(self, stat: 'Stat'):
+    def recalculate_all(self):
+        for kind in self.recalculation_order:
+            try:
+                for stat in self.get_stats_with_kind(kind):
+                    self.df[stat] = [stat.calculate_value(cid) for cid in self.df.index]
+            except KeyError:
+                # TODO: once we don't have any dummy kinds, we can remove this.
+                pass
+        for player in self.players.values():
+            player._stale_dict = self.create_blank_stale_dict(False)
+
+    def add_stat(self, stat: 'statclasses.Stat'):
         """This adds a stat to the playerbase. This is called by the Stat's init method!!"""
+        if stat.kind not in self.recalculation_order:
+            raise RuntimeError(f"Invalid stat kind! {stat.kind} not in {self.recalculation_order}!")
         self.stats[stat.name] = stat
         self.df[stat.name] = stat.default
         self._default_stat_list += [stat.default]
 
-    def remove_stat(self, stat: 'Stat'):
+    def remove_stat(self, stat: 'statclasses.Stat'):
         del self.stats[stat.name]
         column_pos = list(self.df.columns).index(stat.name)
         self.df.drop(columns=[stat.name], inplace=True)
         self._default_stat_list.pop(column_pos)
 
     # stat indexing functions
-    def get_stats_with_kind(self, kind: 'Kinds') -> List['Stat']:
+    def get_stats_with_kind(self, kind: 'statclasses.Kinds') -> List['statclasses.Stat']:
         stats = [x for x in self.stats.values() if x.kind == kind]
         if len(stats) == 0:
             raise KeyError(f"Could not locate any stats with kind {kind}!")
         return stats
 
-    def get_stats_with_personality(self, personality: 'Stat') -> List['Stat']:
+    def get_stats_with_personality(self, personality: 'statclasses.Stat') -> List['statclasses.Stat']:
         # this lazily evaluates so we should only call x.personality if it has it:
         ratings = [x for x in self.stats.values() if hasattr(x, 'personality') and x.personality == personality]
         if len(ratings) == 0:
             raise KeyError(f"Could not locate any stats with personality {personality}!")
         return ratings
 
-    def get_stats_with_category(self, category: 'Stat') -> List['Stat']:
+    def get_stats_with_category(self, category: 'statclasses.Stat') -> List['statclasses.Stat']:
         stats = [x for x in self.stats.values() if hasattr(x, 'category') and x.category == category]
         if len(stats) == 0:
             raise KeyError(f"Could not locate any stats with category {category}!")
         return stats
 
-    def get_stats_by_name(self, identifier: str) -> List['Stat']:
+    def get_stats_by_name(self, identifier: str) -> List['statclasses.Stat']:
         if identifier in self.stats:
             return [self.stats[identifier]]
 

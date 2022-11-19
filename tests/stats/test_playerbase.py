@@ -7,7 +7,7 @@ from blaseball.stats import stats as s
 
 class TestPlayerBasePlayers:
     def test_generate_clear(self):
-        pb = PlayerBase()
+        pb = PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
         name = statclasses.Stat("name", statclasses.Kinds.test, playerbase=pb)
         assert len(pb) == 0
         for __ in range(10):
@@ -76,7 +76,7 @@ class TestPlayerBaseStats:
         assert 'col1' in arbitrary_pb.df.columns
 
     def test_add_stat(self, arbitrary_pb):
-        temp_pb = PlayerBase()
+        temp_pb = PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
         test_stat = statclasses.Stat("test stat", statclasses.Kinds.test_dependent, default=5, playerbase=temp_pb)
         assert test_stat not in arbitrary_pb.stats
         arbitrary_pb.add_stat(test_stat)
@@ -101,6 +101,21 @@ class TestPlayerBaseStats:
         for i in range(len(arbitrary_pb.stats)):
             assert arbitrary_pb._default_stat_list[i] == -1
 
+    def test_recalculate_all(self, arbitrary_pb):
+        # make a simple dependent stat
+        statclasses.Calculatable(
+            "dependent stat",
+            statclasses.Kinds.test_dependent,
+            lambda: -2.0,
+            lambda col3: col3,
+            arbitrary_pb
+        )
+        assert list(arbitrary_pb.df["dependent stat"]) == [-2.0] * 5
+        assert arbitrary_pb.iloc(1)._stale_dict[statclasses.Kinds.test_dependent]
+        arbitrary_pb.recalculate_all()
+        assert list(arbitrary_pb.df["dependent stat"]) == list(arbitrary_pb.df['col3'])
+        assert not arbitrary_pb.iloc(1)._stale_dict[statclasses.Kinds.test_dependent]
+
 
 class TestPlayerBase:
     def test_verify(self, arbitrary_pb):
@@ -109,6 +124,13 @@ class TestPlayerBase:
     def test_global_pb_verify(self):
         s.pb.verify()
 
-    def test_strings(self, arbitrary_pb):
-        assert isinstance(str(arbitrary_pb), str)
-        assert isinstance(repr(arbitrary_pb), str)
+    def test_strings(self):
+        assert isinstance(str(s.pb), str)
+        assert isinstance(repr(s.pb), str)
+
+    @pytest.mark.parametrize("state", [True, False])
+    def test_create_blank_stale_dict(self, state):
+        test_dict = s.pb.create_blank_stale_dict(state)
+        assert len(test_dict) > 5
+        assert not test_dict[statclasses.Kinds.personality]
+        assert test_dict[statclasses.Kinds.weight] == state
