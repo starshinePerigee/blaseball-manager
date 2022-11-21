@@ -21,7 +21,7 @@ def player_dependent(player_1):
 
 
 class TestPlayerIndexing:
-    def test_init(self):
+    def test_init(self, empty_all_base):
         player = players.Player(s.pb)
         assert player.cid in s.pb.df.index
         assert s.pb.df.at[player.cid, "name"] == 'Wyatt Mason'

@@ -35,3 +35,13 @@ def test_dataframe_map_multiple():
 
     assert mapped_add(10) == 1.1
     assert mapped_cat(13) == 'd4'
+
+
+def test_dataframe_mutable_target():
+    def test_add(col1, col3):
+        return col1 + col3
+    mapped_add = dataframe_map(test_add, test_dataframe)
+
+    test_dataframe.loc[15] = [6, 11, "f", 0.6]
+
+    assert mapped_add(15) == 6.6

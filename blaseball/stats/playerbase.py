@@ -29,7 +29,17 @@ class PlayerBase(MutableMapping):
             recalculation_order: List['statclasses.Kinds'],
             base_dependencies: Dict['statclasses.Kinds', List['statclasses.Kinds']]
     ) -> None:
+        # this is the beating heart of the playerbase:
         self.df = pd.DataFrame()
+        # some guidelines on using your heart.
+        # 1. ALWAYS perform operations IN-PLACE.
+        # df.drop() creates a copy, and breaks a ton of stuff - unless you use inplace=True
+        # 2. whenever possible, index the stat through the player as
+        # pb[player][stat] instead of via the df directly - the player handles caching and updating.
+        # 3. you can index this df by stat and by player (via loc[]) directly -
+        # you don't need to disambiguate like pb.df[player.cid];
+        # players and stats has to their index and column headers respectively
+
         self.stats = {}  # dict of Stats
         self._default_stat_list = []
         self.players = {}  # dict of Players
@@ -67,7 +77,7 @@ class PlayerBase(MutableMapping):
 
     def clear_players(self):
         self.players = {}
-        self.df = self.df.drop(self.df.index)
+        self.df.drop(self.df.index, inplace=True)
 
     def __len__(self) -> int:
         if len(self.players) != len(self.df.index):
