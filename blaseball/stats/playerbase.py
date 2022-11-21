@@ -159,12 +159,8 @@ class PlayerBase(MutableMapping):
 
     def recalculate_all(self):
         for kind in self.recalculation_order:
-            try:
-                for stat in self.get_stats_with_kind(kind):
-                    self.df[stat] = [stat.calculate_value(cid) for cid in self.df.index]
-            except KeyError:
-                # TODO: once we don't have any dummy kinds, we can remove this.
-                pass
+            for stat in self.get_stats_with_kind(kind):
+                self.df[stat] = [stat.calculate_value(cid) for cid in self.df.index]
         for player in self.players.values():
             player._stale_dict = self.create_blank_stale_dict(False)
 

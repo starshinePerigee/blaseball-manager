@@ -81,12 +81,8 @@ class Player(Mapping):
     def recalculate(self) -> None:
         for kind in self.pb.recalculation_order:
             if self._stale_dict[kind]:
-                try:
-                    for stat in s.pb.get_stats_with_kind(kind):
-                        self[stat] = stat.calculate_value(self.cid)
-                except KeyError:
-                    # TODO: once we don't have any dummy kinds, we can remove this.
-                    pass
+                for stat in s.pb.get_stats_with_kind(kind):
+                    self[stat] = stat.calculate_value(self.cid)
         for kind in self._stale_dict:
             self._stale_dict[kind] = False
 
@@ -179,9 +175,13 @@ class Player(Mapping):
     @staticmethod
     def _to_stars(value: float) -> str:
         """converts a 0 - 2 float number into a star string"""
+        if value <= 0:
+            return "0"
+
         stars = int(value * 5)
         half = (value * 5) % 1 >= 0.5
         star_string = "*" * stars + ('-' if half else '')
+
         if len(star_string) > 5:
             star_string = star_string[0:5] + " " + star_string[5:]
         elif len(star_string) == 0:

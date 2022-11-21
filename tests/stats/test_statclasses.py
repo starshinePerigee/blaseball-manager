@@ -1,6 +1,7 @@
 import pytest
 
 from blaseball.stats import statclasses, playerbase
+from blaseball.stats import stats as s
 
 
 @pytest.fixture
@@ -115,6 +116,54 @@ def test_descriptor(arbitrary_pb):
 
 
 class TestDescriptor:
+    def test_value_dict(self):
+        value_dict = {2: "two"}
+        assert statclasses.Descriptor._parse_value_dict(value_dict, 1.0) == "two"
+
+        with pytest.raises(RuntimeError):
+            statclasses.Descriptor._parse_value_dict(value_dict, 2.1)
+
+        value_dict[1] = "one"
+        assert statclasses.Descriptor._parse_value_dict(value_dict, 0.5) == "one"
+        assert statclasses.Descriptor._parse_value_dict(value_dict, 1.5) == "two"
+
+    def test_uninitialize(self, test_descriptor):
+        assert test_descriptor.calculate_value(10) == test_descriptor.default
+
+    def test_parse_second_level_weird(self, arbitrary_pb):
+        col3 = arbitrary_pb.stats['col3']
+        assert statclasses.Descriptor._parse_second_level("test str", col3, 0.1, 10, 1.0) == "test str"
+
+        value_dict = {2: "two", 1: "one"}
+        assert statclasses.Descriptor._parse_second_level(value_dict, col3, 0.5, 10, 1.0) == "one"
+
+        fail_dict = {col3: "merp nerp"}
+        with pytest.raises(RuntimeError):
+            statclasses.Descriptor._parse_second_level(fail_dict, col3, 0.1, 10, 1.0)
+
+    # _parse_second_level(first_level_result, highest_stat, highest_value, player_index, secondary_threshold):
+    def test_parse_second_level_str(self, arbitrary_pb):
+        col3 = arbitrary_pb.stats['col3']
+        col4 = arbitrary_pb.stats['col4']
+        col5 = arbitrary_pb.stats['col5']
+        test_dict = {
+            col3: "three",
+            col4: "four",
+            col5: "five"
+        }
+        # test with no secondary
+        assert statclasses.Descriptor._parse_second_level(test_dict, col4, 1.0, 10, 1.0) == "four"
+        # test secondary
+        assert statclasses.Descriptor._parse_second_level(test_dict, col4, 0.5, 10, 0.1) == "three"
+        # test zeros
+        assert statclasses.Descriptor._parse_second_level(test_dict, col4, 0.0, 10, 0.1) == "three"
+
+    def test_parse_second_level_value_dict(self, arbitrary_pb):
+        value_dict = {2: "two", 1: "one"}
+        col3 = arbitrary_pb.stats['col3']
+
+        assert statclasses.Descriptor._parse_second_level(value_dict, col3, 0.4, 10, 1.0) == "one"
+
     def test_single_str(self, test_descriptor, arbitrary_pb):
         test_descriptor.add_weight(arbitrary_pb.stats['col3'], "col3 focused")
         test_descriptor.add_weight(arbitrary_pb.stats['col4'], "col4 focused")
@@ -135,16 +184,16 @@ class TestDescriptor:
         assert test_descriptor.calculate_value(14) == "0.6"
 
     def test_second_order_stats(self, test_descriptor, arbitrary_pb):
-        stat_1 = arbitrary_pb.stats['col3']
-        stat_2 = arbitrary_pb.stats['col4']
+        col3 = arbitrary_pb.stats['col3']
+        col4 = arbitrary_pb.stats['col4']
 
         test_descriptor.add_weight(
-            stat_1,
-            {stat_1: "11", stat_2: "12"}
+            col3,
+            {col3: "11", col4: "12"}
         )
         test_descriptor.add_weight(
-            stat_2,
-            {stat_1: "21", stat_2: "22"}
+            col4,
+            {col3: "21", col4: "22"}
         )
 
         # 0.33, 0.66, 1, 0.75, 0.6
@@ -155,6 +204,9 @@ class TestDescriptor:
         assert test_descriptor.calculate_value(13) == "12"
         assert test_descriptor.calculate_value(14) == "11"
         assert isinstance(test_descriptor.calculate_value(12), str)
+
+    def test_single_second_order(self, test_descriptor, arbitrary_pb):
+        pass  # TODO
 
     def test_all(self, test_descriptor, arbitrary_pb):
         stat_1 = arbitrary_pb.stats['col3']
@@ -177,7 +229,11 @@ class TestDescriptor:
         assert test_descriptor.calculate_value(11) == "all_2"
         assert "all" in test_descriptor.calculate_value(12)
         assert test_descriptor.calculate_value(13) == "all_1"
-        assert test_descriptor.calculate_value(14) == "12"
+        assert test_descriptor.calculate_value(14) == "11"
+
+    def test_all_zeros_integrated(self, player_1):
+        player_1.set_all_stats(0)
+        assert player_1[s.defense_descriptor] == "Force Pitcher"
 
     # dict-dict-dict is not supported. If we need it, we can implement it.
     # def test_third_order_stats_dict_x3(self, test_descriptor, arbitrary_pb):

@@ -66,10 +66,8 @@ RECALCULATION_ORDER_GLOBAL = [
     Kinds.total_weight,
     Kinds.descriptor,
     Kinds.condition,
-    Kinds.performance,
-    Kinds.averaging,
-    Kinds.test,
-    Kinds.test_dependent
+    # Kinds.performance,
+    # Kinds.averaging,
 ]
 
 RECALCULATION_ORDER_TEST = [
@@ -300,7 +298,49 @@ class Descriptor(Stat):
         raise RuntimeError(f"Could not build a descriptor! "
                            f"Max threshold value: {value} vs keys: {value_dict}")
 
-    def get_descriptor(self, player_index):
+    @staticmethod
+    def _parse_second_level(first_level_result, highest_stat, highest_value, player_index, secondary_threshold):
+
+        if isinstance(first_level_result, str):
+            #  Dict[Stat: str]
+            return first_level_result
+
+        # pull a key at random to check its type
+        result_key_instance = next(iter(first_level_result))
+
+        if isinstance(result_key_instance, (int, float)):
+            # this is a value dictionary
+            return Descriptor._parse_value_dict(first_level_result, highest_value)
+
+        # if we reach here, current_level_result is a second dictionary of stat: value pairs
+        # ie: there's another level
+        # check to make sure it's not a single dict element tho lmao
+        if len(first_level_result) < 2:
+            raise RuntimeError(f"Bad first level resul in descriptor! result dict: '{first_level_result}'")
+
+        # build another tuple list
+        second_stat_pairs = [(weight[player_index], weight) for weight in first_level_result]
+        second_stat_pairs.sort(key=lambda x: x[0], reverse=True)
+
+        first_is_above_zero = second_stat_pairs[0][0] > 0
+        first_in_secondary = highest_stat in first_level_result
+        if first_is_above_zero and first_in_secondary:
+            second_is_above_threshold = second_stat_pairs[1][0] / highest_value > secondary_threshold
+        else:
+            second_is_above_threshold = False
+
+        if second_is_above_threshold:
+            # we use the secondary
+            final_result = first_level_result[second_stat_pairs[1][1]]
+        else:
+            final_result = first_level_result[second_stat_pairs[0][1]]
+
+        if isinstance(final_result, str):
+            return final_result
+        else:
+            return Descriptor._parse_value_dict(final_result, highest_value)
+
+    def calculate_value(self, player_index):
         """
         This crunches through an arbitrarily-nested dict of weights to generate a descriptor.
         See add_weight() for description on how to format it.
@@ -308,76 +348,59 @@ class Descriptor(Stat):
         This works like so:
         there are four options. The first pass is always going to be a stats: foo dictionary pair.
         foo is one of several things
-            - if it's a string, find the largest stat and return it's string
+            - if it's a string, find the largest stat and return its string
             - if it's a number-keyed dict, call _parse_value_dict() to use the top level value
-            - if it's another stat-keyed dict, find the largest and second largest stat. then,
-            -- if the second largest is above
+            - if it's another stat-keyed dict, find the largest and second largest stat. and parse
+            appropriately
+
+        this has gotten out of hand, and probably needs another refactor in the future :c
         """
-        # first index the top level
-        # check for the 'all' condition
-        value_stat_dict = {weight[player_index]: weight for weight in self.weights}
-        highest_stat_value = max(value_stat_dict)
-        if highest_stat_value == 0:
-            # avoid a div/0 error
+        # first, catch some dumb cases
+        if len(self.weights) == 0:
+            logger.warning(f"Called get_descriptor() of uninitialized weight {self}")
+            return self.default
+        elif len(self.weights) == 1:
+            highest_stat = list(self.weights)[0]
+            return self._parse_second_level(
+                list(self.weights.values())[0],
+                highest_stat,
+                highest_stat[player_index],
+                player_index,
+                self.secondary_threshold
+            )
+
+        # build a (value, stat) tuple list
+        value_stat_pairs = [(weight[player_index], weight) for weight in self.weights]
+        value_stat_pairs.sort(key=lambda x: x[0], reverse=True)
+
+        # handle some special cases
+        if value_stat_pairs[0][0] == 0:
+            # if highest_stat is 0, that means everything is zero (or the stats go negative)
+            # either way, we need to avoid a div/0 error
             if self.all is not None:
+                # use 'all' if it's an option
                 highest_stat = 'all'
                 current_level_result = self.all
             else:
-                highest_stat = list(value_stat_dict.values())[0]
-                current_level_result = self.weights[highest_stat]
-        elif self.all is not None and min(value_stat_dict) / highest_stat_value > self.secondary_threshold:
+                # pick something arbitrarily lol
+                highest_stat = value_stat_pairs[0][1]
+                current_level_result = self.weights[value_stat_pairs[0][1]]
+        # check for the 'all' condition:
+        elif self.all is not None and value_stat_pairs[-1][0] / value_stat_pairs[0][0] > self.secondary_threshold:
             highest_stat = 'all'
             current_level_result = self.all
         else:
-            highest_stat = value_stat_dict.pop(highest_stat_value)
-            current_level_result = self.weights[highest_stat]
+            # this is basically the 'nominal' case
+            highest_stat = value_stat_pairs[0][1]
+            current_level_result = self.weights[value_stat_pairs[0][1]]
 
-        if isinstance(current_level_result, str):
-            #  Dict[Stat: str]
-            return current_level_result
-
-        # pull a key at random to check its type
-        result_key_instance = next(iter(current_level_result))
-
-        if isinstance(result_key_instance, (int, float)):
-            # this is a value dictionary
-            return self._parse_value_dict(current_level_result, highest_stat_value)
-
-        # if we reach here, current_level_result is a dictionary of stat: value pairs
-        # ie: there's another level
-
-        # first we need to find the second level largest stat and value
-        second_level_value_stat_dict = {weight[player_index]: weight for weight in current_level_result}
-        highest_second_level_value = max(second_level_value_stat_dict)
-
-        if second_level_value_stat_dict[highest_second_level_value] is highest_stat and \
-                len(second_level_value_stat_dict) > 1:
-            second_level_value_stat_dict.pop(highest_second_level_value)
-            next_highest_value = max(second_level_value_stat_dict)
-        else:
-            next_highest_value = highest_second_level_value
-
-        # calculate the next highest to top level ratio
-        try:
-            if next_highest_value / highest_stat_value >= self.secondary_threshold:
-                # we are within the ratio, so we're taking the secondary stat fork
-                final_stat = second_level_value_stat_dict[next_highest_value]
-            else:
-                final_stat = highest_stat
-        except ZeroDivisionError:  # can happen if one of the items is 0.
-            final_stat = highest_stat
-
-        second_level_result = current_level_result[final_stat]
-        if isinstance(second_level_result, str):
-            return second_level_result
-        else:
-            return self._parse_value_dict(second_level_result, highest_stat_value)
-
-    def calculate_value(self, player_index):
-        if len(self.weights) == 0:
-            return self.default  # return default if uninitialized descriptor
-        else:
-            return self.get_descriptor(player_index)
+        return self._parse_second_level(
+            current_level_result,
+            highest_stat,
+            value_stat_pairs[0][0],
+            player_index,
+            self.secondary_threshold
+        )
 
 
 class Rating(Stat):

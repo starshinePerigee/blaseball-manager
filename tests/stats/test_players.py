@@ -126,5 +126,5 @@ class TestPlayerOther:
         player_1.recalculate()
         # TODO: this fails with "-" when run with the entire test
         assert player_1.total_stars() == "0"
-        player_1.set_all_stats("1.0")
+        player_1.set_all_stats(1.0)
         assert player_1.total_stars() == "*****"
