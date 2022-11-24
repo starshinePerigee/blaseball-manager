@@ -7,12 +7,10 @@ import numpy
 import random
 from loguru import logger
 
-# import blaseball
-from blaseball.stats.stats import pb
-from blaseball.stats.statclasses import Stat
-from blaseball.stats.playerbase import PlayerBase
-from blaseball.stats.players import Player
-from blaseball.stats import stadium, teams, lineup
+from blaseball.stats import statclasses, playerbase, players, stadium, teams, lineup
+from blaseball.playball import ballgame, gamestate, basepaths, statsmonitor, pitching, basepaths, inplay, pitchmanager
+from blaseball.util import messenger
+from blaseball.stats import stats as s
 
 from support import fixturetarget
 
@@ -39,24 +37,24 @@ class TestFixtures:
         assert len(logger_store) == 0
 
     def test_arbitrary_pb(self, arbitrary_pb):
-        assert isinstance(arbitrary_pb, PlayerBase)
+        assert isinstance(arbitrary_pb, playerbase.PlayerBase)
         stat_1 = arbitrary_pb.stats['col1']
-        assert isinstance(stat_1, Stat)
+        assert isinstance(stat_1, statclasses.Stat)
         assert stat_1.name == 'col1'
         # assert isinstance(arbitrary_pb[10], Player)
 
     def test_arbitrary_stats(self, arbitrary_pb, stat_1, stat_2):
-        assert isinstance(stat_1, Stat)
+        assert isinstance(stat_1, statclasses.Stat)
         assert stat_1 is not stat_2
         assert stat_1.name == 'col1'
         assert stat_1.name in arbitrary_pb.stats
 
     def test_playerbase_10(self, playerbase_10):
-        assert len(pb) == 10
-        assert isinstance(pb.iloc(0), Player)
+        assert len(s.pb) == 10
+        assert isinstance(s.pb.iloc(0), players.Player)
 
     def test_playerbase_10_clear(self):
-        assert len(pb) == 0
+        assert len(s.pb) == 0
 
     def test_league_2(self, league_2):
         assert isinstance(league_2, teams.League)
@@ -65,11 +63,11 @@ class TestFixtures:
         assert isinstance(team_1, teams.Team)
 
     def test_player_1(self, player_1):
-        assert isinstance(player_1, Player)
+        assert isinstance(player_1, players.Player)
         # assert isinstance(player_1, blaseball.stats.players.Player)
 
-    def test_empty_all_base(self, empty_all_base):
-        assert len(pb) == 0
+    # def test_empty_all_base(self, empty_all_base):
+    #     assert len(s.pb) == 0
 
     def test_stadium_a(self, stadium_a):
         assert isinstance(stadium_a, stadium.Stadium)
@@ -82,78 +80,78 @@ class TestFixtures:
     def test_lineup_1(self, lineup_1):
         assert isinstance(lineup_1, lineup.Lineup)
 
-#     def test_defense_1(self, defense_1):
-#         assert isinstance(defense_1, blaseball.stats.lineup.Defense)
-#
-#     def test_gamestate_1(self, gamestate_1):
-#         assert isinstance(gamestate_1, blaseball.playball.gamestate.GameState)
-#
-#     def test_empty_basepaths(self, empty_basepaths):
-#         assert isinstance(empty_basepaths, blaseball.playball.basepaths.Basepaths)
-#         assert len(empty_basepaths) == 0
-#
-#     def test_stats_monitor_1(self, stats_monitor_1, ballgame_1):
-#         assert isinstance(stats_monitor_1, blaseball.playball.statsmonitor.StatsMonitor)
-#         assert stats_monitor_1.current_state is ballgame_1.state
-#         assert stats_monitor_1.new_game_state in [
-#             priority_tuple[1]
-#             for priority_tuple
-#             in ballgame_1.messenger.listeners[blaseball.playball.gamestate.GameTags.pre_tick]
-#         ]
-#
-#     previous_pitch = None
-#
-#     @pytest.mark.parametrize('execution_number', range(5))
-#     def test_pitch_1(self, pitch_1, execution_number):
-#         assert isinstance(pitch_1, blaseball.playball.pitching.Pitch)
-#         if TestFixtures.previous_pitch is not None:
-#             assert TestFixtures.previous_pitch == pitch_1
-#         TestFixtures.previous_pitch = pitch_1
-#
-#     def test_runner_on_second(self, runner_on_second, gamestate_1):
-#         assert isinstance(runner_on_second, blaseball.playball.basepaths.Runner)
-#         assert gamestate_1.bases[2] == runner_on_second.player
-#
-#     def test_batters_4(self, batters_4, gamestate_1):
-#         assert isinstance(batters_4, list)
-#         assert isinstance(batters_4[0], blaseball.stats.players.Player)
-#         assert gamestate_1.batter() is batters_4[0]
-#
-#     def test_live_defense_1(self, live_defense_rf):
-#         assert isinstance(live_defense_rf, blaseball.playball.inplay.LiveDefense)
-#         assert live_defense_rf.location.y > 100
-#
-#     def test_messenger_1(self, messenger_1):
-#         assert isinstance(messenger_1, blaseball.util.messenger.Messenger)
-#
-#     def test_count_store_all(self, count_store_all, messenger_1):
-#         assert isinstance(count_store_all, blaseball.util.messenger.CountStore)
-#
-#         tags = blaseball.playball.gamestate.GameTags
-#         messenger_1.send(1, tags.outs)
-#         messenger_1.send(2, tags.foul)
-#         messenger_1.send(3, tags.game_updates)
-#
-#         assert count_store_all.count == 3
-#         assert [item.argument for item in count_store_all.items] == [3, 2, 1]
-#
-#     def test_pitch_manager(self, pitch_manager_1, gamestate_1, messenger_1):
-#         assert isinstance(pitch_manager_1, blaseball.playball.pitchmanager.PitchManager)
-#
-#         count_store_pitch = blaseball.util.messenger.CountStore(
-#             messenger_1,
-#             blaseball.playball.gamestate.GameTags.pitch
-#         )
-#
-#         messenger_1.send(gamestate_1, blaseball.playball.gamestate.GameTags.state_ticks)
-#         assert isinstance(count_store_pitch[0], blaseball.playball.pitching.Pitch)
-#
-#     def test_ballgame_1(self, messenger_1, ballgame_1, count_store_all, gamestate_1):
-#         assert isinstance(ballgame_1, blaseball.playball.ballgame.BallGame)
-#         assert ballgame_1.state == gamestate_1
-#         ballgame_1.send_tick()
-#         assert len(count_store_all) > 1
-#         assert isinstance(count_store_all[0], blaseball.playball.gamestate.GameState)
+    def test_defense_1(self, defense_1):
+        assert isinstance(defense_1, lineup.Defense)
+
+    def test_gamestate_1(self, gamestate_1):
+        assert isinstance(gamestate_1, gamestate.GameState)
+
+    def test_empty_basepaths(self, empty_basepaths):
+        assert isinstance(empty_basepaths, basepaths.Basepaths)
+        assert len(empty_basepaths) == 0
+
+    def test_stats_monitor_1(self, stats_monitor_1, ballgame_1):
+        assert isinstance(stats_monitor_1, statsmonitor.StatsMonitor)
+        assert stats_monitor_1.current_state is ballgame_1.state
+        assert stats_monitor_1.new_game_state in [
+            priority_tuple[1]
+            for priority_tuple
+            in ballgame_1.messenger.listeners[gamestate.GameTags.pre_tick]
+        ]
+
+    previous_pitch = None
+
+    @pytest.mark.parametrize('execution_number', range(5))
+    def test_pitch_1(self, pitch_1, execution_number):
+        assert isinstance(pitch_1, pitching.Pitch)
+        if TestFixtures.previous_pitch is not None:
+            assert TestFixtures.previous_pitch == pitch_1
+        TestFixtures.previous_pitch = pitch_1
+
+    def test_runner_on_second(self, runner_on_second, gamestate_1):
+        assert isinstance(runner_on_second, basepaths.Runner)
+        assert gamestate_1.bases[2] == runner_on_second.player
+
+    def test_batters_4(self, batters_4, gamestate_1):
+        assert isinstance(batters_4, list)
+        assert isinstance(batters_4[0], players.Player)
+        assert gamestate_1.batter() is batters_4[0]
+
+    def test_live_defense_1(self, live_defense_rf):
+        assert isinstance(live_defense_rf, inplay.LiveDefense)
+        assert live_defense_rf.location.y > 100
+
+    def test_messenger_1(self, messenger_1):
+        assert isinstance(messenger_1, messenger.Messenger)
+
+    def test_count_store_all(self, count_store_all, messenger_1):
+        assert isinstance(count_store_all, messenger.CountStore)
+
+        tags = gamestate.GameTags
+        messenger_1.send(1, tags.outs)
+        messenger_1.send(2, tags.foul)
+        messenger_1.send(3, tags.game_updates)
+
+        assert count_store_all.count == 3
+        assert [item.argument for item in count_store_all.items] == [3, 2, 1]
+
+    def test_pitch_manager(self, pitch_manager_1, gamestate_1, messenger_1):
+        assert isinstance(pitch_manager_1, pitchmanager.PitchManager)
+
+        count_store_pitch = messenger.CountStore(
+            messenger_1,
+            gamestate.GameTags.pitch
+        )
+
+        messenger_1.send(gamestate_1, gamestate.GameTags.state_ticks)
+        assert isinstance(count_store_pitch[0], pitching.Pitch)
+
+    def test_ballgame_1(self, messenger_1, ballgame_1, count_store_all, gamestate_1):
+        assert isinstance(ballgame_1, ballgame.BallGame)
+        assert ballgame_1.state == gamestate_1
+        ballgame_1.send_tick()
+        assert len(count_store_all) > 1
+        assert isinstance(count_store_all[0], gamestate.GameState)
 
 
 def noop_fn(x, iteration):
