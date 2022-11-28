@@ -77,10 +77,16 @@ def arbitrary_pb():
     )
     pb = playerbase.PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
     pb.players = {i: players.Player(pb, cid=i) for i in test_dataframe.index}
-    pd.stats = {name: statclasses.Stat(name, statclasses.Kinds.test, -1, None, pb) for name in test_dataframe.columns}
+    pd.stats = {
+        name: statclasses.Stat(name, statclasses.Kinds.test, -1, None, None, pb)
+        for name
+        in test_dataframe.columns
+    }
     pb.df = test_dataframe
     for stat in pb.stats.values():
         stat._linked_dataframe = test_dataframe
+    for player in pb.players.values():
+        player.load_from_pb()
     return pb
 
 

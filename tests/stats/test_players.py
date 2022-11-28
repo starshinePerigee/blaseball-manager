@@ -10,8 +10,7 @@ def player_dependent(player_1):
     dependent = statclasses.Calculatable(
         "dependent",
         statclasses.Kinds.weight,
-        None,
-        lambda independent: independent * 2,  # noqa - of course this shadows, that's intentional
+        lambda pb, cid: independent[cid] * 2,  # noqa - of course this shadows, that's intentional
     )
     player_1[independent] = 0.5
     player_1.recalculate()
@@ -60,7 +59,7 @@ class TestPlayerIndexing:
         player_dependent['independent'] = 1.0
         assert player_dependent._stale_dict[statclasses.Kinds.weight]
         assert player_dependent['dependent'] == pytest.approx(2.0)
-        assert player_dependent.pb.df.at[player_dependent.cid, 'dependent'] == pytest.approx(1.0)
+        assert player_dependent._stats_cache['dependent'] == pytest.approx(1.0)
 
     def test_recalculate(self, player_dependent):
         player_dependent['independent'] = 1.0
@@ -70,10 +69,10 @@ class TestPlayerIndexing:
 
         player_dependent['independent'] = 0.33
         assert player_dependent['dependent'] == pytest.approx(0.66)  # cache miss
-        assert player_dependent.pb.df.at[player_dependent.cid, 'dependent'] == pytest.approx(2.0)
+        assert player_dependent._stats_cache['dependent'] == pytest.approx(2.0)
         player_dependent.recalculate()
         assert player_dependent['dependent'] == pytest.approx(0.66)  # cache hit
-        assert player_dependent.pb.df.at[player_dependent.cid, 'dependent'] == pytest.approx(0.66)
+        assert player_dependent._stats_cache['dependent'] == pytest.approx(0.66)
 
     def test_player_modifiers(self, player_1):
         pass
@@ -100,6 +99,20 @@ class TestPlayerOther:
         player_1.remove_modifier(test_mod)
         assert player_1[s.insight] == pytest.approx(0.5)
         assert len(player_1.modifiers) == 0
+
+    def test_save_to_pb(self, player_1):
+        player_1[s.insight] = 1.2
+        assert s.pb.df.at[player_1.cid, s.insight] != 1.2
+        assert player_1._pb_is_stale
+        player_1.save_to_pb()
+        assert s.pb.df.at[player_1.cid, s.insight] == 1.2
+        assert not player_1._pb_is_stale
+
+    def test_load_from_pb(self, player_1):
+        s.pb.df.at[player_1.cid, s.insight] = 1.5
+        assert player_1[s.insight] != 1.5
+        player_1.load_from_pb()
+        assert player_1[s.insight] == 1.5
 
     def test_eq_assign(self, player_1):
         player_2 = players.Player(s.pb)

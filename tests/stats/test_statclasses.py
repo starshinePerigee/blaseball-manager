@@ -7,20 +7,20 @@ from blaseball.stats import stats as s
 @pytest.fixture
 def playerbase_2():
     pb = playerbase.PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
-    statclasses.Stat("test 1", statclasses.Kinds.test, 1, None, pb)
-    statclasses.Stat("test 2", statclasses.Kinds.test, 2, None, pb)
+    statclasses.Stat("test 1", statclasses.Kinds.test, 1, None, None, pb)
+    statclasses.Stat("test 2", statclasses.Kinds.test, 2, None, None, pb)
     return pb
 
 
 class TestStatsBase:
     def test_stat_creation(self):
         pb = playerbase.PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
-        test_stat = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, pb)
+        test_stat = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, None, pb)
         assert str(test_stat) == "Test Stat"
         assert pb.stats['test stat'] is test_stat
 
         with pytest.raises(KeyError):
-            test_stat_err = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, pb)  # noqa
+            test_stat_err = statclasses.Stat("test stat", statclasses.Kinds.test, None, None, None, pb)  # noqa
 
     def test_stat_abbreviation(self, playerbase_2):
         playerbase_2.stats["test 1"].abbreviate("TS1")
@@ -56,8 +56,7 @@ def calculatable_1(arbitrary_pb):
     calculatable = statclasses.Calculatable(
         "test c",
         statclasses.Kinds.test_dependent,
-        initial_formula=lambda col1: col1,
-        value_formula=lambda col2, col3: col2 + col3,
+        value_formula=lambda pb, cid: pb.stats['col2'][cid] + pb.stats['col3'][cid],
         playerbase=arbitrary_pb,
     )
     return calculatable
@@ -68,22 +67,19 @@ class TestCalculatable:
         assert isinstance(calculatable_1, statclasses.Calculatable)
 
     def test_calculate(self, calculatable_1):
-        assert calculatable_1.calculate_initial(10) == 1
-        assert calculatable_1.calculate_initial(13) == 4
         assert calculatable_1.calculate_value(10) == pytest.approx(6.1)
         assert calculatable_1.calculate_value(14) == pytest.approx(10.5)
 
     def test_add(self, arbitrary_pb):
-        statclasses.Calculatable(
+        new_stat = statclasses.Calculatable(
             "new stat",
-            statclasses.Kinds.test,
-            initial_formula=lambda col1, col2: col1 * col2,
-            value_formula=lambda col1, col3:  col1 + col3,
+            statclasses.Kinds.test_dependent,
+            value_formula=lambda pb, cid: pb.stats['col1'][cid] * pb.stats['col2'][cid],
             playerbase=arbitrary_pb
         )
 
-        assert arbitrary_pb.df["new stat"][10] == 6
-        assert arbitrary_pb.df["new stat"][14] == 50
+        assert new_stat[10] == 6
+        assert new_stat[14] == 50
 
     def test_add_empty(self):
         pb = playerbase.PlayerBase(statclasses.RECALCULATION_ORDER_TEST, statclasses.BASE_DEPENDENCIES_TEST)
@@ -101,10 +97,10 @@ class TestWeight:
     def test_weighting(self, arbitrary_pb):
         test_weight = statclasses.Weight("test weight", kind=statclasses.Kinds.test_dependent, playerbase=arbitrary_pb)
 
-        stat_1 = statclasses.Stat("s1", statclasses.Kinds.test, 0.5, None, arbitrary_pb)
+        stat_1 = statclasses.Stat("s1", statclasses.Kinds.test, 0.5, None, None, arbitrary_pb)
         stat_1.weight(test_weight, 2)
 
-        stat_2 = statclasses.Stat("s2", statclasses.Kinds.test, 1, None, arbitrary_pb)
+        stat_2 = statclasses.Stat("s2", statclasses.Kinds.test, 1, None, None, arbitrary_pb)
         stat_2.weight(test_weight, 1)
 
         assert test_weight.calculate_value(10) == pytest.approx((0.5 * 2 + 1) / 3)

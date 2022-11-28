@@ -106,11 +106,10 @@ class TestPlayerBaseStats:
         statclasses.Calculatable(
             "dependent stat",
             statclasses.Kinds.test_dependent,
-            lambda: -2.0,
-            lambda col3: col3,
+            lambda pb, cid: pb.df.at[cid, 'col3'],
             arbitrary_pb
         )
-        assert list(arbitrary_pb.df["dependent stat"]) == [-2.0] * 5
+        assert list(arbitrary_pb.df["dependent stat"]) == [-1.0] * 5
         assert arbitrary_pb.iloc(1)._stale_dict[statclasses.Kinds.test_dependent]
         arbitrary_pb.recalculate_all()
         assert list(arbitrary_pb.df["dependent stat"]) == list(arbitrary_pb.df['col3'])

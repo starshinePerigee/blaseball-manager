@@ -46,11 +46,20 @@ class Player(Mapping):
             # this player was already created as a row
             self.cid = cid
 
-        self._stale_dict = self.pb.create_blank_stale_dict()
+        self._stale_dict = pb.create_blank_stale_dict()
+        self._stats_cache = pb.get_default_stat_dict()
+        self._pb_is_stale = True
+
         # this does not use self.add_modifier! This is called before stats get initialized - the personality four
         # use Personality which looks backwards at this list to retroactively calculate the effects of traits
         self.modifiers = self.roll_traits()
         # you MUST call initialize after this.
+
+    def add_stat(self, stat: statclasses.Stat):
+        self._stats_cache[stat] = stat.default
+        self._pb_is_stale = True
+        for kind in self.pb.dependents[stat.kind]:
+            self._stale_dict[kind] = True
 
     @staticmethod
     def roll_traits() -> List[modifiers.Modifier]:
@@ -73,16 +82,20 @@ class Player(Mapping):
 
     def initialize(self) -> None:
         """Initialize/roll all stats for this player. This duplicates playerbase.initialize_all!"""
+        # note: any function calls in this stack can't use player-hash indexing (pb[self]) as it's not
+        # all together yet.
         for stat in self.pb.stats.values():
-            if not self._stale_dict[stat.kind]:
+            if self.pb.dependents[stat.kind]:
                 self[stat] = stat.calculate_initial(self.cid)
         self.recalculate()
+        self.save_to_pb()
 
     def recalculate(self) -> None:
+        self._pb_is_stale = True
         for kind in self.pb.recalculation_order:
             if self._stale_dict[kind]:
                 for stat in s.pb.get_stats_with_kind(kind):
-                    self[stat] = stat.calculate_value(self.cid)
+                    self._stats_cache[stat] = stat.calculate_value(self.cid)
         for kind in self._stale_dict:
             self._stale_dict[kind] = False
 
@@ -117,7 +130,20 @@ class Player(Mapping):
         for key in keys:
             self[key] = values[key]
 
+        self._stale_dict = self.pb.create_blank_stale_dict(True)
+        self.recalculate()
+
+    def save_to_pb(self):
+        """Writes the stored cache to the playerbase"""
+        self.pb.df.loc[self.cid] = self._stats_cache
+        self._pb_is_stale = False
+
+    def load_from_pb(self):
+        for stat in self._stats_cache:
+            self._stats_cache[stat] = self.pb.df.at[self.cid, stat]
+
     def stat_row(self) -> pd.Series:
+        self.save_to_pb()
         return self.pb.df.loc[self.cid]
 
     def __getitem__(self, item: Union[statclasses.Stat, str]) -> Union[float, int, str]:
@@ -126,7 +152,7 @@ class Player(Mapping):
                 # cached value is stale
                 return item.calculate_value(self.cid)
             else:
-                return self.pb.df.at[self.cid, item.name]
+                return self._stats_cache[item]
         elif item == 'cid':
             return self.cid
         elif isinstance(item, str):
@@ -139,14 +165,15 @@ class Player(Mapping):
 
     def __setitem__(self, item: Union[statclasses.Stat, str], value) -> None:
         if isinstance(item, statclasses.Stat):
-            self.pb.df.at[self.cid, item.name] = value
+            self._stats_cache[item] = value
             for kind in self.pb.dependents[item.kind]:
                 self._stale_dict[kind] = True
+            self._pb_is_stale = True
         else:
             self[self.pb.stats[item]] = value
 
     def __iter__(self) -> iter:
-        return iter(self.stat_row())
+        return iter(self._stats_cache.values())
 
     def __len__(self) -> int:
         return len(self.stat_row())
@@ -250,7 +277,6 @@ class Player(Mapping):
                 f"[{self.cid}] "
                 f"'{self['name']}' "
                 f"(c{self.cid}) at {hex(id(self))}>")
-
 
 
 if __name__ == "__main__":

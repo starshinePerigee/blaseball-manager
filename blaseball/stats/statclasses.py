@@ -10,7 +10,6 @@ from numpy.random import rand
 
 from loguru import logger
 
-from blaseball.util.dfmap import dataframe_map
 from blaseball.stats.playerbase import PlayerBase
 
 
@@ -101,6 +100,7 @@ class Stat:
             kind: Kinds,
             default=None,
             initial_function=None,
+            value_function=None,
             playerbase: PlayerBase = None
     ):
         self.name = name
@@ -119,6 +119,7 @@ class Stat:
         # Default also sets the default TYPE of that column! Don't use an int default if you're going to put
         # floats in it later!!
         self.initial_function = initial_function
+        self.value_function = value_function
 
         self._linked_playerbase = playerbase
         playerbase.add_stat(self)
@@ -136,8 +137,11 @@ class Stat:
 
     def calculate_value(self, player_index):
         """Calculate the current value for this stat based on its current value"""
-        logger.debug(f"abstract calculate_value called for {self}")
-        return self._linked_playerbase.df.at[player_index, self]
+        if self.value_function is not None:
+            return self.value_function(self._linked_playerbase, player_index)
+        else:
+            logger.debug(f"abstract calculate_value called for {self}")
+            return self._linked_playerbase.df.at[player_index, self]
 
     def abbreviate(self, abbreviation: str):
         for stat in self._linked_playerbase.stats.values():
@@ -178,33 +182,15 @@ class Calculatable(Stat):
             self,
             name: str,
             kind: Kinds,
-            initial_formula: Callable = None,
             value_formula: Callable = None,
             playerbase: PlayerBase = None,
     ):
-        super().__init__(name, kind, -1.0, None, playerbase)
-
-        # default and value should either be a mappable callable (via dfmap), constant, or None
-        if initial_formula is not None:
-            self._wrapped_initial = dataframe_map(initial_formula, self._linked_playerbase.df)
-        else:
-            self._wrapped_initial = dataframe_map(lambda: None, self._linked_playerbase.df)
-
-        if value_formula is not None:
-            self._wrapped_value = dataframe_map(value_formula, self._linked_playerbase.df)
-        else:
-            self._wrapped_value = dataframe_map(lambda: None, self._linked_playerbase.df)
+        super().__init__(name, kind, -1.0, None, value_formula, playerbase)
 
         if len(self._linked_playerbase.df) > 0:
             # create default values
             initial_values = [self.calculate_initial(i) for i in self._linked_playerbase.df.index]
             self._linked_playerbase.df[name] = initial_values
-
-    def calculate_initial(self, player_index):
-        return self._wrapped_initial(player_index)
-
-    def calculate_value(self, player_index):
-        return self._wrapped_value(player_index)
 
 
 class Weight(Stat):
@@ -221,7 +207,7 @@ class Weight(Stat):
             kind: Kinds = Kinds.weight,
             playerbase: PlayerBase = None
     ):
-        super().__init__(name, kind, -1.0, None, playerbase)
+        super().__init__(name, kind, -1.0, None, None, playerbase)
 
         self.stats = {}
         self.extra_weight = 0
@@ -273,7 +259,7 @@ class Descriptor(Stat):
     ):
         if default is None:
             default = f"{name.upper()}_DEFAULT"
-        super().__init__(name, kind, default, None, playerbase)
+        super().__init__(name, kind, default, None, None, playerbase)
 
         self.weights = {}
         self.all = None
@@ -430,6 +416,7 @@ class Rating(Stat):
             kind,
             default=-1.0,
             initial_function=None,
+            value_function=None,
             playerbase=playerbase
         )
 

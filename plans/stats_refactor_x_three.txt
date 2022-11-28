@@ -1,0 +1,58 @@
+ok this has been dumb so let's fix it
+
+two parts:
+
+1. players keep their own stats cache now, in a stat: value dictionary
+2. no more dfmap (this was dumb) and instead calculatables use stats directly
+
+
+#2 is pretty simple - pull dfmap, pull some tests, and then refactor the existing calculatables to use the
+stats directly - remembering that stats can index by player or CID to get the stat's value.
+
+
+#1 is more hard, but overall a lot simpler than stats refactor 2 -
+
+a player keeps their own stat dictionary.
+
+player[stat] always pulls to/from the player's stat cache.
+
+player.save_to_pb() writes the stats to the playerbase.
+player.load_from_pb() loads the stats from the playerbase.
+
+99% of the time we'll be using the player's stats, and then writing to the pb in one operation -
+the only time we need an up-to-date PB is when making player comparisons or when displaying chunks of players,
+such as between days.
+
+
+how do we handle dependent stats?
+
+option A: recalculate them whenever a stat is updated
+
+option B: track stale and recalculate them as-needed
+
+option C: recalculate when read and never cache the result
+- this doesn't work because you'll need the actual values in PB for things like sorting by batting average
+
+option D: recalculate only when writing to the playerbase
+
+option E: track stale and recalculate only when writing to the playerbase
+- roll this into option B, where "as needed" might mean "only during pb writes"
+
+
+the deal with dependent stats is they aren't used during a game very often, if ever. They're written far more
+than their read. So option A is out.
+
+Option B means the stats exist in three places:
+- calculated
+- player cache
+- playerbase
+
+on cache miss, calculate, else, use player cache
+
+
+Option D means stats exist in two places:
+- calculated
+- playerbase
+
+
+but we already have caching built in, and things like descriptors can be slow, so maybe option B?

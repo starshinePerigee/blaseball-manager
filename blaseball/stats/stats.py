@@ -97,10 +97,11 @@ total_defense_fielding.display_name = "total defence - fielding"
 # no abbreviations because these are internal stats
 
 total_defense = statclasses.Calculatable(
-    'total defense', statclasses.Kinds.total_weight,
-    value_formula=lambda total_pitching_defense, total_fielding_defense:
-        max(total_pitching_defense, total_fielding_defense)
+    'total defense',
+    statclasses.Kinds.total_weight,
+    value_formula=lambda df, cid: max(total_defense_pitching[cid], total_defense_fielding[cid])
 )
+
 total_defense.abbreviate("TDE")
 
 total_off_field = statclasses.Weight('total off-field', statclasses.Kinds.total_weight)
@@ -461,11 +462,11 @@ sacrifice_hits = statclasses.Stat('sacrifice hits', statclasses.Kinds.performanc
 hit_by_pitch = statclasses.Stat('hit by pitch', statclasses.Kinds.performance, 0)
 
 
-def calc_at_bats(plate_appearances, walks, sacrifice_hits, hit_by_pitch):
-    return plate_appearances - (walks + sacrifice_hits + hit_by_pitch)
+def calc_at_bats(df, cid):
+    return plate_appearances[cid] - (walks[cid] + sacrifice_hits[cid] + hit_by_pitch[cid])
 
 
-at_bats = statclasses.Calculatable('at bats', statclasses.Kinds.derived, lambda: 0, calc_at_bats)
+at_bats = statclasses.Calculatable('at bats', statclasses.Kinds.derived, calc_at_bats)
 at_bats.display_name = 'at-bats'
 
 
@@ -474,30 +475,22 @@ pitches_called = statclasses.Stat('pitches called', statclasses.Kinds.performanc
 total_called_location = statclasses.Stat('total called location', statclasses.Kinds.performance, 0)
 
 
-def calc_average_called_location(total_pitches_called, total_called_location):
-    if pitches_called == 0:
+def calc_average_called_location(df, cid):
+    if pitches_called[cid] == 0:
         return 0
     else:
-        return total_called_location / pitches_called
+        return total_called_location[cid] / pitches_called[cid]
 
 
 average_called_location = statclasses.Calculatable(
     "average called location",
     statclasses.Kinds.averaging,
-    lambda: 0,
     calc_average_called_location
 )
 
 
 pitches_thrown = statclasses.Stat("total pitches thrown", statclasses.Kinds.performance, 0)
 
-
-# oh god did you fuck up big time
-# is there no performance difference between add_average and this?
-# like, you have to track the totals instead which adds extra columns
-# you do get to skip some things (like at-bats) but a lot of these stats need to be updated every time anyway
-# even if it's updating a total instead of an average?
-# fuck time for stats refactor 3
 
 
 # pitches_thrown = Stat('total pitches thrown', 'performance')

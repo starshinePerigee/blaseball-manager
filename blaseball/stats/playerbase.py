@@ -71,6 +71,10 @@ class PlayerBase(MutableMapping):
                 stale_dict[kind] = True
         return stale_dict
 
+    def get_default_stat_dict(self):
+        """Creates a fresh blank stats cache dictionary."""
+        return {stat: stat.default for stat in self.stats.values()}
+
     def new_player(self, player: 'players.Player'):
         self.players[player.cid] = player
         self.df.loc[player.cid] = self._default_stat_list
@@ -96,15 +100,15 @@ class PlayerBase(MutableMapping):
 
     def __getitem__(self, key: Hashable) -> Union['players.Player', List['players.Player']]:
         """Get a player or range of players by name(s) or cid(s)"""
-        if isinstance(key, str):
+        if isinstance(key, (int, integer)):
+            return self.players[key]
+        elif isinstance(key, str):
             item_row = self.df.loc[self.df['name'] == key.title()]
             if len(item_row) > 1:
                 # you have duplicate names!
                 pass
             item_row = item_row.iloc[0]
             return self.players[item_row.name]
-        elif isinstance(key, (int, integer)):
-            return self.players[key]
         elif isinstance(key, (range, list)):
             return [self[i] for i in key]
         else:
@@ -181,6 +185,8 @@ class PlayerBase(MutableMapping):
         self.stats[stat.name] = stat
         self.df[stat.name] = stat.default
         self._default_stat_list += [stat.default]
+        for player in self.players.values():
+            player.add_stat(stat)
 
     def remove_stat(self, stat: 'statclasses.Stat'):
         del self.stats[stat.name]
