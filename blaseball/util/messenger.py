@@ -125,7 +125,8 @@ class Messenger:
                         finally:
                             sent.add(recipient)
 
-    # TODO: add "send queue" for optional timing management
+    # TODO: add "send queue" for optional timing management - a "send message, but at the back of the queue" option
+    # (in the appraise/bellow) option, bob can add his
 
     def __str__(self):
         total_listeners = sum([len(self.listeners[key]) for key in self.listeners])
@@ -152,7 +153,7 @@ class Listener:
 
 
 class ReceivedArgument:
-    """I can't belive i'm doing this but it's basically a namedtuple with a str method"""
+    """I can't believe I'm doing this, but it's basically a namedtuple with a str method"""
     def __init__(self, argument=None):
         callers = inspect.stack()[2:4]  # respond(), messenger.send(), caller
         self.argument = argument

@@ -45,3 +45,14 @@ def test_dataframe_mutable_target():
     test_dataframe.loc[15] = [6, 11, "f", 0.6]
 
     assert mapped_add(15) == 6.6
+
+
+def test_dataframe_spaces():
+    test_dataframe["space column"] = 2
+
+    def test_add(col1, space_column):
+        return col1 + space_column
+
+    mapped_add = dataframe_map(test_add, test_dataframe)
+
+    assert mapped_add(11) == 4

@@ -15,7 +15,7 @@ from blaseball.util.messenger import Messenger
 
 
 class GameManagmentUpdate(Update):
-    """This is a sublass for the purpose of keeping this distinct"""
+    """This is a subclass for the purpose of keeping this distinct"""
     def __init__(self, text: str = None):
         super().__init__(text)
 

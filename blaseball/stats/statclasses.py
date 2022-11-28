@@ -14,7 +14,7 @@ from blaseball.util.dfmap import dataframe_map
 from blaseball.stats.playerbase import PlayerBase
 
 
-# a stat kind is the relative type of a stat; these are used for categorization and dependencies
+# a stat kind is the relative type of stat; these are used for categorization and dependencies
 class Kinds(Enum):
     # the number in this enum
     character = auto()  # a player's character stats, such as name and fingers
@@ -26,6 +26,7 @@ class Kinds(Enum):
     descriptor = auto()  # english derived stat descriptors based on a weight
     condition = auto()  # a player's condition stats, such as mood and soul
     performance = auto()  # a tracked performance metric, such as number of hits
+    derived = auto()  # a derived, non-averaging statistic such as at-bats
     averaging = auto()  # tracked metric that is a running average, such as batting average
     test = auto()  # stats in the test group are only for use in testing and shouldn't be used anywehre else.
     test_dependent = auto()  # a test that depends on test
@@ -50,12 +51,17 @@ BASE_DEPENDENCIES_GLOBAL = {
                          Kinds.weight],
     Kinds.descriptor: [Kinds.rating, Kinds.character, Kinds.personality, Kinds.category,
                        Kinds.weight, Kinds.total_weight],
-    Kinds.averaging: [Kinds.performance],
+    Kinds.derived: [Kinds.performance],
+    Kinds.averaging: [Kinds.performance, Kinds.derived],
 }
 
 BASE_DEPENDENCIES_TEST = {
     Kinds.test_dependent: [Kinds.test]
 }
+
+# recalculation order matters for stats which depend on other stats, so it's defined here.
+# Stats which share a Kind are recalculated in the order they are first created - usually the order they are
+# defined in stats.py
 
 RECALCULATION_ORDER_GLOBAL = [
     Kinds.character,
@@ -66,8 +72,9 @@ RECALCULATION_ORDER_GLOBAL = [
     Kinds.total_weight,
     Kinds.descriptor,
     Kinds.condition,
-    # Kinds.performance,
-    # Kinds.averaging,
+    Kinds.performance,
+    Kinds.derived,
+    Kinds.averaging,
 ]
 
 RECALCULATION_ORDER_TEST = [

@@ -89,10 +89,10 @@ total_offense = statclasses.Weight('total offense', statclasses.Kinds.total_weig
 total_offense.abbreviate("TOF")
 
 # these are named with underscores so we can use them in a calculatable
-total_defense_pitching = statclasses.Weight("total_pitching_defense", statclasses.Kinds.total_weight)
+total_defense_pitching = statclasses.Weight("total pitching defense", statclasses.Kinds.total_weight)
 total_defense_pitching.display_name = "total defence - pitching"
 
-total_defense_fielding = statclasses.Weight("total_fielding_defense", statclasses.Kinds.total_weight)
+total_defense_fielding = statclasses.Weight("total fielding defense", statclasses.Kinds.total_weight)
 total_defense_fielding.display_name = "total defence - fielding"
 # no abbreviations because these are internal stats
 
@@ -450,14 +450,56 @@ playerdescriptors.describe_element(element)
 element.abbreviate("ELE")
 
 
+# performance statistics
 
-# all_stats.at_bats = Stat('at bats', 'performance')
-#
-# pitches_called = Stat('total pitches called', 'performance')
-#
-# average_called_location = Stat('average called location', 'averaging')
-# average_called_location.total_stat = 'total pitches called'
-#
+plate_appearances = statclasses.Stat('plate appearances', statclasses.Kinds.performance, 0)
+
+walks = statclasses.Stat('walks', statclasses.Kinds.performance, 0)
+
+sacrifice_hits = statclasses.Stat('sacrifice hits', statclasses.Kinds.performance, 0)
+
+hit_by_pitch = statclasses.Stat('hit by pitch', statclasses.Kinds.performance, 0)
+
+
+def calc_at_bats(plate_appearances, walks, sacrifice_hits, hit_by_pitch):
+    return plate_appearances - (walks + sacrifice_hits + hit_by_pitch)
+
+
+at_bats = statclasses.Calculatable('at bats', statclasses.Kinds.derived, lambda: 0, calc_at_bats)
+at_bats.display_name = 'at-bats'
+
+
+pitches_called = statclasses.Stat('pitches called', statclasses.Kinds.performance, 0)
+
+total_called_location = statclasses.Stat('total called location', statclasses.Kinds.performance, 0)
+
+
+def calc_average_called_location(total_pitches_called, total_called_location):
+    if pitches_called == 0:
+        return 0
+    else:
+        return total_called_location / pitches_called
+
+
+average_called_location = statclasses.Calculatable(
+    "average called location",
+    statclasses.Kinds.averaging,
+    lambda: 0,
+    calc_average_called_location
+)
+
+
+pitches_thrown = statclasses.Stat("total pitches thrown", statclasses.Kinds.performance, 0)
+
+
+# oh god did you fuck up big time
+# is there no performance difference between add_average and this?
+# like, you have to track the totals instead which adds extra columns
+# you do get to skip some things (like at-bats) but a lot of these stats need to be updated every time anyway
+# even if it's updating a total instead of an average?
+# fuck time for stats refactor 3
+
+
 # pitches_thrown = Stat('total pitches thrown', 'performance')
 #
 # pitch_stats = [

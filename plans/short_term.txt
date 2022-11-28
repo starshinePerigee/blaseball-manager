@@ -1,6 +1,6 @@
 stats refactor
-review statshortener
-review descriptors
+
+doc refactor
 
 refactor to use stats handlers in classes
 add additional fielding descriptions
@@ -25,3 +25,16 @@ refactor private methods/members into private
 
 
 leaving this here: https://pypi.org/project/inflect/
+
+
+THE PROCESS
+- questions
+- options outline
+- prototype
+- choose option
+- code outline
+- copy docs
+- write tests
+- fill code
+- pass tests
+- refactor
