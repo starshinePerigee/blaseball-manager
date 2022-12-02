@@ -439,3 +439,38 @@ class Rating(Stat):
     def calculate_value(self, player_index):
         """Modifiers are calculated and saved by the player class!"""
         return self._linked_playerbase.df.at[player_index, self]
+
+
+def build_averaging(
+        count_stat: Stat,
+        average_stat_name: str,
+        total_stat_name: Optional[str] = None,
+        average_kind: Kinds = Kinds.averaging,
+        total_kind: Kinds = Kinds.performance,
+        playerbase: Optional[PlayerBase] = None
+) -> Tuple[Calculatable, Stat]:
+    if total_stat_name is None:
+        total_stat_name = average_stat_name.replace('average', 'total')
+
+    total_stat = Stat(
+        total_stat_name,
+        total_kind,
+        0,
+        playerbase=playerbase
+    )
+
+    def averaging_function(pb_, cid):
+        count = count_stat[cid]
+        if count == 0:
+            return 0.0
+        else:
+            return total_stat[cid] / count_stat[cid]
+
+    averaging_stat = Calculatable(
+        average_stat_name,
+        average_kind,
+        averaging_function,
+        playerbase=playerbase
+    )
+
+    return averaging_stat, total_stat

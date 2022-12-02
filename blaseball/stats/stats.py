@@ -472,24 +472,12 @@ at_bats.display_name = 'at-bats'
 
 pitches_called = statclasses.Stat('pitches called', statclasses.Kinds.performance, 0)
 
-total_called_location = statclasses.Stat('total called location', statclasses.Kinds.performance, 0)
-
-
-def calc_average_called_location(df, cid):
-    if pitches_called[cid] == 0:
-        return 0
-    else:
-        return total_called_location[cid] / pitches_called[cid]
-
-
-average_called_location = statclasses.Calculatable(
-    "average called location",
-    statclasses.Kinds.averaging,
-    calc_average_called_location
+average_called_location, total_called_location = statclasses.build_averaging(
+    pitches_called, 'average called location',
 )
 
 
-pitches_thrown = statclasses.Stat("total pitches thrown", statclasses.Kinds.performance, 0)
+# pitches_thrown = statclasses.Stat("total pitches thrown", statclasses.Kinds.performance, 0)
 
 
 

@@ -94,7 +94,7 @@ class Player(Mapping):
         self._pb_is_stale = True
         for kind in self.pb.recalculation_order:
             if self._stale_dict[kind]:
-                for stat in s.pb.get_stats_with_kind(kind):
+                for stat in self.pb.get_stats_with_kind(kind):
                     self._stats_cache[stat] = stat.calculate_value(self.cid)
         for kind in self._stale_dict:
             self._stale_dict[kind] = False
@@ -103,8 +103,8 @@ class Player(Mapping):
         return sum([mod[stat] for mod in self.modifiers])
 
     def set_all_stats(self, value):
-        all_stats = s.pb.get_stats_with_kind(statclasses.Kinds.personality)
-        all_stats += s.pb.get_stats_with_kind(statclasses.Kinds.rating)
+        all_stats = self.pb.get_stats_with_kind(statclasses.Kinds.personality)
+        all_stats += self.pb.get_stats_with_kind(statclasses.Kinds.rating)
         # self['clutch'] = value
         for stat in all_stats:
             self[stat] = value
@@ -157,7 +157,7 @@ class Player(Mapping):
             return self.cid
         elif isinstance(item, str):
             try:
-                return self[s.pb.stats[item]]
+                return self[self.pb.stats[item]]
             except KeyError:
                 raise KeyError(f"No results found via string lookup for {item}")
         else:
@@ -247,7 +247,7 @@ class Player(Mapping):
         )
         text += "\r\n\r\n"
         text += "\r\n".join(
-            [f"{r}: {self._to_stars(self[r])}" for r in s.pb.get_stats_with_kind(statclasses.Kinds.personality)]
+            [f"{r}: {self._to_stars(self[r])}" for r in self.pb.get_stats_with_kind(statclasses.Kinds.personality)]
         )
         text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
         text += "Traits and Conditions\r\n\r\n"
@@ -257,11 +257,11 @@ class Player(Mapping):
         text += "\r\n\r\n~ ~ ~ ~ ~\r\n\r\n"
         text += "Deep Ratings\r\n"
 
-        for category in s.pb.get_stats_with_kind(statclasses.Kinds.category):
+        for category in self.pb.get_stats_with_kind(statclasses.Kinds.category):
             if 'total' in category.name:
                 continue
             text += f"\r\n{category}:\r\n"
-            for rating in s.pb.get_stats_with_category(category):
+            for rating in self.pb.get_stats_with_category(category):
                 text += f"{rating} {self._to_stars(self[rating.name])}\r\n"
 
         return text

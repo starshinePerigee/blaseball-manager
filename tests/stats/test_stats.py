@@ -33,6 +33,11 @@ class TestCharacterStats:
         player_1.set_all_stats(1.5)
         assert player_1[s.offense_descriptor] == "All-Rounder"
 
+    def test_averaging(self, player_1):
+        player_1[s.pitches_called] = 2
+        player_1[s.total_called_location] = 1.2
+        assert player_1[s.average_called_location] == pytest.approx(0.6)
+
 
 class TestAllBase:
     def test_existence(self):

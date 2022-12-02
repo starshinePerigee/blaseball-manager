@@ -326,3 +326,40 @@ class TestRating:
         personality = arbitrary_pb.stats['col5']
         test_rating = statclasses.Rating('test rating', personality, None, arbitrary_pb, statclasses.Kinds.test)
         assert test_rating.calculate_initial(cid) == pytest.approx(result)
+
+
+def test_averaging(arbitrary_pb):
+    count = statclasses.Stat(
+        'base_count',
+        statclasses.Kinds.test,
+        0,
+        playerbase=arbitrary_pb
+    )
+
+    average, total = statclasses.build_averaging(
+        count,
+        "averaging",
+        "total",
+        average_kind=statclasses.Kinds.test_dependent,
+        total_kind=statclasses.Kinds.test,
+        playerbase=arbitrary_pb
+    )
+
+    assert arbitrary_pb.stats['averaging'] is average
+
+    # test div 0
+    assert average[10] == 0
+
+    player_0 = arbitrary_pb[10]
+    player_0[count] += 2
+
+    assert player_0[average] == 0
+
+    player_0[total] += 5
+    assert player_0[average] == pytest.approx(2.5)
+
+    player_0.recalculate()
+    assert player_0[average] == pytest.approx(2.5)
+
+    player_0.save_to_pb()
+    assert arbitrary_pb.df['averaging'][10] == pytest.approx(2.5)
