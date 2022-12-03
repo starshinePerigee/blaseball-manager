@@ -2,12 +2,13 @@
 Controls a player's pre-hit decisions as well as their actual swing attempt.
 """
 
+from numpy.random import normal, rand
+
 from blaseball.playball.gamestate import GameState
 from blaseball.playball.pitching import Pitch
 from blaseball.stats.players import Player
 from blaseball.playball.event import Update
-
-from numpy.random import normal, rand
+from blaseball.stats import stats as s
 
 
 # Hit Intent:
@@ -79,7 +80,7 @@ class Swing(Update):
         super().__init__()
 
         self.desperation = calc_desperation(game.balls, game.strikes, game.rules.ball_count, game.rules.strike_count)
-        self.read_chance = calc_read_chance(pitch.obscurity, batter['discipline'])
+        self.read_chance = calc_read_chance(pitch.obscurity, batter[s.discipline])
         self.swing_chance = calc_swing_chance(self.read_chance, self.desperation, pitch.strike)
         self.did_swing = roll_for_swing_decision(self.swing_chance)
 
@@ -90,7 +91,7 @@ class Swing(Update):
 
         # this could probably use cleaning up
         if self.did_swing:
-            self.net_contact = batter['contact'] - pitch.difficulty
+            self.net_contact = batter[s.contact] - pitch.difficulty
             self.hit_quality = roll_hit_quality(self.net_contact)
             if self.hit_quality < -FOUL_HIT_QUALITY_THRESHOLD:
                 self.strike = True
@@ -143,9 +144,8 @@ if __name__ == "__main__":
     test_batter = g.batter()
 
     print(f"Batter: {test_batter}")
-    for s in statclasses.all_stats['rating']:
-        if s.category == 'batting':
-            print(f"{s}: {test_batter._to_stars(test_batter[s.name])}")
+    for s_ in s.pb.get_stats_with_category(s.batting):
+        print(f"{s_}: {test_batter._to_stars(test_batter[s_.name])}")
 
     def do_swing():
         p = Pitch(g, test_pitcher, test_catcher)

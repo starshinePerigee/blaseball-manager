@@ -2,14 +2,15 @@
 Governs the flight of a ball after it is hit, errored out, etc.
 """
 
+import math
+from numpy.random import normal
+
 from blaseball.playball.event import Update
 from blaseball.playball.hitting import Swing
 from blaseball.playball.gamestate import GameState
 from blaseball.stats.players import Player
 from blaseball.util.geometry import Coord
-
-import math
-from numpy.random import normal
+from blaseball.stats import stats as s
 
 
 DEGSY = u'\N{DEGREE SIGN}'
@@ -136,13 +137,11 @@ class HitBall(Update):
         self.update_stats(batter)
 
     def update_stats(self, batter: Player):
-        batter.add_average(
-            ['average hit distance', 'average exit velocity'],
-            [self.live.distance(), self.live.speed]
-        )
+        batter[s.total_hit_distance] += self.live.distance()
+        batter[s.total_exit_velocity] += self.live.speed
 
         if self.homerun:
-            batter['total home runs'] += 1
+            batter[s.total_home_runs] += 1
 
     def __str__(self):
         return f"HitBall with live {self.live}"

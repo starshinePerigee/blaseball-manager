@@ -3,6 +3,7 @@
 from blaseball.util.messenger import Messenger
 from blaseball.playball.gamestate import GameState, GameTags
 from blaseball.playball import hitting, pitching
+from blaseball.stats import stats as s
 
 
 class StatsMonitor:
@@ -26,45 +27,24 @@ class StatsMonitor:
 
     def update_pitch(self, pitch: pitching.Pitch):
         catcher = self.current_state.defense()['catcher']
+        catcher[s.pitches_called] += 1
+        catcher[s.total_called_location] += pitch.target
+
         pitcher = self.current_state.defense()['pitcher']
-        catcher.add_average("average called location", pitch.location)
-        pitcher.add_average(
-            [
-                'average pitch difficulty',
-                'average pitch obscurity',
-                'average pitch distance from edge',
-                'average pitch distance from call',
-                'thrown strike rate',
-                'average reduction'
-            ],
-            [
-                pitch.difficulty,
-                pitch.obscurity,
-                min(abs(pitch.location - 1), abs(pitch.location + 1)),
-                abs(pitch.location - pitch.target),
-                int(pitch.strike),
-                pitch.reduction
-            ]
-        )
+        pitcher[s.pitches_thrown] += 1
+        pitcher[s.total_pitch_difficulty] += pitch.difficulty
+        pitcher[s.total_pitch_obscurity] += pitch.obscurity
+        pitcher[s.average_pitch_distance_from_edge] += min(abs(pitch.location - 1), abs(pitch.location + 1))
+        pitcher[s.average_pitch_distance_from_call] += abs(pitch.location - pitch.target)
+        pitcher[s.total_reduction] += pitch.reduction
 
     def update_swing(self, swing: hitting.Swing):
         batter = self.current_state.batter()
-        batter.add_average(
-            [
-                'strike rate',
-                'ball rate',
-                'foul rate',
-                'hit rate',
-                'pitch read chance'
-            ],
-            [
-                float(swing.strike),
-                float(swing.ball),
-                float(swing.foul),
-                float(swing.hit),
-                swing.read_chance
-            ]
-        )
+        batter[s.pitches_seen] += 1
+        batter[s.total_strikes] += float(swing.strike)
+        batter[s.total_fouls] += float(swing.foul)
+        batter[s.total_hits] += float(swing.hit)
+        batter[s.total_pitch_read_percent] += swing.read_chance
 
 
 """

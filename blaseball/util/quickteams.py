@@ -3,18 +3,17 @@
 This module creates a few placeholders so we can copy less code."""
 
 from blaseball.stats import players, teams, lineup, stadium
+from blaseball.stats import stats as s
 from blaseball.playball import gamestate
 from data import teamdata
 
 from random import shuffle
 
 
-playerbase = players.PlayerBase()
-
 team_names = teamdata.TEAMS_99
 shuffle(team_names)
 
-league = teams.League(playerbase, team_names[0:2])
+league = teams.League(s.pb, team_names[0:2])
 
 player = league[0]
 

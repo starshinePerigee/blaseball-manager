@@ -55,3 +55,14 @@ stats.print_stats()
          424616 function calls (423667 primitive calls) in 0.288 seconds
          417747 function calls (416808 primitive calls) in 0.285 seconds
 """
+
+# after stats refactor!
+"""
+         166491 function calls (163942 primitive calls) in 0.097 seconds
+         164334 function calls (161828 primitive calls) in 0.096 seconds
+         163885 function calls (161392 primitive calls) in 0.089 seconds
+         160630 function calls (158223 primitive calls) in 0.088 seconds
+         164786 function calls (162278 primitive calls) in 0.099 seconds
+"""
+
+# wao 3x speedup :v

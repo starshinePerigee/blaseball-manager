@@ -512,8 +512,8 @@ strike_rate, total_strikes_against = statclasses.build_averaging(
 )
 ball_rate, total_balls_taken = statclasses.build_averaging(pitches_seen, "ball rate", "total balls taken")
 foul_rate, total_fouls = statclasses.build_averaging(pitches_seen, "foul rate", "total fouls")
-pitch_read_chance, total_pitches_read = statclasses.build_averaging(
-    pitches_seen, "pitch read rate", "total pitches read correctly"
+pitch_read_chance, total_pitch_read_percent = statclasses.build_averaging(
+    pitches_seen, "pitch read rate", "total pitch read percentage (dumb stat)"
 )
 
 average_hit_distance, total_hit_distance = statclasses.build_averaging(total_hits, "average hit distance")
@@ -521,7 +521,7 @@ average_exit_velocity, total_exit_velocity = statclasses.build_averaging(
     total_hits, "average exit velocity"
 )
 
-total_home_runs = statclasses.Stat('total home runs', statclasses.Kinds.performance)
+total_home_runs = statclasses.Stat('total home runs', statclasses.Kinds.performance, 0)
 
 
 if __name__ == "__main__":

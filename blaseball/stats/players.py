@@ -85,7 +85,8 @@ class Player(Mapping):
         # note: any function calls in this stack can't use player-hash indexing (pb[self]) as it's not
         # all together yet.
         for stat in self.pb.stats.values():
-            if self.pb.dependents[stat.kind]:
+            # only run stats that don't depend on other stats:
+            if not self.pb.dependencies[stat.kind]:
                 self[stat] = stat.calculate_initial(self.cid)
         self.recalculate()
         self.save_to_pb()

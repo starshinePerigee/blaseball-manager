@@ -124,7 +124,8 @@ def league_2():
     for i, player in enumerate(league[1]):
         player["name"] = f"Test{i} Johnson"
         player.set_all_stats(1)
-    return league
+    yield league
+    s.pb.clear_players()
 
 
 @pytest.fixture(scope='class')

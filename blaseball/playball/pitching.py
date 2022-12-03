@@ -3,14 +3,15 @@ Controls a pitch through the entire pitch process - beginning with an intent, th
 to the pitch.
 """
 
-from blaseball.playball.gamestate import GameState, GameRules
-from blaseball.playball.event import Update
-from blaseball.stats.players import Player
-
 from scipy.stats import norm
 from numpy.random import normal, rand
 from math import tanh
 from typing import List
+
+from blaseball.playball.gamestate import GameState, GameRules
+from blaseball.playball.event import Update
+from blaseball.stats.players import Player
+from blaseball.stats import stats as s
 
 
 ONE_STDV_AT_ONE_ACCURACY = 0.7  # how wide one standard deviation is at one accuracy
@@ -94,7 +95,7 @@ def calling_mod_from_outs(outs: int, outs_count: int) -> float:
 
 
 def calling_mod_from_next_hitter(current: Player, on_deck: Player) -> float:
-    return current['total offense'] - on_deck['total offense']
+    return current[s.total_offense] - on_deck[s.total_offense]
 
 
 CALLING_WEIGHTS = {
@@ -116,7 +117,7 @@ def calc_calling_modifier(game: GameState) -> float:
     calling_modifier += (calling_mod_from_count(game.balls, game.strikes,
                                                 game.rules.ball_count, game.rules.strike_count)
                          * CALLING_WEIGHTS['count'])
-    calling_modifier += (calling_mod_from_discipline_bias(game.batter()['power'], game.batter()['discipline'])
+    calling_modifier += (calling_mod_from_discipline_bias(game.batter()[s.power], game.batter()[s.discipline])
                          * CALLING_WEIGHTS['discipline_bias'])
     calling_modifier += calling_mod_from_runners(game.boolean_base_list()) * CALLING_WEIGHTS['bases_loaded']
     calling_modifier += calling_mod_from_outs(game.outs, game.rules.outs_count) * CALLING_WEIGHTS['outs_number']
@@ -154,9 +155,9 @@ def decide_call(game: GameState, catcher: Player, pitcher: Player) -> float:
     and >1 is further into ball territory."""
 
     base_calling_modifier = calc_calling_modifier(game)
-    catcher_calling_modifier = base_calling_modifier * min(1.0, catcher['calling'])
+    catcher_calling_modifier = base_calling_modifier * min(1.0, catcher[s.calling])
     ideal_strike_percent = calc_ideal_strike_percent(catcher_calling_modifier)
-    pitcher_accuracy = pitcher['accuracy']
+    pitcher_accuracy = pitcher[s.accuracy]
     target_location = calc_target_location(pitcher_accuracy, ideal_strike_percent)
     return target_location
 
@@ -232,11 +233,11 @@ class Pitch(Update):
         pitcher = pitcher
 
         self.target = decide_call(game, catcher, pitcher)
-        self.location = roll_location(self.target, pitcher['accuracy'])
-        self.strike = check_strike(self.location, catcher['calling'])
-        self.obscurity = calc_obscurity(self.location, pitcher['trickery'])
-        self.difficulty = calc_difficulty(self.location, pitcher['force'])
-        self.reduction = roll_reduction(pitcher['trickery'])
+        self.location = roll_location(self.target, pitcher[s.accuracy])
+        self.strike = check_strike(self.location, catcher[s.calling])
+        self.obscurity = calc_obscurity(self.location, pitcher[s.trickery])
+        self.difficulty = calc_difficulty(self.location, pitcher[s.force])
+        self.reduction = roll_reduction(pitcher[s.trickery])
 
         super().__init__(self.description_string(pitcher))
 
@@ -256,7 +257,7 @@ class Pitch(Update):
         else:
             loc_text = "to the far inside"
 
-        text_obscurity = pitcher['trickery'] * rand()
+        text_obscurity = pitcher[s.trickery] * rand()
         if text_obscurity > 1.5:
             pitch_text = "screwball"
         elif text_obscurity > 1:
@@ -272,7 +273,7 @@ class Pitch(Update):
         else:
             pitch_text = "two seam fastball"
 
-        text_force = normal(pitcher['force'] * 20 + 70, 10)
+        text_force = normal(pitcher[s.force] * 20 + 70, 10)
 
         return f"{text_force:.0f} mph {pitch_text} {loc_text}."
 
@@ -299,12 +300,12 @@ if __name__ == "__main__":
 
     test_pitcher = g.defense()['pitcher']
     print(f"Pitcher: {test_pitcher}")
-    for s in statclasses.all_stats['rating']:
-        if s.category == 'pitching':
-            print(f"{s}: {test_pitcher._to_stars(test_pitcher[s.name])}")
+    for stat in s.pb.get_stats_with_kind(statclasses.Kinds.rating):
+        if stat.category == 'pitching':
+            print(f"{s}: {test_pitcher._to_stars(test_pitcher[stat.name])}")
     test_catcher = g.defense()['catcher']
     print(f"Catcher: {test_catcher}")
-    print(f"Calling: {test_catcher._to_stars(test_catcher['calling'])}")
+    print(f"Calling: {test_catcher._to_stars(test_catcher[s.calling])}")
     print("")
 
     def do_pitch():
@@ -319,9 +320,10 @@ if __name__ == "__main__":
             Pitch(g, test_pitcher, test_catcher)
 
     def run_game():
-        for stat in statclasses.all_stats['averaging'] + statclasses.all_stats['performance']:
-            test_pitcher[stat.name] = 0
-            test_catcher[stat.name] = 0
+        for stat_ in s.pb.get_stats_with_kind(statclasses.Kinds.performance) + \
+                    s.pb.get_stats_with_kind(statclasses.Kinds.averaging):
+            test_pitcher[stat_.name] = 0
+            test_catcher[stat_.name] = 0
 
         do_pitch()
         g.balls = 1
