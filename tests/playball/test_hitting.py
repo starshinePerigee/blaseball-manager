@@ -2,6 +2,7 @@ import pytest
 import statistics
 
 from blaseball.playball import hitting, pitching
+from blaseball.stats import stats as s
 
 
 class TestHitting:
@@ -252,18 +253,18 @@ class TestHitStats:
 
         strikes = sum([1 if swing.strike else 0 for swing in all_swings])
         assert strikes == 36
-        assert batter['strike rate'] == pytest.approx(strikes/len(all_swings))
+        assert batter[s.strike_rate] == pytest.approx(strikes/len(all_swings))
 
         balls = sum([1 if swing.ball else 0 for swing in all_swings])
         assert balls == 24
-        assert batter['ball rate'] == pytest.approx(balls/len(all_swings))
+        assert batter[s.ball_rate] == pytest.approx(balls/len(all_swings))
 
         fouls = sum([1 if swing.foul else 0 for swing in all_swings])
         assert fouls == 4
-        assert batter['foul rate'] == pytest.approx(fouls/len(all_swings))
+        assert batter[s.foul_rate] == pytest.approx(fouls/len(all_swings))
 
         hits = sum([1 if swing.hit else 0 for swing in all_swings])
         assert hits == 8
-        assert batter['hit rate'] == pytest.approx(hits/len(all_swings))
+        assert batter[s.hit_rate] == pytest.approx(hits/len(all_swings))
 
-        assert batter['pitch read chance'] == pytest.approx(0.5)
+        assert batter[s.pitch_read_chance] == pytest.approx(0.5)

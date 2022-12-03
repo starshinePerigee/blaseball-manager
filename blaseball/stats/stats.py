@@ -490,7 +490,7 @@ average_pitch_distance_from_edge, total_pitch_distance_from_edge = statclasses.b
 average_pitch_distance_from_call, total_pitch_distance_from_call = statclasses.build_averaging(
     pitches_thrown, 'average pitch distance from call'
 )
-thrown_strike_rate, total_strikes = statclasses.build_averaging(
+thrown_strike_rate, total_strikes_thrown = statclasses.build_averaging(
     pitches_thrown, 'thrown strike rate', 'total strikes thrown'
 )
 average_reduction, total_reduction = statclasses.build_averaging(

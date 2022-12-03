@@ -32,6 +32,7 @@ class StatsMonitor:
 
         pitcher = self.current_state.defense()['pitcher']
         pitcher[s.pitches_thrown] += 1
+        pitcher[s.total_strikes_thrown] += float(pitch.strike)
         pitcher[s.total_pitch_difficulty] += pitch.difficulty
         pitcher[s.total_pitch_obscurity] += pitch.obscurity
         pitcher[s.average_pitch_distance_from_edge] += min(abs(pitch.location - 1), abs(pitch.location + 1))
@@ -41,9 +42,10 @@ class StatsMonitor:
     def update_swing(self, swing: hitting.Swing):
         batter = self.current_state.batter()
         batter[s.pitches_seen] += 1
-        batter[s.total_strikes] += float(swing.strike)
+        batter[s.total_strikes_against] += float(swing.strike)
         batter[s.total_fouls] += float(swing.foul)
         batter[s.total_hits] += float(swing.hit)
+        batter[s.total_balls_taken] += float(swing.ball)
         batter[s.total_pitch_read_percent] += swing.read_chance
 
 

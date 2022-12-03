@@ -286,10 +286,11 @@ class Descriptor(Stat):
     @staticmethod
     def _parse_value_dict(value_dict: Dict[float, str], value: float) -> str:
         for key in sorted(value_dict.keys()):
-            if value < key:
+            if value <= key:
                 return value_dict[key]
-        raise RuntimeError(f"Could not build a descriptor! "
-                           f"Max threshold value: {value} vs keys: {value_dict}")
+        logger.warning(f"Could not build a descriptor! "
+                       f"Max threshold value: {value} vs keys: {value_dict}")
+        return value_dict[sorted(value_dict.keys())[-1]]
 
     @staticmethod
     def _parse_second_level(first_level_result, highest_stat, highest_value, player_index, secondary_threshold):

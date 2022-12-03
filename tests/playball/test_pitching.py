@@ -3,6 +3,7 @@ import statistics
 
 from blaseball.stats import statclasses
 from blaseball.playball import pitching
+from blaseball.stats import stats as s
 
 
 # note: this was written mostly avoiding parameterize, relying on comparisons instead. compare test_hitting
@@ -300,8 +301,8 @@ class TestPitchIntegrated:
             pitches = [pitching.Pitch(gamestate_1, pitcher, catcher) for __ in patcher]
             [stats_monitor_1.update_pitch(pitch) for pitch in pitches]
 
-            assert catcher['total pitches called'] == 100
-            assert pitcher['total pitches thrown'] == 100
+            assert catcher[s.pitches_called] == 100
+            assert pitcher[s.pitches_thrown] == 100
 
             called_location_ave = statistics.mean([x.target for x in pitches])
             difficulty_ave = statistics.mean([x.difficulty for x in pitches])
@@ -321,8 +322,12 @@ class TestPitchIntegrated:
                 group += [result]
 
             print(f"\r\nAll stats at {stat:0.1f}")
-            for tracked in statclasses.pitch_stats:
-                print(f"{tracked.title()}: {pitcher[tracked]:0.2f}")
+
+            for tracked in [
+                s.average_pitch_difficulty, s.average_pitch_obscurity, s.average_pitch_distance_from_edge,
+                s.average_pitch_distance_from_call, s.thrown_strike_rate, s.average_reduction
+            ]:
+                print(f"{tracked.name.title()}: {pitcher[tracked]:0.2f}")
 
         for group in [difficulties, obscurities, reductions]:
             assert sorted(group) == group

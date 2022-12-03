@@ -137,6 +137,7 @@ class HitBall(Update):
         self.update_stats(batter)
 
     def update_stats(self, batter: Player):
+        batter[s.total_hits] += 1
         batter[s.total_hit_distance] += self.live.distance()
         batter[s.total_exit_velocity] += self.live.speed
 

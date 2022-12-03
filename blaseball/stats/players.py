@@ -112,11 +112,11 @@ class Player(Mapping):
         self.modifiers = []
         self.recalculate()
 
-    # def reset_tracking(self):
-    #     """Reset all tracking stats to 0"""
-    #     for stat in all_stats['performance'] + all_stats['averaging']:
-    #         self[stat.name] = 0
-    #
+    def reset_tracking(self):
+        """Reset all tracking stats to 0"""
+        for stat in self.pb.get_stats_with_kind(statclasses.Kinds.performance):
+            self[stat] = 0
+        self.recalculate()
 
     def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
         """Update multiple stats from another plyaer, series, or dictionary"""

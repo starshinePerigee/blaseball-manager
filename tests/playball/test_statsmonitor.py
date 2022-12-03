@@ -3,6 +3,7 @@ import pytest
 from blaseball.playball.statsmonitor import StatsMonitor
 from blaseball.playball.gamestate import GameState
 from blaseball.playball.hitting import Swing
+from blaseball.stats import stats as s
 
 
 class TestStatsMonitor:
@@ -25,17 +26,17 @@ class TestStatsMonitor:
 
         stats_monitor_1.update_pitch(pitch_1)
 
-        assert catcher['total pitches called'] == 1
-        assert pitcher['total pitches thrown'] == 1
-        assert pitcher['average pitch difficulty'] == pitch_1.difficulty
-        assert pitcher['thrown strike rate'] == pytest.approx(1)
+        assert catcher[s.pitches_called] == 1
+        assert pitcher[s.pitches_thrown] == 1
+        assert pitcher[s.average_pitch_difficulty] == pitch_1.difficulty
+        assert pitcher[s.thrown_strike_rate] == pytest.approx(1)
 
         stats_monitor_1.update_pitch(pitch_1)
 
-        assert catcher['total pitches called'] == 2
-        assert pitcher['total pitches thrown'] == 2
-        assert pitcher['average pitch difficulty'] == pitch_1.difficulty
-        assert pitcher['thrown strike rate'] == pytest.approx(1)
+        assert catcher[s.pitches_called] == 2
+        assert pitcher[s.pitches_thrown] == 2
+        assert pitcher[s.average_pitch_difficulty] == pitch_1.difficulty
+        assert pitcher[s.thrown_strike_rate] == pytest.approx(1)
 
     def test_update_hit(self, stats_monitor_1, pitch_1, gamestate_1, patcher):
         patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: True)
@@ -45,8 +46,8 @@ class TestStatsMonitor:
 
         stats_monitor_1.update_swing(swing)
 
-        assert batter['pitches seen'] == 1
-        assert batter['strike rate'] == pytest.approx(0)
+        assert batter[s.pitches_seen] == 1
+        assert batter[s.strike_rate] == pytest.approx(0)
 
 
 class TestStatsMonitorIntegrated:
