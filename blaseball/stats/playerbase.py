@@ -38,11 +38,17 @@ class PlayerBase(MutableMapping):
         # pb[player][stat] instead of via the df directly - the player handles caching and updating.
         # 3. you can index this df by stat and by player (via loc[]) directly -
         # you don't need to disambiguate like pb.df[player.cid];
-        # players and stats has to their index and column headers respectively
+        # players and stats hash to their index and column headers respectively
 
         self.stats = {}  # dict of Stats
         self._default_stat_list = []
         self.players = {}  # dict of Players
+
+        # each time you add a column, you increase the fragmentation of the dataframe
+        # the correct way to bulk add columns is all at once in a vectorized operation
+        # the majority of stats are created in stats.py, before players are instantiated
+        # so cache the stats here before loading them to the dataframe
+        self._pending_stats = []
 
         self.recalculation_order = recalculation_order
 
@@ -76,12 +82,20 @@ class PlayerBase(MutableMapping):
         return {stat: stat.default for stat in self.stats.values()}
 
     def new_player(self, player: 'players.Player'):
+        if len(self._pending_stats) > 0:
+            self.write_stats_to_dataframe()
+
         self.players[player.cid] = player
         self.df.loc[player.cid] = self._default_stat_list
 
     def clear_players(self):
         self.players = {}
         self.df.drop(self.df.index, inplace=True)
+
+    def write_stats_to_dataframe(self):
+        """Writes all cached stats in _pending_stats to the dataframe columns"""
+        self.df = pd.DataFrame(columns=self._pending_stats)
+        self._pending_stats = []
 
     def __len__(self) -> int:
         if len(self.players) != len(self.df.index):
@@ -90,7 +104,7 @@ class PlayerBase(MutableMapping):
                 f"{len(self.players)} players vs "
                 f"{len(self.df.index)} dataframe rows."
             )
-        if len(self.stats) != len(self.df.columns):
+        if len(self.stats) != (len(self.df.columns) + len(self._pending_stats)):
             raise RuntimeError(
                 f"stats/df mismatch! "
                 f"{len(self.stats)} stats vs "
@@ -183,7 +197,12 @@ class PlayerBase(MutableMapping):
         if stat.kind not in self.recalculation_order:
             raise RuntimeError(f"Invalid stat kind! {stat.kind} not in {self.recalculation_order}!")
         self.stats[stat.name] = stat
-        self.df[stat.name] = stat.default
+
+        if len(self.df) == 0:
+            self._pending_stats += [stat.name]
+        else:
+            self.df[stat.name] = stat.default
+
         self._default_stat_list += [stat.default]
         for player in self.players.values():
             player.add_stat(stat)
@@ -228,6 +247,10 @@ class PlayerBase(MutableMapping):
     def verify(self) -> None:
         """Checks the stat and player indicies and throws an error if discrepancies are found."""
         try:
+            # check initialization
+            if len(self.players) > 0 and len(self._pending_stats) > 0:
+                raise RuntimeError(f"Players exist without initialized dataframe! pending: "
+                                   f"{len(self._pending_stats)}")
             # check self.players
             for player_cid in self.players.keys():
                 # make sure all players are listed in the right index:

@@ -82,6 +82,7 @@ def arbitrary_pb():
         for name
         in test_dataframe.columns
     }
+    pb._pending_stats = []  # blow this away
     pb.df = test_dataframe
     for stat in pb.stats.values():
         stat._linked_dataframe = test_dataframe

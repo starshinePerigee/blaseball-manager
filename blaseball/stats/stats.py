@@ -504,7 +504,7 @@ total_hits = statclasses.Stat('total hits', statclasses.Kinds.performance, 0)
 hit_rate = statclasses.Calculatable(
     "hit rate not BA",
     statclasses.Kinds.averaging,
-    value_formula=lambda df, cid: total_hits[cid] / pitches_seen[cid]
+    value_formula=lambda df, cid: total_hits[cid] / pitches_seen[cid] if pitches_seen[cid] > 0 else 0
 )
 
 strike_rate, total_strikes_against = statclasses.build_averaging(

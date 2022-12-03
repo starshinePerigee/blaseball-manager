@@ -88,6 +88,7 @@ class TestCalculatable:
             statclasses.Kinds.test,
             playerbase=pb
         )
+        pb.write_stats_to_dataframe()
 
         assert "new stat" in pb.stats
         assert "new stat" in pb.df.columns
