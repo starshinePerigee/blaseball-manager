@@ -476,70 +476,77 @@ average_called_location, total_called_location = statclasses.build_averaging(
     pitches_called, 'average called location',
 )
 
+pitches_thrown = statclasses.Stat("total pitches thrown", statclasses.Kinds.performance, 0)
 
-# pitches_thrown = statclasses.Stat("total pitches thrown", statclasses.Kinds.performance, 0)
+average_pitch_difficulty, total_pitch_difficulty = statclasses.build_averaging(
+    pitches_thrown, 'average pitch difficulty'
+)
+average_pitch_obscurity, total_pitch_obscurity = statclasses.build_averaging(
+    pitches_thrown, 'average pitch obscurity'
+)
+average_pitch_distance_from_edge, total_pitch_distance_from_edge = statclasses.build_averaging(
+    pitches_thrown, 'average pitch distance from edge'
+)
+average_pitch_distance_from_call, total_pitch_distance_from_call = statclasses.build_averaging(
+    pitches_thrown, 'average pitch distance from call'
+)
+thrown_strike_rate, total_strikes = statclasses.build_averaging(
+    pitches_thrown, 'thrown strike rate', 'total strikes thrown'
+)
+average_reduction, total_reduction = statclasses.build_averaging(
+    pitches_thrown, "average reduction"
+)
+
+pitches_seen = statclasses.Stat('pitches seen', statclasses.Kinds.performance, 0)
+
+total_hits = statclasses.Stat('total hits', statclasses.Kinds.performance, 0)
+
+hit_rate = statclasses.Calculatable(
+    "hit rate not BA",
+    statclasses.Kinds.averaging,
+    value_formula=lambda df, cid: total_hits[cid] / pitches_seen[cid]
+)
+
+strike_rate, total_strikes_against = statclasses.build_averaging(
+    pitches_seen, 'hitting strike rate', 'total strikes against'
+)
+ball_rate, total_balls_taken = statclasses.build_averaging(pitches_seen, "ball rate", "total balls taken")
+foul_rate, total_fouls = statclasses.build_averaging(pitches_seen, "foul rate", "total fouls")
+pitch_read_chance, total_pitches_read = statclasses.build_averaging(
+    pitches_seen, "pitch read rate", "total pitches read correctly"
+)
+
+average_hit_distance, total_hit_distance = statclasses.build_averaging(total_hits, "average hit distance")
+average_exit_velocity, total_exit_velocity = statclasses.build_averaging(
+    total_hits, "average exit velocity"
+)
+
+total_home_runs = statclasses.Stat('total home runs', statclasses.Kinds.performance)
 
 
+if __name__ == "__main__":
+    for p in pb.get_stats_with_kind(statclasses.Kinds.personality):
+        print(p.name.upper())
+        for s in pb.get_stats_with_personality(p):
+            print(f"\t{s}")
+    print("\n")
+    for c in pb.get_stats_with_kind(statclasses.Kinds.category):
+        print(c.name.upper())
+        for s in pb.get_stats_with_category(c):
+            print(f"\t{s}")
 
-# pitches_thrown = Stat('total pitches thrown', 'performance')
-#
-# pitch_stats = [
-#     'average pitch difficulty',
-#     'average pitch obscurity',
-#     'average pitch distance from edge',
-#     'average pitch distance from call',
-#     'thrown strike rate',
-#     'average reduction'
-# ]
-#
-# for stat in pitch_stats:
-#     new_stat = Stat(stat, 'averaging')
-#     new_stat.total_stat = 'total pitches thrown'
-#
-# pitches_seen = Stat('pitches seen', 'performance')
-#
-# hit_stats = ['strike rate', 'ball rate', 'foul rate', 'hit rate', 'pitch read chance']
-# for stat in hit_stats:
-#     new_stat = Stat(stat, 'averaging')
-#     new_stat.total_stat = 'pitches seen'
-#
-# total_hits = Stat('total hits', 'performance')
-#
-# average_hit_distance = Stat('average hit distance', 'averaging')
-# average_hit_distance.total_stat = 'total hits'
-#
-# exit_velo = Stat('average exit velocity', 'averaging')
-# exit_velo.total_stat = 'total hits'
-#
-# total_home_runs = Stat('total home runs', 'performance')
-#
-# for stat in all_stats['performance'] + all_stats['averaging']:
-#     stat.default = 0
-#
-#
-# if __name__ == "__main__":
-#     for p in all_stats[Kinds.personality]:
-#         print(p.name.upper())
-#         for s in all_stats[p]:
-#             print(f"\t{s}")
-#     print("\n")
-#     for c in all_stats[Kinds.category]:
-#         print(c.name.upper())
-#         for s in all_stats[c]:
-#             print(f"\t{s}")
-#
-#     print("\r\n\r\n")
-#     for weight in all_stats[Kinds.weight]:
-#         if "overall" not in weight.name and "total" not in weight.name:
-#             print(weight.nice_string())
-#     print('\r\n')
-#     for weight in all_stats[Kinds.weight]:
-#         if "overall" in weight.name and "total" not in weight.name:
-#             print(weight.nice_string())
-#     print('\r\n')
-#     for weight in all_stats[Kinds.weight]:
-#         if "total" in weight.name:
-#             print(weight.nice_string())
-#
-#     print("\r\n\r\nPersonality Report:")
-#     print("TBR")
+    print("\r\n\r\n")
+    for weight in pb.get_stats_with_kind(statclasses.Kinds.weight):
+        if "overall" not in weight.name and "total" not in weight.name:
+            print(weight.nice_string())
+    print('\r\n')
+    for weight in pb.get_stats_with_kind(statclasses.Kinds.weight):
+        if "overall" in weight.name and "total" not in weight.name:
+            print(weight.nice_string())
+    print('\r\n')
+    for weight in pb.get_stats_with_kind(statclasses.Kinds.weight):
+        if "total" in weight.name:
+            print(weight.nice_string())
+
+    print("\r\n\r\nPersonality Report:")
+    print("TBR")

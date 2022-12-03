@@ -5,9 +5,10 @@ Use the DescriptorBuilder to generate this code - or not lol
 
 """
 
-from typing import TYPE_CHECKING
 from blaseball.stats import statclasses
-from blaseball.stats import stats as s
+
+# we have to jump through this hoop to avoid a circular import:
+pbs = statclasses.all_base.stats
 
 
 # notes on element count:
@@ -19,39 +20,39 @@ from blaseball.stats import stats as s
 def describe_element(d: statclasses.Descriptor):
     d.secondary_threshold = 0.7
     d.add_weight(
-        s.determination,
+        pbs['determination'],
         {
-            s.determination: "flame",
-            s.enthusiasm: "purple",
-            s.stability: "steam",
-            s.insight: "lava",
+            pbs['determination']: "flame",
+            pbs['enthusiasm']: "purple",
+            pbs['stability']: "steam",
+            pbs['insight']: "lava",
         }
     )
     d.add_weight(
-        s.enthusiasm,
+        pbs['enthusiasm'],
         {
-            s.determination: "electric",
-            s.enthusiasm: "wind",
-            s.stability: "rain",
-            s.insight: "leaf",
+            pbs['determination']: "electric",
+            pbs['enthusiasm']: "wind",
+            pbs['stability']: "rain",
+            pbs['insight']: "leaf",
         }
     )
     d.add_weight(
-        s.stability,
+        pbs['stability'],
         {
-            s.determination: "ash",
-            s.enthusiasm: "music",
-            s.stability: "ocean",
-            s.insight: "gold",
+            pbs['determination']: "ash",
+            pbs['enthusiasm']: "music",
+            pbs['stability']: "ocean",
+            pbs['insight']: "gold",
         }
     )
     d.add_weight(
-        s.insight,
+        pbs['insight'],
         {
-            s.determination: "robot",
-            s.enthusiasm: "space",
-            s.stability: "bone",
-            s.insight: "dirt",
+            pbs['determination']: "robot",
+            pbs['enthusiasm']: "space",
+            pbs['stability']: "bone",
+            pbs['insight']: "dirt",
         }
     )
 
@@ -60,37 +61,37 @@ def describe_offense(d: statclasses.Descriptor):
     # here are your weights:
     """
     slugger = statclasses.Weight("slugging")
-    reliable_hitter = statclasses.Weight("contact hitter")
+    contact hitter = statclasses.Weight("contact hitter")
     manufacturer = statclasses.Weight("runs manufacturer")
-    utility_hitter = statclasses.Weight("utility hitter")
+    utility hitter = statclasses.Weight("utility hitter")
     """
     d.secondary_threshold = 0.8
     d.add_weight(
-        s.slugger,
+        pbs['slugging'],
         {
-            s.slugger: "Slugger",
-            s.contact: "Power, Contact",
-            s.manufacturer: "Power, Speed",
+            pbs['slugging']: "Slugger",
+            pbs['contact']: "Power, Contact",
+            pbs['runs manufacturer']: "Power, Speed",
         }
     )
     d.add_weight(
-        s.reliable_hitter,
+        pbs['contact hitter'],
         {
-            s.reliable_hitter: "Contact Hitter",
-            s.slugger: "Contact, Power",
-            s.manufacturer: "Contact, Speed"
+            pbs['contact hitter']: "Contact Hitter",
+            pbs['slugging']: "Contact, Power",
+            pbs['runs manufacturer']: "Contact, Speed"
         }
     )
     d.add_weight(
-        s.manufacturer,
+        pbs['runs manufacturer'],
         {
-            s.manufacturer: "Baserunner",
-            s.contact: "Speed, Contact",
-            s.power: "Speed, Power"
+            pbs['runs manufacturer']: "Baserunner",
+            pbs['contact']: "Speed, Contact",
+            pbs['power']: "Speed, Power"
         }
     )
     d.add_weight(
-        s.utility_hitter, "Utility Hitter"
+        pbs['utility hitter'], "Utility Hitter"
     )
     d.add_all(
         {0.4: "Garbage", 2.0: "All-Rounder"}
@@ -99,20 +100,20 @@ def describe_offense(d: statclasses.Descriptor):
 
 def describe_defense(d: statclasses.Descriptor):
     d.add_weight(
-        s.pitching,
+        pbs['pitching'],
         {
-            s.pitcher_speed: "Force Pitcher",
-            s.pitcher_movement: "Trickery Pitcher",
-            s.pitcher_accuracy: "Ruthless Pitcher",
-            s.pitcher_special: "Special Pitcher"
+            pbs['fastball pitcher']: "Force Pitcher",
+            pbs['movement pitcher']: "Trickery Pitcher",
+            pbs['control pitcher']: "Ruthless Pitcher",
+            pbs['special pitcher']: "Special Pitcher"
         }
     )
     d.add_weight(
-        s.defense,
+        pbs['defense'],
         {
-            s.infield: "Infielder",
-            s.outfield: "Outfielder",
-            s.catcher: "Catcher"
+            pbs['infielder']: "Infielder",
+            pbs['outfielder']: "Outfielder",
+            pbs['catcher']: "Catcher"
         }
     )
 
@@ -125,11 +126,11 @@ def _add_tiered_stat(descriptor, stat, description):
 
 
 def describe_overall(d: statclasses.Descriptor):
-    _add_tiered_stat(d, s.overall_power, "Slugger")
-    _add_tiered_stat(d, s.overall_smallball, "On-Base Hitter")
-    _add_tiered_stat(d, s.overall_fielding, "Fielder")
-    _add_tiered_stat(d, s.overall_fastball, "Fastball Pitcher")
-    _add_tiered_stat(d, s.overall_trickery, "Curveball Pitcher")
-    _add_tiered_stat(d, s.overall_utility, "Utility Player")
-    _add_tiered_stat(d, s.overall_captaincy, "Captain")
-    _add_tiered_stat(d, s.overall_support, "Support")
+    _add_tiered_stat(d, pbs['overall power'], "Slugger")
+    _add_tiered_stat(d, pbs['overall smallball'], "On-Base Hitter")
+    _add_tiered_stat(d, pbs['overall fielding'], "Fielder")
+    _add_tiered_stat(d, pbs['overall fastball'], "Fastball Pitcher")
+    _add_tiered_stat(d, pbs['overall trickery'], "Curveball Pitcher")
+    _add_tiered_stat(d, pbs['overall utility'], "Utility Player")
+    _add_tiered_stat(d, pbs['overall captaincy'], "Captain")
+    _add_tiered_stat(d, pbs['overall support'], "Support")

@@ -233,7 +233,7 @@ class Weight(Stat):
 
     def nice_string(self) -> str:
         nice = self.name + ":"
-        for v, s in sorted(zip(self.stats.values(), self.stats.keys()), reverse=True):
+        for v, s in sorted(zip(self.stats.values(), self.stats.keys()), reverse=True, key=lambda x: x[0]):
             nice += f" {s} {v}"
         if self.extra_weight != 0:
             nice += f" extra {self.extra_weight}"
