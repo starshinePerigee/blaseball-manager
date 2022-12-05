@@ -1,8 +1,8 @@
 stats refactor
+coarse balance pass
 
 doc refactor
 
-refactor to use stats handlers in classes
 add additional fielding descriptions
 fix pitch descriptors (mph and type)
 write hit descriptors

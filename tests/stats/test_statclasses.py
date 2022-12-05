@@ -117,8 +117,7 @@ class TestDescriptor:
         value_dict = {2: "two"}
         assert statclasses.Descriptor._parse_value_dict(value_dict, 1.0) == "two"
 
-        with pytest.raises(RuntimeError):
-            statclasses.Descriptor._parse_value_dict(value_dict, 2.1)
+        assert isinstance(statclasses.Descriptor._parse_value_dict(value_dict, 2.1), str)
 
         value_dict[1] = "one"
         assert statclasses.Descriptor._parse_value_dict(value_dict, 0.5) == "one"
