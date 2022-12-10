@@ -2,6 +2,10 @@
 This is a data class (but not a dataclass) that represents a single moment in blaseball. It use used as a frequent messenge / input
 to the various ballgame listeners.
 
+It mostly exists to be passed along the Messenger between a BallGame and a PitchManager. By being an external object,
+we can handle it separately and avoid circular imports
+
+(and this will also come in handy when it comes time to manage the UI)
 """
 
 from dataclasses import dataclass

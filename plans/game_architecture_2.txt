@@ -1,29 +1,26 @@
-assume we're using a messenger as previously established.
+assume we're using a messenger as previously established in the now-deleted game_architecture.txt
 
-There are a few questions:
-1. how are we handling the circular import issue:
-- do we need a GameState
-- is there an optimization issue with creating a million gamestates
+Here are some answers toa few questions:
+1. where is question one
+- when feather eventually learns to stop making numbered lists in text documents which don't auto-number
 
 2. where is game logic
-
+- game state logic is in ballgame.py > BallGame.
+- individual action logic gets stepped through and called via pitchmanager.py and submodules
 
 3. how are we structuring Messenger
-- one singleton messenger?
-- multiple messengers? create a messenger for a game? or just a tag for a game?
--- multiple messengers - one per game - makes more sense; you can link two messengers with a repeater
---- repeater can be your thread boundary?
-- single big managers for things like stats
-- manager should eventually become thread safe
+- a messenger is a many to many communication stream
+- a ballgame has its own internal messenger
+- it also has a global synchronization messenger that only pumps send_tick()
+- data escapes the parallel messengers because one statsmonitor can listen to many messengers
 
-
-option A:
-
+here's a longer summary:
 AllGames is the top level manager class:
 - creates ballgames
 - sends out tick events
 - interfaces with UI for timing
 - manages cross-game communication (re: processes)
+# todo: this does not yet exist
 
 BallGame is your manager class
 - initializes objects
@@ -38,41 +35,7 @@ PitchManager is a listener to game timing
 
 Recorder is another listener
 - saves and packages gamestates by At-Bat?
+# todo: does not yet exist
 
-no playball classes need access to BallGame
-
-each BallGame has its own messenger, and AllGames contains the global listeners and subscribes them to the manager
-as it goes.
-
-
-Event isn't necessary - Events can be built by a game recorder, which bundles together at-bats.
-
-
-
-(if you want to do a "view highlights only" it executes the game (like skip)
-
-
-ok so threading is actually not what we want - we need multiprocessing. let's put this off for a bit.
-
-
-the big issue:
-you're going to have a lot of different listeners flying around. A lot of these are tied to out of ballgame things,
-such as player stats, player modifiers, etc. etc. etc.
-
-Things that are Always Listening need to be manually joined on to each BallGame's Messenger.
-
-The hard option is manually connect them every time.
-the weird option is have a single global messenger, but use that to braodcast "new game" announcements?
-the medium option is to keep a repository of "every ballgame" recievers, and join from that container each time
-the easy option is really just have a single global messenger?
-
-
-the hard option sucks, because there's going to be a million different places and having to remember them defeats the
-entire point of a Messenger.
-
-The easy option means we'd need to have some way of distinguishing between in-game and cross-game comms. You could add
-filtering, or use two messengers, but that's kind of annoying also?
-
-the medium option and the weird option kind of sound like the same dang thing, except with a dedicated global structure
-in one (and by global it could be part of the AllGames singleton?) and requires the other object keep track of who all
-what needs to get added how; whereas a messenger for game starts means each sub-item can manage their own selves.
+4. How do we make sure everything that needs to subscribe to a ballgame subscribes to that ballgame?
+- the allgames global game messenger is persistent and each new ballgame can send a "game start" message on it.

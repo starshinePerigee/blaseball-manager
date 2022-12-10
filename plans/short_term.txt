@@ -7,7 +7,6 @@ add additional fielding descriptions
 fix pitch descriptors (mph and type)
 write hit descriptors
 add/fix spacers and stat dumps
-fix docs / remove old plans
 write balance tests
 review converting some module methods to staticmethods?
 

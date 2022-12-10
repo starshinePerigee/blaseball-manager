@@ -470,7 +470,7 @@ at_bats = statclasses.Calculatable('at bats', statclasses.Kinds.derived, calc_at
 at_bats.display_name = 'at-bats'
 
 
-pitches_called = statclasses.Stat('pitches called', statclasses.Kinds.performance, 0)
+pitches_called = statclasses.Stat('total pitches called', statclasses.Kinds.performance, 0)
 
 average_called_location, total_called_location = statclasses.build_averaging(
     pitches_called, 'average called location',

@@ -48,7 +48,7 @@ class Player(Mapping):
 
         self._stale_dict = pb.create_blank_stale_dict()
         self._stats_cache = pb.get_default_stat_dict()
-        self._pb_is_stale = True
+        self.pb_is_stale = True
 
         # this does not use self.add_modifier! This is called before stats get initialized - the personality four
         # use Personality which looks backwards at this list to retroactively calculate the effects of traits
@@ -57,7 +57,7 @@ class Player(Mapping):
 
     def add_stat(self, stat: statclasses.Stat):
         self._stats_cache[stat] = stat.default
-        self._pb_is_stale = True
+        self.pb_is_stale = True
         for kind in self.pb.dependents[stat.kind]:
             self._stale_dict[kind] = True
 
@@ -92,7 +92,7 @@ class Player(Mapping):
         self.save_to_pb()
 
     def recalculate(self) -> None:
-        self._pb_is_stale = True
+        self.pb_is_stale = True
         for kind in self.pb.recalculation_order:
             if self._stale_dict[kind]:
                 for stat in self.pb.get_stats_with_kind(kind):
@@ -141,7 +141,7 @@ class Player(Mapping):
         # self.pb.df.loc[self.cid] = self._stats_cache
         for stat in self._stats_cache:
             self.pb.df.at[self.cid, stat.name] = self._stats_cache[stat]
-        self._pb_is_stale = False
+        self.pb_is_stale = False
 
     def load_from_pb(self):
         for stat in self._stats_cache:
@@ -152,6 +152,15 @@ class Player(Mapping):
         return self.pb.df.loc[self.cid]
 
     def __getitem__(self, item: Union[statclasses.Stat, str]) -> Union[float, int, str]:
+        """
+        Get a stat or stat-by-name, using relevant caches
+
+        How does getting a stat work exactly?
+        - first, check if _stale_dict says this stat's kind is stale
+           (you can only have stale dict flip stale for calculatable kinds, so don't worry about it)
+        - if it's stale, calculate, otherwise use the stats cache
+        - all non-dependent stats will just always hit the stats cache.
+        """
         if isinstance(item, statclasses.Stat):
             if self._stale_dict[item.kind]:
                 # cached value is stale
@@ -173,7 +182,7 @@ class Player(Mapping):
             self._stats_cache[item] = value
             for kind in self.pb.dependents[item.kind]:
                 self._stale_dict[kind] = True
-            self._pb_is_stale = True
+            self.pb_is_stale = True
         else:
             self[self.pb.stats[item]] = value
 

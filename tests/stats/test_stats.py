@@ -55,9 +55,9 @@ class TestAllStats:
         ("determination", 1.0),
         ("batting", -1),
         ("i.t.", -1),
-        # ("total pitches called", 0),
+        ("total pitches called", 0),
         # ("average pitch distance from edge", 0),
-        # ("element", "Basic")
+        ("element", "Basic")
     ]
 
     @pytest.mark.parametrize(stat_param_ids, stat_params)

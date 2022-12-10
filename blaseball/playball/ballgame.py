@@ -1,4 +1,23 @@
-"""This module contains BallGame, which is responsible for managing games as they are played:
+"""
+This module contains BallGame, which is responsible for managing games as they are played:
+
+How does a ballgame happen?
+
+First, you need some Lineups.
+    A Lineup needs a Team, which needs Players, which need a Playerbase, which need Stats.
+    But all that should be initialized before you create a BallGame
+
+On init BallGame creates its own internal messenger (unless one is provided).
+
+Once BallGame exists, you need to create a PitchManger
+    This controls the basepaths, and maybe should be initialized as part of BallGame init?
+    But it's not currently.  # TODO
+
+Then you start the game with BallGame.start_game() and run the game through calls to BallGame.send_tick()
+
+Ballgame sends and receives updates through Messenger, and keeps track of the game state and moves things along
+as-needed.
+
 """
 
 from decimal import Decimal
@@ -152,7 +171,7 @@ class BallGame:
 
     def inning_mercy(self):
         logger.warning(f"Inning mercy: {self.state.away_team['team']} at {self.state.home_team['team']}")
-        self.messenger.send(Update(f"The home team recieves a boon to move things along, please."),
+        self.messenger.send(Update(f"The home team receives a boon to move things along, please."),
                             GameTags.game_updates)
         self.messenger.send(Decimal("0.1"), GameTags.runs_scored)
 

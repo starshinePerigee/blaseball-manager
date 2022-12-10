@@ -1,0 +1,60 @@
+This is a summary of the way stats and players are handled as of the "Stats Refactor"
+
+What is a Stat?
+    a stat (lowercase s) is a piece of data that describes a player (lowercase p).
+
+    These can be arbitrary numbers, like run speed (ratings), text strings (name, descriptors) and derived stats
+    (like batting average)
+
+    a Stat is a class that defines a stat. when a Stat is created, it automatically adds it to the PlayerBase
+    (and thus indirectly adds it to each player)
+
+    all stats live in a big module - blaseball.stats.stats. You are supposed to always import this as such:
+        from blaseball.stats import stats as s
+    and then you can get each Stat via s.Foo - and pycharm will autosuggest from all created stats in the stats module.
+
+
+What is a PlayerBase?
+    there are a lot of times you need to perform bulk operations on stats - maybe you want to find the player with the
+    best hitting, or calculate ERA+ (which requires knowing the average), or maybe you want to save/load stats to disk.
+    All these make it so you want all of the player's stats in a big ol' pandas dataframe.
+
+    A PlayerBase is a wrapped DataFrame. It also acts as a top level collection structure, so it holds all of the Stats
+    and also all of the Players. However you shouldn't be accessing the playerbase directly unless you're specifically
+    trying to operate on the sum total of players.
+
+
+What is a Player?
+    a player is a character on a blaseball team.
+
+    A Player is a bundle of Stats and other nonsense, that can be assigned to teams, etc.
+
+    Becuase it can have modifiers that affect stats, the only way to get a player's current stats is to ask that player.
+    It has it's own indexing methods.
+
+    It also handles caching - because indexing a DataFrame is relatively slow, each player keeps track of their own
+    cached stats in a dictionary (dict lookups are basically the fastest thing in python)
+
+
+What is a Modifier?
+    a Modifier is something that affect's a players stats. when they are applied to the player, the player permanently
+    modifies their stats. When a modifier is removed, that change is undone.
+
+
+So were do stats actually live?
+    Three places.
+        1. Each player has a private internal dict (_stats_cache) that stores their current stats
+        2. The PlayerBase stores a copy of all stats in a dataframe
+        3. some stats (derived stats) are formulas, and so both _stats_cache and playerbase.df can both be wrong
+            (differently wrong, even!)
+
+    Note that none of these places are in the Stats themselves - you can pull numbers out of a Stat by indexing it by
+    Player cid, but this just wraps around and calls the Player's indexing methods. This is a running theme - there
+    only one place to actually safely get any of a get a player's stats, and that's via that Player's indexing method.
+
+
+So how do I actually interface / get stats?
+    Simple! in the wider game, you can do player[s.my_stat], or s.my_stat[player_cid].
+
+    If you are doing league-wide ops, load all the cached data back into the dataframe using player.save_to_pb() or
+    (more likely) playerbase.save_all_players_to_pb(), and then operate on pb.df.

@@ -97,6 +97,11 @@ class PlayerBase(MutableMapping):
         self.df = pd.DataFrame(columns=self._pending_stats)
         self._pending_stats = []
 
+    def save_all_players_to_pb(self):
+        for player in self.players:
+            if player.pb_is_stale:
+                player.save_to_pb()
+
     def __len__(self) -> int:
         if len(self.players) != len(self.df.index):
             raise RuntimeError(

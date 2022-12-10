@@ -186,6 +186,12 @@ bonuses to proximity when players are at bat or on base.
 - Leadership: how much of a boost a player can provide to another player from the dugout by providing words
 of advice or inspiration; works best in close, critical situations.
 - I.T.: a player's ability to operate office equipment.
+(during-game decisions, such as substitutions and special calls, are made via office equipment:
+fax machine, toaster oven, voicemail, etc. each machine has an "tech cost" that you pay for by assigning
+non-active players to the "helpdesk")
+
+Players can also be assigned to non-player positions like basecoaches, which both directly impact the on-field
+players via leadership and give proximity for heckling
 
 6. Rating Descriptors
 

@@ -74,3 +74,22 @@ Fielder, Runner, Basepaths class
 7. basepaths.check_out
 - create FieldingOut update if needed
 8. repeat throw - possibility for rundown
+
+
+
+RUNDOWNS:
+
+rundowns are a special case when:
+a. a player is caught on the basepaths
+b. both go and nogo are valid options
+c. no other runners are higher priority
+
+a rundown is a sacred duel between the runner and the basist.
+the runner is alone, save for their BRAVERY.
+the basist is backed up - by the shortstop, other basist, and pitcher.
+in the back field, other runners can attempt to steal - depending on their
+runner's abilities.
+
+it's a little inset RPG where the runner and the basist duel
+as the basist succeeds, their runners can advance and they can defeeat the supporting
+characters and possibly even the basist themselves (resulting in a safe)

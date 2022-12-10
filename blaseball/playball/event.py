@@ -1,11 +1,20 @@
 """
-Events are things that happen during the game. This is generic, but in a nutshell, an event is:
-- something
-- becuase of a player, other event, or external factor
-- that affects the game state
-- and updates the display
-- have text
+Updates are things that happen during the game. This is generic, but in a nutshell, an event is:
+- something that happens
+- because of a player, other event, or external factor
+- affects the game state
+- updates the display
+- has text for the event log
 - during a game
+
+Think of an event as a single message in a game feed.
+
+An Event is a container for multiple updates. A single pitch+hit+field is an Event, but so are things like incinerations
+or game substitutions.
+
+Events are not currently used. # TODO
+We will eventually be having a separate listener that bundles together updates into Events and stores them for reference
+and use.
 
 """
 

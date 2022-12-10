@@ -103,10 +103,10 @@ class TestPlayerOther:
     def test_save_to_pb(self, player_1):
         player_1[s.insight] = 1.2
         assert s.pb.df.at[player_1.cid, s.insight] != 1.2
-        assert player_1._pb_is_stale
+        assert player_1.pb_is_stale
         player_1.save_to_pb()
         assert s.pb.df.at[player_1.cid, s.insight] == 1.2
-        assert not player_1._pb_is_stale
+        assert not player_1.pb_is_stale
 
     def test_load_from_pb(self, player_1):
         s.pb.df.at[player_1.cid, s.insight] = 1.5
