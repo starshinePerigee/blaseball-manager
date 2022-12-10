@@ -136,7 +136,11 @@ class Player(Mapping):
 
     def save_to_pb(self):
         """Writes the stored cache to the playerbase"""
-        self.pb.df.loc[self.cid] = self._stats_cache
+        self.recalculate()
+        # this doesn't work due to a weird pandas bug?
+        # self.pb.df.loc[self.cid] = self._stats_cache
+        for stat in self._stats_cache:
+            self.pb.df.at[self.cid, stat.name] = self._stats_cache[stat]
         self._pb_is_stale = False
 
     def load_from_pb(self):
