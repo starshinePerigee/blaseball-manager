@@ -119,6 +119,7 @@ class TestPlayerOther:
         player_2.initialize()
         player_2.modifiers = []
         player_2.recalculate()
+        player_1.recalculate()
 
         assert player_1 != player_2
         player_2.assign(player_1)

@@ -1,10 +1,9 @@
 """
-Contains database info and stats for a blaseball player and the playerbase.
+A Player is a representation of a single player, and is used as the primary way of reading stats
+(playerbase is only to be used if you need to do statistical analysis)
 
-Typical workflow:
-maintain a single collection of players in the single PlayerBase. Player
-info is pulled as Player instances. Player methods should update the
-playerbase entries as-needed (and vice versa)
+It handles its own caching, and you should feel comfortable passing Players around and operating on them.
+
 """
 
 import random
@@ -34,6 +33,7 @@ class Player(Mapping):
 
     @staticmethod
     def new_cid() -> int:
+        """Generates a new, unique CID for a player."""
         Player.player_class_id += 1
         return Player.player_class_id
 
@@ -56,6 +56,8 @@ class Player(Mapping):
         # you MUST call initialize after this.
 
     def add_stat(self, stat: statclasses.Stat):
+        """Adds a stat to a player - this should be called by playerbase, since otherwise you'll get out of sync
+        with PlayerBase's stat listings."""
         self._stats_cache[stat] = stat.default
         self.pb_is_stale = True
         for kind in self.pb.dependents[stat.kind]:
@@ -63,17 +65,22 @@ class Player(Mapping):
 
     @staticmethod
     def roll_traits() -> List[modifiers.Modifier]:
+        """Create random traits for this player."""
         trait_list = []
         for i in range(0, random.randrange(3, 6)):
             trait_list += [modifiers.default_personality_deck.draw()]
         return trait_list
 
     def add_modifier(self, modifier: modifiers.Modifier) -> None:
+        """Cleanly adds a modifier to this player, updating stats accordingly.
+
+        Use remove_modifier() to remove this modifier later."""
         for stat in modifier.stat_effects:
             self[stat] += modifier[stat]
         self.modifiers += [modifier]
 
     def remove_modifier(self, modifier: modifiers.Modifier):
+        """Cleanly removes a modifier from a player, updating stats accordingly."""
         if modifier not in self.modifiers:
             raise KeyError(f"Modifier {modifier} not present in modifier list for {self}!")
         for stat in modifier.stat_effects:
@@ -92,6 +99,12 @@ class Player(Mapping):
         self.save_to_pb()
 
     def recalculate(self) -> None:
+        """Player keeps a cache of all derived stats. If a derived stat's dependent updates, the derived stat becomes
+        stale and any time that stat is read results in a recalculation.
+
+        This function recalculates all stale derived stats and updates this player's cache, refreshing all stale
+        Kinds.
+        """
         self.pb_is_stale = True
         for kind in self.pb.recalculation_order:
             if self._stale_dict[kind]:
@@ -101,9 +114,15 @@ class Player(Mapping):
             self._stale_dict[kind] = False
 
     def get_modifier_total(self, stat: Union[str, statclasses.Stat]):
+        """Get the total effect of all modifiers for a stat.
+
+        IE: if a stat is currently 0.5, becuase a base value of 0.2 and two 0.15 modifiers, this will return 0.3.
+        """
         return sum([mod[stat] for mod in self.modifiers])
 
     def set_all_stats(self, value):
+        """Sets all personality and rating stats to the specified value, plus clears all modifiers.
+        Used for testing."""
         all_stats = self.pb.get_stats_with_kind(statclasses.Kinds.personality)
         all_stats += self.pb.get_stats_with_kind(statclasses.Kinds.rating)
         # self['clutch'] = value
@@ -119,7 +138,7 @@ class Player(Mapping):
         self.recalculate()
 
     def assign(self, values: Union[dict, pd.Series, 'Player']) -> None:
-        """Update multiple stats from another plyaer, series, or dictionary"""
+        """Update multiple stats from another player, series, or dictionary"""
         if isinstance(values, Player):
             self.assign(values.stat_row())
             return
@@ -129,7 +148,11 @@ class Player(Mapping):
             keys = values.keys()
 
         for key in keys:
-            self[key] = values[key]
+            try:
+                self[key] = values[key]
+            except RuntimeError:
+                # catch dependent stat errors
+                pass
 
         self._stale_dict = self.pb.create_blank_stale_dict(True)
         self.recalculate()
@@ -144,10 +167,14 @@ class Player(Mapping):
         self.pb_is_stale = False
 
     def load_from_pb(self):
+        """Loads all stats from the playerbase.
+
+        Because a player is the source of general truth, this is used less than save_to_pb()"""
         for stat in self._stats_cache:
             self._stats_cache[stat] = self.pb.df.at[self.cid, stat]
 
     def stat_row(self) -> pd.Series:
+        """Get this player's stats as a pandas series."""
         self.save_to_pb()
         return self.pb.df.loc[self.cid]
 
@@ -157,9 +184,14 @@ class Player(Mapping):
 
         How does getting a stat work exactly?
         - first, check if _stale_dict says this stat's kind is stale
-           (you can only have stale dict flip stale for calculatable kinds, so don't worry about it)
         - if it's stale, calculate, otherwise use the stats cache
-        - all non-dependent stats will just always hit the stats cache.
+        - you can only have stale dict flip stale for calculatable kinds, so all non-dependent stats will
+          always hit the stats cache.
+
+        Note that at no point will you hit playerbase - if you need to pull stats from playerbase to player
+        you'll need to use load_from_pb.
+
+        This does work for strings, but it's slower than passing stat classes.
         """
         if isinstance(item, statclasses.Stat):
             if self._stale_dict[item.kind]:
@@ -178,7 +210,10 @@ class Player(Mapping):
             raise KeyError(f"Invalid indexer provided to Player: {item} of type {type(item)}")
 
     def __setitem__(self, item: Union[statclasses.Stat, str], value) -> None:
+
         if isinstance(item, statclasses.Stat):
+            if item.kind in self.pb.base_dependencies:
+                raise RuntimeError(f"Tried to set dependent stat {item} on player {self}!")
             self._stats_cache[item] = value
             for kind in self.pb.dependents[item.kind]:
                 self._stale_dict[kind] = True

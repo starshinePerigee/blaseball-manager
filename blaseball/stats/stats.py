@@ -1,3 +1,17 @@
+"""
+This module contains all discrete stats definitions and initializations. As such, accessing a stat's class object
+is easiest by just pulling it from this module. Because we do this so often, the typical invocation is:
+
+from blaseball.stats import stats as s
+
+and then you can call individual stats as s.my_stat. The core playerbase also exists as s.pb.
+
+Be aware that importing this module runs a lot of code, which then sets up the core playerbase! This is weird and a
+little dangerous, and causes some issues in test, but we're commmited at this point.
+
+Also be aware that actual logic for the stats classes is in statclasses.py.
+"""
+
 import random
 from numpy.random import normal as numpy_normal
 import functools

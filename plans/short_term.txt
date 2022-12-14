@@ -1,7 +1,10 @@
-stats refactor
+finish adding tracking stats
 coarse balance pass
 
-doc refactor
+settle on an import style
+remove Typing dependency
+update stats calls to use classes
+
 
 add additional fielding descriptions
 fix pitch descriptors (mph and type)

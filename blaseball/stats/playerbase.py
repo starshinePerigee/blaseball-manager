@@ -1,8 +1,8 @@
 """
-Playerbase contains all the statisitical information for all players in the game.
+Playerbase contains all the statistical information for all players in the game.
 
 At its core, it's a pandas DataFrame with a number of utility function wrappers.
-The indexes are player CIDs.
+The indexes are player CIDs, and the columns are stat names
 
 """
 from collections.abc import MutableMapping, Hashable
@@ -52,7 +52,7 @@ class PlayerBase(MutableMapping):
 
         self.recalculation_order = recalculation_order
 
-        self._base_dependencies = base_dependencies
+        self.base_dependencies = base_dependencies
         self.dependencies = {}
         # fill in everything that's not a dependent
         for kind in self.recalculation_order:
@@ -73,7 +73,7 @@ class PlayerBase(MutableMapping):
         Otherwise, it starts fresh."""
         stale_dict = {kind: False for kind in self.recalculation_order}
         if state:
-            for kind in self._base_dependencies.keys():
+            for kind in self.base_dependencies.keys():
                 stale_dict[kind] = True
         return stale_dict
 

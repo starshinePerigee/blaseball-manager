@@ -1,7 +1,9 @@
 """
-defines stats for use in other classes
+Stats are classes that define a stat's behavior. This module contains the code that defines types of stats,
+without describing any specific stats.
 
-does not handle caching! that's handled in Player. But some of the logic is defined here, via Kinds
+this module also handles definitions for kinds and dependencies - although those should probably be moved out at some
+point?
 """
 
 from enum import Enum, auto
@@ -144,6 +146,7 @@ class Stat:
             return self._linked_playerbase.df.at[player_index, self]
 
     def abbreviate(self, abbreviation: str):
+        """Add an abbreviation for this stat, making sure it's not clobbering an exsiting one."""
         for stat in self._linked_playerbase.stats.values():
             if stat.abbreviation == abbreviation:
                 raise KeyError(f"Duplicate Abbreviation {abbreviation}! "
@@ -151,6 +154,7 @@ class Stat:
         self.abbreviation = abbreviation
 
     def weight(self, weight: "Weight", value: float):
+        """Add this stat to a Weight"""
         weight.add(self, value)
 
     def __str__(self):
