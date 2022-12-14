@@ -3,7 +3,7 @@ import pytest
 import math
 import statistics
 
-from blaseball.playball import liveball
+from blaseball.playball import liveball, gamestate
 from blaseball.stats.stadium import Stadium
 from blaseball.util.geometry import Coord
 from blaseball.stats import stats as s
@@ -201,7 +201,7 @@ class TestHitBall:
         assert hit_ball.text == text
         assert hit_ball.live.distance() == distance
 
-    def test_hit_ball_stats(self, patcher, gamestate_1, stats_monitor_1):
+    def test_hit_ball_stats(self, patcher, gamestate_1, messenger_1):
         # two averaging stats: average hit distance, and average exit velocity.
         # plus "total home runs"
         def distance_iterator(iteration):  # noqa
@@ -222,11 +222,16 @@ class TestHitBall:
         # fix launch angle to avoid ground rebounds
         patcher.patch("blaseball.playball.liveball.roll_launch_angle", lambda quality, batter_power: 20)
 
+        # stop incrementing batters
+        patcher.patch("blaseball.playball.ballgame.BallGame.increment_batter", lambda: None)
+
         batter = gamestate_1.batter()
 
-        all_hit_balls = [liveball.HitBall(gamestate_1, 0, 0, batter) for __ in patcher]
-        all_evs = [hb.live.speed for hb in all_hit_balls]
+        for i, __ in enumerate(patcher):
+            ball = liveball.HitBall(gamestate_1, 0, 0, batter)
+            messenger_1.send(ball, gamestate.GameTags.hit_ball)
 
+        assert batter[s.total_hits] == 100
         assert batter[s.average_hit_distance] == pytest.approx(570)
         assert batter[s.average_exit_velocity] == pytest.approx(55)
         assert batter[s.total_home_runs] == 70

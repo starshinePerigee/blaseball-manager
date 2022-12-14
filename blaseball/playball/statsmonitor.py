@@ -1,9 +1,13 @@
 """Stats monitor is a class which subscribes to a game feed, and updates player stats accordingly."""
 
+from decimal import Decimal
+
 from blaseball.util.messenger import Messenger
 from blaseball.playball.gamestate import GameState, GameTags
-from blaseball.playball import hitting, pitching
+from blaseball.playball import hitting, pitching, liveball, fielding
 from blaseball.stats import stats as s
+
+from typing import Union
 
 
 class StatsMonitor:
@@ -21,6 +25,8 @@ class StatsMonitor:
         messenger.subscribe(self.new_game_state, GameTags.pre_tick, priority=-10)
         messenger.subscribe(self.update_pitch, GameTags.pitch, priority=-10)
         messenger.subscribe(self.update_swing, GameTags.swing, priority=-10)
+        messenger.subscribe(self.update_liveball, GameTags.hit_ball, priority=-10)
+        messenger.subscribe(self.update_runs_batted_in, GameTags.runs_scored, priority=-10)
 
     def new_game_state(self, game_state: GameState):
         self.current_state = game_state
@@ -35,8 +41,8 @@ class StatsMonitor:
         pitcher[s.total_strikes_thrown] += float(pitch.strike)
         pitcher[s.total_pitch_difficulty] += pitch.difficulty
         pitcher[s.total_pitch_obscurity] += pitch.obscurity
-        pitcher[s.average_pitch_distance_from_edge] += min(abs(pitch.location - 1), abs(pitch.location + 1))
-        pitcher[s.average_pitch_distance_from_call] += abs(pitch.location - pitch.target)
+        pitcher[s.total_pitch_distance_from_edge] += min(abs(pitch.location - 1), abs(pitch.location + 1))
+        pitcher[s.total_pitch_distance_from_call] += abs(pitch.location - pitch.target)
         pitcher[s.total_reduction] += pitch.reduction
 
     def update_swing(self, swing: hitting.Swing):
@@ -48,27 +54,18 @@ class StatsMonitor:
         batter[s.total_balls_taken] += float(swing.ball)
         batter[s.total_pitch_read_percent] += swing.read_chance
 
+    def update_liveball(self, swing: liveball.HitBall):
+        batter = self.current_state.batter()
+        batter[s.total_hits] += 1
+        batter[s.total_hit_distance] += swing.live.distance()
+        batter[s.total_exit_velocity] += swing.live.speed
+        batter[s.total_launch_angle] += swing.live.launch_angle
+        batter[s.total_field_angle] += swing.live.field_angle
 
-"""
-    state_ticks = 'state ticks <GameState>'
-    new_batter = 'new player up to bat <Player>'
-    new_inning = 'new inning reached <int>'
-    new_half = 'new inning half reached <int>'
-    game_over = 'game is complete <Update>'
-    game_start = 'first message of a new game. <Update>'
+        if swing.homerun:
+            batter[s.total_home_runs] += 1
 
-    game_updates = 'game updates <Update>'
-    pitch = 'pitch was thrown <Pitch>'
-    swing = 'swing was swung <Swing>'
-    hit_ball = 'ball is hit <HitBall>'
-    bases_update = 'basepath update <BaseSummary>'
-    player_walked = 'player walked to first <Player>'
-    home_run = 'home run was hit <int>'
-    cycle_batting_order = 'every batter hit <Lineup>'
-    runs_scored = 'runs were scored <int/Decimal>'
-    strike = 'strike was thrown <bool: strike swinging?>'
-    ball = 'ball was thrown <None>'
-    foul = 'foul was hit <None>'
-    outs = 'players out for any cause <int>'
+    def update_runs_batted_in(self, runs_scored: Union[int, Decimal]):
+        # TODO: this does not correctly measure RBIs in the case of errors, stolen home, etc.
+        self.current_state.batter()[s.total_runs_seen_from_home] += runs_scored
 
-"""

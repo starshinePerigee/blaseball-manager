@@ -15,6 +15,7 @@ Also be aware that actual logic for the stats classes is in statclasses.py.
 import random
 from numpy.random import normal as numpy_normal
 import functools
+from decimal import Decimal
 
 from blaseball.stats import statclasses
 from data import playerdata, playerdescriptors
@@ -534,8 +535,11 @@ average_hit_distance, total_hit_distance = statclasses.build_averaging(total_hit
 average_exit_velocity, total_exit_velocity = statclasses.build_averaging(
     total_hits, "average exit velocity"
 )
+average_launch_angle, total_launch_angle = statclasses.build_averaging(total_hits, "average launch angle")
+average_field_angle, total_field_angle = statclasses.build_averaging(total_hits, "average field angle")
 
 total_home_runs = statclasses.Stat('total home runs', statclasses.Kinds.performance, 0)
+total_runs_seen_from_home = statclasses.Stat('total runs "batted" in', statclasses.Kinds.performance, Decimal('0.0'))
 
 
 if __name__ == "__main__":
