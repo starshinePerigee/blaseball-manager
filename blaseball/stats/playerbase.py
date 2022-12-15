@@ -98,7 +98,7 @@ class PlayerBase(MutableMapping):
         self._pending_stats = []
 
     def save_all_players_to_pb(self):
-        for player in self.players:
+        for player in self.players.values():
             if player.pb_is_stale:
                 player.save_to_pb()
 

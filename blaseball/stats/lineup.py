@@ -200,6 +200,15 @@ class Lineup(Collection):
             else:
                 self.defense.add(f"extra {i - (Stadium.NUMBER_OF_BASES*2 + 1)}", batter)
 
+    def add_player(self, player: Player, position: str) -> None:
+        """Adds a player to the lineup (including defense)"""
+        if position == 'pitcher':
+            self.pitcher = player
+            self.defense.add('pitcher', player)
+        else:
+            self.defense.add(position, player)
+            self.batting_order += [player]
+
     def validate(self) -> (bool, str):
         """
         Make sure a lineup is still valid:
