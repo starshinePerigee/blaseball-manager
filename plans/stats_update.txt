@@ -1,0 +1,16 @@
+remove two defense stats?
+
+split edge into on-field edge and off-field edge
+
+on field:
+sparkle
+awareness
+
+
+off field:
+IT
+heckle
+leadership
+
+
+or just merge calling / awareness?

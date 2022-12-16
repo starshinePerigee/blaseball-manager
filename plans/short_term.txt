@@ -1,6 +1,8 @@
 finish adding tracking stats
 coarse balance pass
 
+revise some stats?
+
 settle on an import style
 remove Typing dependency
 update stats calls to use classes
