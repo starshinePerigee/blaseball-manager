@@ -13,10 +13,12 @@ from blaseball.playball.liveball import LiveBall
 from blaseball.playball.event import Update
 from blaseball.stats.players import Player
 from blaseball.stats.lineup import Defense
+from blaseball.stats import stats as s
 from blaseball.util.geometry import Coord
 
 from numpy.random import normal, rand
 from typing import List, Tuple
+from loguru import logger
 
 
 class LiveDefense:
@@ -25,8 +27,8 @@ class LiveDefense:
         self.defense = defense
         self.base_locations = base_locations
 
-        self.fielder = None
-        self.location = None
+        self.fielder = None  # Player who has the ball
+        self.location = None  # coordinate location of the ball
 
     def catch_liveball(self, ball: LiveBall, batter: Player) -> Tuple[Update, float, bool]:
         """"""
@@ -48,7 +50,7 @@ class LiveDefense:
         receiver = position.player
 
         if receiver is self.fielder:
-            # tag the base?
+            # tag the base - if this returns 0 FieldBall will initiate a rundown.
             run_time = distance / calc_speed(self.fielder['speed'])
             return Update(f"{self.fielder['name']} tags base {target_base}"), run_time
 
@@ -94,6 +96,90 @@ class LiveDefense:
         runners.sort(key=lambda x: x[0], reverse=True)
         return runners[0][1].next_base()
 
+    RUNDOWN_FORWARD_WEIGHT = 1
+    RUNDOWN_BACKwARD_WEIGHT = 1
+    RUNDOWN_RUNNER_WEIGHT = 1
+    RUNDOWN_MAX_BALLAST = 1  # higher numbers mean skill has lower effect
+
+    @staticmethod
+    def roll_rundown_out(runner_bravery, primary_basepeep_bravery, support_basepeep_bravery) -> float:
+        """Roll to see if a runner in a rundown is out.
+        higher odds mean better chances for the runner
+        this means that if this is positive, the defenders win
+        """
+        defending_bravery = primary_basepeep_bravery * LiveDefense.RUNDOWN_FORWARD_WEIGHT
+        defending_bravery += support_basepeep_bravery * LiveDefense.RUNDOWN_BACKwARD_WEIGHT
+        runner_bravery = runner_bravery * LiveDefense.RUNDOWN_RUNNER_WEIGHT
+        offensive_advantage = runner_bravery + LiveDefense.RUNDOWN_MAX_BALLAST / 2
+        defensive_advantage = defending_bravery + LiveDefense.RUNDOWN_MAX_BALLAST / 2
+
+        odds = offensive_advantage / (offensive_advantage + defensive_advantage)
+        return rand() - odds
+
+    @staticmethod
+    def roll_rundown_advance(runner_bravery, forward_basepeep_bravery) -> bool:
+        runner_advantage = runner_bravery + LiveDefense.RUNDOWN_MAX_BALLAST / 2
+        defender_advantage = runner_bravery + forward_basepeep_bravery + LiveDefense.RUNDOWN_MAX_BALLAST
+        return rand() >= runner_advantage / defender_advantage
+
+    BASE_TIME = 1  # how many seconds for a single pass rundown
+    TIMING_TIME_MODIFIER = 2  # bonus delay for the runner's time
+
+    @staticmethod
+    def calc_wasted_time(timing: float, rundown_roll: float) -> float:
+        time_multiplier = 1 / (abs(rundown_roll) + 0.5)  # 0.6 to 2
+        time_multiplier *= (timing + 1) * LiveDefense.TIMING_TIME_MODIFIER
+        return LiveDefense.BASE_TIME * time_multiplier
+
+    def run_rundown(self, basepaths: Basepaths, base: int) -> Tuple[List[Update], int, float]:
+        # runner = basepaths.runners[]
+        runner = basepaths.get_runner_approaching_base(base)
+        if runner.tagging_up:
+            base_forward = base + 1
+            base_backward = base
+            support_basepeep = self.defense.closest(self.base_locations[base_forward])[0].player
+            forward_basepeep = support_basepeep
+            extra_str = " while tagging up"
+        else:
+            base_forward = base
+            base_backward = base - 1
+            support_basepeep = self.defense.closest(self.base_locations[base_backward])[0].player
+            forward_basepeep = self.fielder
+            extra_str = ""
+
+        primary_basepeep = self.fielder
+
+        updates = [Update(f"{runner.player[s.name]} is caught in a rundown between "
+                          f"{primary_basepeep[s.name] and support_basepeep[s.name]}{extra_str}!")]
+
+        outs = 0
+        rundown_roll = LiveDefense.roll_rundown_out(
+            runner.player[s.bravery],
+            primary_basepeep[s.bravery],
+            support_basepeep[s.bravery]
+        )
+        if rundown_roll >= 0:
+            # runner loses!
+            updates += [Update(f"{runner.player[s.name]} is caught! They are out!")]
+            basepaths.mark_out(runner)
+            outs = 1
+        else:
+            # check to see if advance or retreat:
+            if LiveDefense.roll_rundown_advance(runner.player[s.bravery], forward_basepeep[s.bravery]):
+                updates += [Update(f"{runner.player[s.name]} makes it forward!")]
+                runner.touch_base(base_forward)
+                runner.hold()
+            else:
+                updates += [Update(f"{runner.player[s.name]} is driven backwards, but makes it safe!")]
+                runner.touch_base(base_backward)
+                runner.hold()
+
+        wasted_time = LiveDefense.calc_wasted_time(runner.player[s.timing], rundown_roll)
+        if wasted_time > 1:
+            updates += [Update(f"{wasted_time} seconds were wasted.")]
+
+        return updates, outs, wasted_time
+
     def __str__(self):
         return f"Fielder, currently {self.fielder['name']} at {self.location}"
 
@@ -115,10 +201,6 @@ class FieldingOut(Update):
         else:
             base = runner.base
         super().__init__(f"{runner.player['name']} {verb} out at base {base} by {fielder['name']}.")
-
-
-class Rundown(Update):
-    pass
 
 
 class RunScored(Update):
@@ -154,11 +236,11 @@ class FieldBall:
 
             # a rundown occurs when:
             # fielder is on a base
-            # throwing it one base forward or backwards
-            # with a player in between
-            # who is not out
+            # throws it to themselves
+            # and it's not a force out
 
             throw_update, throw_duration = live_defense.throw_to_base(target)
+            initiate_rundown = throw_duration <= 0.05
             self.updates += [throw_update]
 
             new_runs, runners_scoring = basepaths.advance_all(throw_duration)
@@ -169,12 +251,27 @@ class FieldBall:
             if player_out:
                 self.outs += 1
                 self.updates += [FieldingOut(live_defense.fielder, player_out, not tagged_out)]
+            elif initiate_rundown:
+                self.do_rundown(basepaths, live_defense, target)
 
         if not caught and len(self.updates) < 2:
             if len(basepaths.runners) > 0:
                 self.updates += [self.filler_text(basepaths.runners[-1])]
             else:
                 self.updates += [Update("Whoops, batter vanished into a secret base???")]
+                logger.warning("Player vanished into a secret base.")
+
+    def do_rundown(self, basepaths: Basepaths, live_defense: LiveDefense, target: int) -> None:
+        """Execute a rundown, which is complicated enough to need its own function."""
+
+        rundown_updates, rundown_outs, rundown_duration = live_defense.run_rundown(basepaths, target)
+        self.outs += rundown_outs
+        self.updates += [rundown_updates]
+
+        # if the rundown runner makes it home, they'll touch base, hold, and get scored here:
+        rundown_runs, runners_scoring = basepaths.advance_all(rundown_duration)
+        self.runs += rundown_runs
+        self.updates += [RunScored(runner) for runner in runners_scoring]
 
     def filler_text(self, runner: Runner) -> Update:
         BASE_LENGTH = {

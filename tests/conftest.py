@@ -267,6 +267,16 @@ def live_defense_rf(gamestate_1):
 
 
 @pytest.fixture(scope='function')
+def live_defense_catcher(gamestate_1):
+    live_d = inplay.LiveDefense(gamestate_1.defense().defense, gamestate_1.stadium.base_coords)
+
+    catcher = live_d.defense['catcher'].player
+    live_d.fielder = catcher
+    live_d.location = live_d.defense['catcher'].location
+    return live_d
+
+
+@pytest.fixture(scope='function')
 def messenger_1():
     return messenger.Messenger()
 

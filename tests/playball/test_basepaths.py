@@ -433,6 +433,23 @@ class TestBasepathsManipulation:
         for i in range(1, 4):
             assert empty_basepaths[i].player == batters_4[i]
 
+    def test_get_player_approaching_base(self, empty_basepaths, batters_4):
+        with pytest.raises(KeyError):
+            empty_basepaths.get_runner_approaching_base(2)
+
+        empty_basepaths[2] = batters_4[0]
+        empty_basepaths[2].remainder = 10
+
+        assert empty_basepaths.get_runner_approaching_base(3) == batters_4[0]
+        with pytest.raises(KeyError):
+            empty_basepaths.get_runner_approaching_base(2)
+
+        empty_basepaths[2].tagging_up = True
+
+        assert empty_basepaths.get_runner_approaching_base(2) == batters_4[0]
+        with pytest.raises(KeyError):
+            empty_basepaths.get_runner_approaching_base(3)
+
     def test_strings(self, empty_basepaths, player_1):
         assert isinstance(str(empty_basepaths), str)
         assert isinstance(empty_basepaths.nice_string(), str)
@@ -662,3 +679,17 @@ class TestBasepathsRunners:
         assert players == [batters_4[0]]
         for i in range(1, 4):
             assert empty_basepaths[i].player == batters_4[4-i]
+
+    def test_mark_out(self, empty_basepaths, batters_4):
+        empty_basepaths[2] = batters_4[2]
+        assert len(empty_basepaths) == 1
+        empty_basepaths.mark_out(batters_4[2])
+        assert len(empty_basepaths) == 0
+        empty_basepaths[1] = batters_4[1]
+        empty_basepaths[3] = batters_4[3]
+        runner = empty_basepaths.runners[1]
+        empty_basepaths.mark_out(runner)
+        assert len(empty_basepaths) == 1
+        with pytest.raises(ValueError):
+            empty_basepaths.mark_out(runner)
+

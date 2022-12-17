@@ -95,7 +95,9 @@ class Catch(Update):
             self.duration += roll_error_time(self.total_odds)
 
     def __str__(self):
-        return f"Catch by {self.player_name} with odds {self.total_odds:.2f} and duration {self.duration:.2f}"
+        descript = "Caught" if self.caught else "Missed"
+        return (f"{descript} Catch by {self.player_name} with odds {self.total_odds:.2f} "
+                f"and duration {self.duration:.2f}")
 
     def __repr__(self):
         return f"<Catch by {self.player_name} duration {self.duration:.2f}>"

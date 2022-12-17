@@ -17,6 +17,7 @@ from blaseball.util.geometry import Coord
 from numpy.random import normal
 from typing import List, Tuple, Optional, Union
 from collections.abc import MutableMapping
+from loguru import logger
 
 
 # Running:
@@ -291,6 +292,7 @@ class Runner:
         else:
             raise TypeError(f"Invalid type comparison: Runner vs {type(other)} (other: {other})")
 
+
 class Basepaths(MutableMapping):
     """Stores the bases and basepaths, and manipulates runners on base. Each game should have one Basepaths
 
@@ -357,9 +359,20 @@ class Basepaths(MutableMapping):
                     out = tagable or runner.force
 
             if out:
-                self.runners.remove(runner)
+                self.mark_out(runner)
                 return runner, tagable
         return None, False
+
+    def mark_out(self, runner: Union[Runner, Player]) -> None:
+        if isinstance(runner, Runner):
+            self.runners.remove(runner)
+            return
+        else:
+            for possible_runner in self.runners:
+                if possible_runner.player is runner:
+                    self.runners.remove(possible_runner)
+                    return
+            raise ValueError(f"Could not fine {runner} in {self.runners}")
 
     def reset_all(self, pitcher: Player, catcher: Player):
         """Moves all runners back to their most recently passed base, then sets them at leadoff"""
@@ -404,6 +417,21 @@ class Basepaths(MutableMapping):
     def to_base_list(self) -> list:
         """return a list of Runners, with None in the place of a base"""
         return [self[i] for i in range(0, self.number_of_bases+1)]
+
+    def get_runner_approaching_base(self, base: int) -> Runner:
+        possible_runners = []
+        for runner in self.runners:
+            if not runner.tagging_up and runner.base + 1 == base:
+                possible_runners += [runner]
+            elif runner.tagging_up and runner.base == base:
+                possible_runners += [runner]
+
+        if len(possible_runners) <= 0:
+            raise KeyError(f"No runners are approaching base {base}!")
+        elif len(possible_runners) > 1:
+            logger.debug(f"Multiple runners apparoaching single base {base}")
+
+        return possible_runners[0]
 
     def load_from_summary(self, summary: BaseSummary):
         self.runners = []

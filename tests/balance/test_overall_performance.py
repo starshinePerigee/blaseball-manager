@@ -1,5 +1,7 @@
 from random import shuffle
 
+import pytest
+
 from blaseball.playball.ballgame import BallGame
 from blaseball.playball.pitchmanager import PitchManager
 from blaseball.playball.gamestate import GameRules, GameState
@@ -79,6 +81,7 @@ def print_stats_distribution(name: str) -> None:
         print(f"Could not evaluate stats for {name}")
 
 
+# @pytest.mark.skip("Skip this because it takes forever - manually run this as-needed")
 def test_all_stats(stadium_a, messenger_1):
     Settings.players_per_team = 10
 
@@ -97,7 +100,6 @@ def test_all_stats(stadium_a, messenger_1):
     print(build_lineup(league[1], 0).string_summary())
 
     for i in range(200):
-        # TODO: this hangs sometimes??
         lineup_a = build_lineup(league[0], i % 10)
         lineup_b = build_lineup(league[1], (i // 10) % 10)
         a_is_home = i >= 100

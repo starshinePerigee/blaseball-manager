@@ -4,6 +4,8 @@ from blaseball.playball import inplay
 from blaseball.playball.liveball import LiveBall
 from blaseball.playball.fielding import Catch, Throw, calc_throw_duration_base
 from blaseball.playball.event import Update
+from blaseball.playball.inplay import LiveDefense, FieldBall
+from blaseball.stats import stats as s
 
 from statistics import mean
 
@@ -159,6 +161,101 @@ class TestLiveDefense:
         # with no time, favor closest
         assert live_defense_rf.fielders_choice(active_runners) == 1
 
+    def test_roll_rundown_out(self, patcher):
+        patcher.patch('blaseball.playball.inplay.rand', lambda: 0)
+        assert LiveDefense.roll_rundown_out(0, 0, 0) == pytest.approx(-1/2)
+        assert - LiveDefense.roll_rundown_out(1.8, 1, 1) < - LiveDefense.roll_rundown_out(2, 1, 1)
+        assert - LiveDefense.roll_rundown_out(1, 1, 1) > - LiveDefense.roll_rundown_out(1, 1, 1.1)
+        assert - LiveDefense.roll_rundown_out(1, 1, 1) > - LiveDefense.roll_rundown_out(1, 1.1, 1)
+        assert 0.2 < - LiveDefense.roll_rundown_out(1, 1, 1) < 0.5
+
+    @pytest.mark.parametrize(
+        'min_limit, max_limit, runner_bravery, defender_bravery',
+        [
+            (45, 55, 1, 1),
+            (10, 20, 2, 0),
+            (80, 90, 0, 2)
+        ]
+    )
+    def test_roll_rundown_advance(self, patcher, min_limit, max_limit, runner_bravery, defender_bravery):
+        patcher.patch_rand('blaseball.playball.inplay.rand', 100)
+        rolls = [LiveDefense.roll_rundown_advance(runner_bravery, defender_bravery) for __ in patcher]
+        assert min_limit < sum(rolls) < max_limit
+
+
+    @pytest.mark.parametrize(
+        'low_runner, high_runner, roll, low_time, high_time',
+        [
+            (1, 1.1, 0.1, 1, 10),
+            (0, 2, 1, 1, 10),
+            (1, 1.1, 0.5, 1, 5)
+        ]
+    )
+    def test_calc_wasted_time(self, low_runner, high_runner, roll, low_time, high_time):
+        low_wasted = LiveDefense.calc_wasted_time(low_runner, roll)
+        high_wasted = LiveDefense.calc_wasted_time(high_runner, roll)
+        assert low_wasted < high_wasted
+        assert low_time < low_wasted
+        assert high_time > high_wasted
+
+
+    @pytest.mark.parametrize(
+        'tagging_up, rundown_out, rundown_advance, expected_outs, final_base',
+        [
+            (False, False, True, 0, 4),
+            (False, True, True, 1, 0),
+            (False, False, False, 0, 3),
+            (True, False, False, 0, 3),
+            (True, True, False, 1, 0),
+            (True, False, True, 0, 4)
+        ]
+    )
+    def test_run_rundown(self, live_defense_catcher, empty_basepaths, batters_4, patcher,
+                         tagging_up, rundown_out, rundown_advance, expected_outs, final_base):
+        empty_basepaths[3] = batters_4[1]
+        runner = empty_basepaths[3]
+        runner.speed = 25
+        runner.remainder = 60
+
+        roll = 0.2 if rundown_out else -0.2
+        patcher.patch("blaseball.playball.inplay.LiveDefense.roll_rundown_out",
+                      lambda runner_bravery, primary_basepeep_bravery, support_basepeep_bravery: roll)
+        patcher.patch("blaseball.playball.inplay.LiveDefense.roll_rundown_advance",
+                      lambda runner_bravery, forward_basepeep_bravery: rundown_advance)
+        patcher.patch('blaseball.playball.inplay.LiveDefense.calc_wasted_time',
+                      lambda timing, rundown_roll: 1.25)
+
+        if tagging_up:
+            runner.tagging_up = tagging_up
+            destination_base = 3
+            third_basepeep = live_defense_catcher.defense['basepeep 3'].player
+            live_defense_catcher.fielder = third_basepeep
+            live_defense_catcher.location = live_defense_catcher.defense['basepeep 3'].location
+        else:
+            destination_base = 4
+
+        updates, outs, wasted_time = live_defense_catcher.run_rundown(empty_basepaths, destination_base)
+
+        assert wasted_time == 1.25
+        assert outs == expected_outs
+        if expected_outs < 1:
+            assert runner.base == final_base
+        else:
+            assert runner not in empty_basepaths.runners
+
+    def test_rundown_stall(self, live_defense_catcher, empty_basepaths, batters_4, gamestate_1):
+        # this situation should trigger a rundown via throwing to self
+        empty_basepaths[3] = batters_4[1]
+        runner = empty_basepaths[3]
+        runner.speed = 1
+        runner.remainder = 60
+
+        active_runners = [runner for runner in empty_basepaths.runners if runner]
+        assert len(active_runners) == 1
+
+        assert live_defense_catcher.fielders_choice(active_runners) == 4
+        assert live_defense_catcher.throw_to_base(4)[1] == 0.0
+
     def test_strings(self, live_defense_rf):
         assert isinstance(str(live_defense_rf), str)
         assert isinstance(repr(live_defense_rf), str)
@@ -234,3 +331,43 @@ class TestFieldBall:
 
         assert field_ball.outs == 0
         assert field_ball.runs == 4
+
+    def test_do_rundown_score(self, defense_1, empty_basepaths, batters_4, patcher):
+        """
+        In this scenario, there is a runner on 3rd.
+        The runner taps it impossibly slow (a bunt basically), and the catcher gets the ball
+        Because there's no one on second, the runner on third doesn't have force
+        but because they took a huge leadoff, they're caught in a rundown.
+        They're super baller, so not only do they win the rundown (scoring a run),
+        they buy enough time for the hitter to advance to first.
+        """
+        empty_basepaths[3] = batters_4[1]
+        runner = empty_basepaths[3]
+        runner.speed = 25
+        runner.remainder = 55
+
+        defense_1['catcher'].player[s.awareness] = 2
+
+        patcher.patch("blaseball.playball.inplay.LiveDefense.roll_rundown_out",
+                      lambda runner_bravery, primary_basepeep_bravery, support_basepeep_bravery: -0.2)
+        patcher.patch("blaseball.playball.inplay.LiveDefense.roll_rundown_advance",
+                      lambda runner_bravery, forward_basepeep_bravery: True)
+        patcher.patch("blaseball.playball.inplay.LiveDefense.calc_wasted_time",
+                      lambda timing, rundown_roll: 3)
+        patcher.patch("blaseball.playball.fielding.roll_to_catch",
+                      lambda odds: False)
+        patcher.patch("blaseball.playball.fielding.roll_error_time",
+                      lambda odds: 0.1)
+        # patcher.patch("blaseball.playball.inplay.normal", lambda: 0)
+
+        fail_ball = LiveBall(30, 45, 0)
+
+        fb = FieldBall(batters_4[0], defense_1, fail_ball, empty_basepaths)
+
+        print(" ~Rundown to Home~")
+        for update in fb.updates:
+            print(update)
+
+        assert fb.outs == 0
+        assert fb.runs == 1
+        assert empty_basepaths[1].player is batters_4[0]
