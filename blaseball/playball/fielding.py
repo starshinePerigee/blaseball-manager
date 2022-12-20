@@ -197,10 +197,3 @@ class Throw(Update):
 
     def __repr__(self):
         return f"<Throw {self.quick_string}>"
-
-
-if __name__ == "__main__":
-    from blaseball.util import quickteams
-    g = quickteams.game_state
-
-    # TODO - quick demo

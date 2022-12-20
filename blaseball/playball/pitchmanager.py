@@ -80,18 +80,3 @@ class PitchManager:
             self.messenger.send(Update(walk_string), Tags.game_updates)
             self.messenger.send(runs_scored, Tags.runs_scored)
         self.messenger.send(BaseSummary(basepaths=self.basepaths), Tags.bases_update)
-
-
-if __name__ == "__main__":
-    from blaseball.util import quickteams
-    from blaseball.util.messenger import Printer
-    g = quickteams.game_state
-
-    m = Messenger()
-    p = Printer(m, Tags.game_updates)
-
-    manager = PitchManager(g, m)
-
-    for i in range(9):
-        g.at_bat_numbers[g.offense_i()] = i
-        m.send(g, Tags.state_ticks)
