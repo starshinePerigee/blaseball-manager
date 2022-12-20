@@ -116,6 +116,13 @@ class Swing(Update):
 
         messenger.send(self, [GameTags.swing])
 
+        if self.strike:
+            messenger.send(self.did_swing, GameTags.strike)
+        elif self.foul:
+            messenger.send(tags=GameTags.foul)
+        elif self.ball:
+            messenger.send(tags=GameTags.ball)
+
     def __bool__(self):
         return self.did_swing
 

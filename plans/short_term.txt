@@ -1,4 +1,7 @@
 move messenger sends into subclasses
+decouple bases and pitchmanager?
+- pitchmanager and fielding are independent modules connected by messenger?
+
 finish adding tracking stats
 convert all blaseball to use s.stats
 add expected min/max/average to stats

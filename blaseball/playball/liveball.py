@@ -7,7 +7,7 @@ from numpy.random import normal
 
 from blaseball.playball.event import Update
 from blaseball.playball.hitting import Swing
-from blaseball.playball.gamestate import GameState, GameTags
+from blaseball.playball.gamestate import GameState, GameTags, BaseSummary
 from blaseball.stats.players import Player
 from blaseball.util.geometry import Coord
 from blaseball.util.messenger import Messenger
@@ -131,6 +131,9 @@ class HitBall(Update):
 
         if self.homerun:
             self.text = "Home run!"
+            messenger.send(len(game.bases) + 1, [GameTags.home_run, GameTags.runs_scored])
+            messenger.send(BaseSummary(game.stadium.NUMBER_OF_BASES), GameTags.bases_update)
+
         elif hit_wall:
             self.text = "Off the outfield wall!"
             self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity-5)
