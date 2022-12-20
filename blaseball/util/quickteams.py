@@ -5,6 +5,7 @@ This module creates a few placeholders so we can copy less code."""
 from blaseball.stats import players, teams, lineup, stadium
 from blaseball.stats import stats as s
 from blaseball.playball import gamestate
+from blaseball.util import messenger
 from data import teamdata
 
 from random import shuffle
@@ -25,5 +26,7 @@ away_lineup.generate(league[1])
 stadium = stadium.Stadium(stadium.ANGELS_STADIUM)
 
 game_state = gamestate.GameState(home_lineup, away_lineup, stadium, gamestate.GameRules())
+
+messenger = messenger.Messenger()
 
 print("Setup complete.")

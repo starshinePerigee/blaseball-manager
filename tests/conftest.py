@@ -193,7 +193,7 @@ def gamestate_1(ballgame_1):
 
 
 @pytest.fixture(scope='function')
-def pitch_1(gamestate_1, monkeypatch):
+def pitch_1(gamestate_1, monkeypatch, messenger_1):
     """A nice pitch right through the zone."""
     catcher = gamestate_1.defense()['catcher']
     catcher.set_all_stats(1)
@@ -216,7 +216,7 @@ def pitch_1(gamestate_1, monkeypatch):
         lambda current, on_deck: 0
     )
 
-    pitch = pitching.Pitch(gamestate_1, pitcher, catcher)
+    pitch = pitching.Pitch(gamestate_1, pitcher, catcher, messenger_1)
 
     monkeypatch.setattr('blaseball.playball.pitching.normal', numpy.random.normal)
     monkeypatch.setattr('blaseball.playball.pitching.rand', numpy.random.rand)
@@ -299,5 +299,5 @@ def count_store_all(messenger_1):
 
 @pytest.fixture(scope='function')
 def stats_monitor_1(ballgame_1):
-    stats_monitor = statsmonitor.StatsMonitor(ballgame_1.messenger, ballgame_1.state)
+    stats_monitor = ballgame_1.stats_monitor
     return stats_monitor

@@ -39,7 +39,7 @@ while bg.live_game:
         break
 
 profiler.disable()
-stats = pstats.Stats(profiler).sort_stats('cumtime')
+stats = pstats.Stats(profiler).sort_stats('tottime')
 
 se.print_all()
 print("\r\n\r\n~~~~~~~~~~~\r\n\r\n")

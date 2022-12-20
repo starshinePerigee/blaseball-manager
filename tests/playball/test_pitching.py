@@ -267,7 +267,7 @@ class TestPitching:
 
 
 class TestPitchIntegrated:
-    def test_pitch(self, gamestate_1, stats_monitor_1, monkeypatch, patcher):
+    def test_pitch(self, gamestate_1, messenger_1, monkeypatch, patcher):
         gamestate_1.outs = 1
         catcher = gamestate_1.defense()['catcher']
         pitcher = gamestate_1.defense()['pitcher']
@@ -298,8 +298,7 @@ class TestPitchIntegrated:
                 lambda pitcher_trickery: pitcher_trickery * pitching.REDUCTION_FROM_TRICKERY
             )
 
-            pitches = [pitching.Pitch(gamestate_1, pitcher, catcher) for __ in patcher]
-            [stats_monitor_1.update_pitch(pitch) for pitch in pitches]
+            pitches = [pitching.Pitch(gamestate_1, pitcher, catcher, messenger_1) for __ in patcher]
 
             assert catcher[s.pitches_called] == 100
             assert pitcher[s.pitches_thrown] == 100

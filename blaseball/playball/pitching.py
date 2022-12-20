@@ -8,9 +8,10 @@ from numpy.random import normal, rand
 from math import tanh
 from typing import List
 
-from blaseball.playball.gamestate import GameState, GameRules
+from blaseball.playball.gamestate import GameState, GameRules, GameTags
 from blaseball.playball.event import Update
 from blaseball.stats.players import Player
+from blaseball.util.messenger import Messenger
 from blaseball.stats import stats as s
 
 
@@ -228,7 +229,7 @@ class Pitch(Update):
     difficulty: how hard the pitch is to hit, from 0 +
     reduction: how much successful hits are reduced
     """
-    def __init__(self, game: GameState, pitcher: Player, catcher: Player):
+    def __init__(self, game: GameState, pitcher: Player, catcher: Player, messenger: Messenger):
         catcher = catcher
         pitcher = pitcher
 
@@ -240,6 +241,8 @@ class Pitch(Update):
         self.reduction = roll_reduction(pitcher[s.trickery])
 
         super().__init__(self.description_string(pitcher))
+
+        messenger.send(self, [GameTags.pitch, GameTags.game_updates])
 
     def description_string(self, pitcher: Player):
         if self.location > 1.6:
@@ -297,6 +300,7 @@ if __name__ == "__main__":
 
     from blaseball.util import quickteams
     g = quickteams.game_state
+    m = quickteams.messenger
 
     test_pitcher = g.defense()['pitcher']
     print(f"Pitcher: {test_pitcher}")
@@ -313,15 +317,14 @@ if __name__ == "__main__":
         strike_percent = calc_ideal_strike_percent(calling_modifier)
         print(f"Catcher logic: modifier {calling_modifier} -> "
               f"strike {strike_percent*100:.1f}%")
-        p = Pitch(g, test_pitcher, test_catcher)
+        p = Pitch(g, test_pitcher, test_catcher, m)
         print(p)
         print(p.text)
         for i in range(0, 100):
             Pitch(g, test_pitcher, test_catcher)
 
     def run_game():
-        for stat_ in s.pb.get_stats_with_kind(statclasses.Kinds.performance) + \
-                    s.pb.get_stats_with_kind(statclasses.Kinds.averaging):
+        for stat_ in s.pb.get_stats_with_kind(statclasses.Kinds.performance):
             test_pitcher[stat_.name] = 0
             test_catcher[stat_.name] = 0
 

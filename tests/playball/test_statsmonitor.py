@@ -22,7 +22,9 @@ class TestStatsMonitor:
 
     def test_update_pitch(self, stats_monitor_1, pitch_1, gamestate_1):
         pitcher = gamestate_1.defense()['pitcher']
+        pitcher.reset_tracking()
         catcher = gamestate_1.defense()['catcher']
+        catcher.reset_tracking()
 
         stats_monitor_1.update_pitch(pitch_1)
 

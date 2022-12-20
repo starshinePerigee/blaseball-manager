@@ -81,7 +81,7 @@ def print_stats_distribution(name: str) -> None:
         print(f"Could not evaluate stats for {name}")
 
 
-# @pytest.mark.skip("Skip this because it takes forever - manually run this as-needed")
+@pytest.mark.skip("Skip this because it takes forever - manually run this as-needed")
 def test_all_stats(stadium_a, messenger_1):
     Settings.players_per_team = 10
 

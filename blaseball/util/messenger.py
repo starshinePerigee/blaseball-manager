@@ -59,7 +59,10 @@ class Messenger:
     running_id = 1
 
     def __init__(self):
-
+        """
+        Creates an empty messenger. Because most of the configuration occurs on subscribe, an
+        empty messenger isn't different from another empty messenger.
+        """
         # listeners is a dictionary of list of tuples:
         """
         {
@@ -77,6 +80,8 @@ class Messenger:
             tags = [tags]
 
         for tag in tags:
+            if function in [listener[1] for listener in self.listeners[tag]]:
+                raise ValueError(f"Function '{function}' already subscribed to tag {tag}!")
             self.listeners[tag] += [(priority, function)]
             self.listeners[tag].sort(key=lambda x: x[0], reverse=True)
 

@@ -12,6 +12,7 @@ from blaseball.playball.basepaths import Basepaths
 from blaseball.playball.gamestate import GameState, BaseSummary
 from blaseball.playball.gamestate import GameTags as Tags
 from blaseball.stats.players import Player
+from blaseball.stats import stats as s
 
 
 class PitchManager:
@@ -30,9 +31,9 @@ class PitchManager:
         pitch = Pitch(
             game,
             game.defense()['pitcher'],
-            game.defense()['catcher']
+            game.defense()['catcher'],
+            self.messenger
         )
-        self.messenger.send(pitch, [Tags.pitch, Tags.game_updates])
 
         batter = game.batter()
 
@@ -75,7 +76,7 @@ class PitchManager:
     def player_walk(self, player: Player):
         runs_scored, players_scoring = self.basepaths.walk_batter(player)
         if runs_scored:
-            walk_string = f"{players_scoring[0]['name']} walked in for a run!"
+            walk_string = f"{players_scoring[0][s.name]} walked in for a run!"
             self.messenger.send(Update(walk_string), Tags.game_updates)
             self.messenger.send(runs_scored, Tags.runs_scored)
         self.messenger.send(BaseSummary(basepaths=self.basepaths), Tags.bases_update)

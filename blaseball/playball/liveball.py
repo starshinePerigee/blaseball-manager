@@ -147,13 +147,14 @@ if __name__ == "__main__":
 
     from blaseball.util import quickteams
     g = quickteams.game_state
+    m = quickteams.messenger
 
     test_pitcher = g.defense()['pitcher']
     test_catcher = g.defense()['catcher']
     test_batter = g.batter()
 
     print(f"Batter: {test_batter}")
-    for s in statclasses.all_stats['rating']:
+    for s in statclasses.all_base['rating']:
         if s.category == 'batting':
             print(f"{s}: {test_batter._to_stars(test_batter[s.name])}")
 
@@ -165,7 +166,7 @@ if __name__ == "__main__":
         furthest_swing = None
         furthest_distance = 0
         for __ in range(0, 1000):
-            p = Pitch(g, test_pitcher, test_catcher)
+            p = Pitch(g, test_pitcher, test_catcher, m)
             p.location = 0
             s = Swing(g, p, test_batter)
             if s.hit:
