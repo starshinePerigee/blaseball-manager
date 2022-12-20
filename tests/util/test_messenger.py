@@ -164,6 +164,53 @@ class TestMessenger:
         assert r1.class_numbers == [2, 4, 1, 3] * 2
 
 
+class TestQueues:
+    global_messenger = Messenger()
+
+    def test_queuing(self):
+        cs = CountStore(TestQueues.global_messenger, [TestTags.count, TestTags.count_2, TestTags.count_3])
+
+        def slow_function(x: int):
+            TestQueues.global_messenger.send(x + 2, TestTags.count_2, queue=True)
+            TestQueues.global_messenger.send(x + 1, TestTags.count_2)
+        TestQueues.global_messenger.subscribe(slow_function, TestTags.count_3)
+
+        def fast_function(x: int):
+            TestQueues.global_messenger.send(x + 2, TestTags.count, queue=True)
+        TestQueues.global_messenger.subscribe(fast_function, TestTags.count_2)
+
+        """
+        call chain                  count_store         messenger_queue
+        test_qing (1 > 1)           [1]                 []
+        
+        test_qing (2 > 1q)          [1]                 [2 > 1]
+        
+        messenger_q (2 > 1)         [2 1]               []
+        
+        test_qing (3 > 3)           [3 2 1]             []
+            slow (3+2 > 2q)         [3 2 1]             [5 > 2]
+            slow (3+1 > 2)          [4 3 2 1]           [5 > 2]
+                fast (4+2 > 1q)     [4 3 2 1]           [5 > 2, 6 > 1]
+                
+        messenger_q (5 > 2)         [5 4 3 2 1]         [6 > 1]
+            fast(5+2 > 1q)          [5 4 3 2 1]         [6 > 1, 7 > 1]
+            
+        messenger_q (6 > 1)         [6 5 4 3 2 1]       [7 > 1]
+        
+        messenger_q (7 > 1)         [7 6 5 4 3 2 1]     []
+        """
+
+        TestQueues.global_messenger.send(1, TestTags.count)
+        TestQueues.global_messenger.send(2, TestTags.count, queue=True)
+        TestQueues.global_messenger.send(3, TestTags.count_3)
+
+        assert len(cs) == 7
+        for i in range(1, len(cs)+1):
+            assert cs[-i] == i
+
+
+
+
 def fake_messenger_send(argument=None, tags=""):
     if not isinstance(tags, list):
         tags = [tags]

@@ -71,6 +71,8 @@ class Messenger:
         }
         """
         self.listeners = defaultdict(list)
+        self._queue = []
+        self._broadcasting = False
         self.id = Messenger.running_id
         Messenger.running_id += 1
 
@@ -95,8 +97,13 @@ class Messenger:
                 if priority_tuple[1] == function:
                     self.listeners[tag].remove(priority_tuple)
 
-    def send(self, argument=None, tags: Union[Enum, List[Enum]] = "") -> None:
+    def send(self, argument=None, tags: Union[Enum, List[Enum]] = "", queue=False) -> None:
         """Send a message."""
+        if queue and self._broadcasting:
+            self._queue += [(argument, tags)]
+            return
+
+        self._broadcasting = True
         sent = set()
 
         if tags == "":
@@ -130,8 +137,9 @@ class Messenger:
                         finally:
                             sent.add(recipient)
 
-    # TODO: add "send queue" for optional timing management - a "send message, but at the back of the queue" option
-    # (in the appraise/bellow) option, bob can add his
+        self._broadcasting = False
+        if len(self._queue) > 0:
+            self.send(*self._queue.pop(0))
 
     def __str__(self):
         total_listeners = sum([len(self.listeners[key]) for key in self.listeners])
@@ -200,7 +208,7 @@ class CircuitBreaker(Listener):
 
 
 class CountStore(Listener):
-    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]], items_to_store=-1):
+    def __init__(self, messenger: Messenger, tags: Union[Enum, List[Enum]] = "", items_to_store=-1):
         """Count the number of items passing through this message with tags, and optionally save them.
         If items_to_store is 0, no items will be saved. if items_to_store is -1, all items will be saved."""
         super().__init__(messenger, tags, 100)
