@@ -1,4 +1,4 @@
-move messenger sends into subclasses?
+move messenger sends into subclasses
 finish adding tracking stats
 convert all blaseball to use s.stats
 add expected min/max/average to stats

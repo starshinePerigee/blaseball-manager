@@ -40,13 +40,11 @@ class TestStatsMonitor:
         assert pitcher[s.average_pitch_difficulty] == pitch_1.difficulty
         assert pitcher[s.thrown_strike_rate] == pytest.approx(1)
 
-    def test_update_hit(self, stats_monitor_1, pitch_1, gamestate_1, patcher):
+    def test_update_hit(self, stats_monitor_1, pitch_1, gamestate_1, patcher, messenger_1):
         patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: True)
         patcher.patch('blaseball.playball.hitting.roll_hit_quality', lambda net_contact: 2)
         batter = gamestate_1.batter()
-        swing = Swing(gamestate_1, pitch_1, batter)
-
-        stats_monitor_1.update_swing(swing)
+        swing = Swing(gamestate_1, pitch_1, batter, messenger_1)
 
         assert batter[s.pitches_seen] == 1
         assert batter[s.strike_rate] == pytest.approx(0)

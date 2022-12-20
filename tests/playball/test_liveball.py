@@ -191,13 +191,13 @@ class TestHitBall:
             (45, 200, None)
         ]
     )
-    def test_hit_ball_integrated(self, gamestate_1, patcher, field_angle, distance, text):
+    def test_hit_ball_integrated(self, gamestate_1, messenger_1, patcher, field_angle, distance, text):
         patcher.patch("blaseball.playball.liveball.LiveBall.distance",
                       lambda x: distance)
         patcher.patch("blaseball.playball.liveball.roll_field_angle",
                       lambda batter_pull: field_angle)
 
-        hit_ball = liveball.HitBall(gamestate_1, 0, 0, gamestate_1.batter())
+        hit_ball = liveball.HitBall(gamestate_1, 0, 0, gamestate_1.batter(), messenger_1)
         assert hit_ball.text == text
         assert hit_ball.live.distance() == distance
 
@@ -228,8 +228,7 @@ class TestHitBall:
         batter = gamestate_1.batter()
 
         for i, __ in enumerate(patcher):
-            ball = liveball.HitBall(gamestate_1, 0, 0, batter)
-            messenger_1.send(ball, gamestate.GameTags.hit_ball)
+            ball = liveball.HitBall(gamestate_1, 0, 0, batter, messenger_1)
 
         assert batter[s.total_hits] == 100
         assert batter[s.average_hit_distance] == pytest.approx(570)

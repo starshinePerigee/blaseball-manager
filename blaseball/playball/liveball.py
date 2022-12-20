@@ -7,9 +7,10 @@ from numpy.random import normal
 
 from blaseball.playball.event import Update
 from blaseball.playball.hitting import Swing
-from blaseball.playball.gamestate import GameState
+from blaseball.playball.gamestate import GameState, GameTags
 from blaseball.stats.players import Player
 from blaseball.util.geometry import Coord
+from blaseball.util.messenger import Messenger
 from blaseball.stats import stats as s
 
 
@@ -118,7 +119,7 @@ def roll_exit_velocity(quality, reduction, batter_power) -> float:
 
 class HitBall(Update):
     """A hit ball is an update which turns a swing into a live ball, which it carries with it."""
-    def __init__(self, game: GameState, quality: float, reduction: float, batter: Player):
+    def __init__(self, game: GameState, quality: float, reduction: float, batter: Player, messenger: Messenger):
         super().__init__()
 
         launch_angle = roll_launch_angle(quality, batter[s.power])
@@ -133,6 +134,8 @@ class HitBall(Update):
         elif hit_wall:
             self.text = "Off the outfield wall!"
             self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity-5)
+
+        messenger.send(self, [GameTags.hit_ball, GameTags.game_updates])
 
     def __str__(self):
         return f"HitBall with live {self.live}"

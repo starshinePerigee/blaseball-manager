@@ -4,11 +4,12 @@ Controls a player's pre-hit decisions as well as their actual swing attempt.
 
 from numpy.random import normal, rand
 
-from blaseball.playball.gamestate import GameState
+from blaseball.playball.gamestate import GameState, GameTags
 from blaseball.playball.pitching import Pitch
 from blaseball.stats.players import Player
 from blaseball.playball.event import Update
 from blaseball.stats import stats as s
+from blaseball.util.messenger import Messenger
 
 
 # Hit Intent:
@@ -76,7 +77,7 @@ def roll_hit_quality(net_contact) -> float:
 
 class Swing(Update):
     """A player's swing, from decision up to hit quality"""
-    def __init__(self, game: GameState, pitch: Pitch, batter: Player):
+    def __init__(self, game: GameState, pitch: Pitch, batter: Player, messenger: Messenger):
         super().__init__()
 
         self.desperation = calc_desperation(game.balls, game.strikes, game.rules.ball_count, game.rules.strike_count)
@@ -113,6 +114,8 @@ class Swing(Update):
                 self.ball = True
                 self.text = "Ball."
 
+        messenger.send(self, [GameTags.swing])
+
     def __bool__(self):
         return self.did_swing
 
@@ -131,39 +134,3 @@ class Swing(Update):
             text += f" with quality {self.hit_quality:.3f}"
         text += f" from desperation {self.desperation:.02f}"
         return text
-
-
-if __name__ == "__main__":
-    from blaseball.stats import statclasses
-
-    from blaseball.util import quickteams
-    g = quickteams.game_state
-
-    test_pitcher = g.defense()['pitcher']
-    test_catcher = g.defense()['catcher']
-    test_batter = g.batter()
-
-    print(f"Batter: {test_batter}")
-    for s_ in s.pb.get_stats_with_category(s.batting):
-        print(f"{s_}: {test_batter._to_stars(test_batter[s_.name])}")
-
-    def do_swing():
-        p = Pitch(g, test_pitcher, test_catcher)
-        print(p)
-        for __ in range(0, 5):
-            w = Swing(g, p, test_batter)
-            print(w)
-            print(w.text)
-        print("")
-
-    print("")
-    g.strikes = 2
-    do_swing()
-
-    g.strikes = 0
-    do_swing()
-
-    g.balls = 3
-    do_swing()
-
-

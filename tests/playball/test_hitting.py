@@ -170,13 +170,16 @@ class TestHitIntegrated:
         hit_parameters.values(),
         ids=list(hit_parameters.keys())
     )
-    def test_swing_results(self, patcher, gamestate_1, pitch_1, location, swing, quality, strike, ball, foul, hit):
+    def test_swing_results(
+            self, patcher, gamestate_1, messenger_1, pitch_1,
+            location, swing, quality, strike, ball, foul, hit
+    ):
         pitch_1.location = location
         pitch_1.strike = pitching.check_strike(location, 1)
         patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: swing)
         patcher.patch('blaseball.playball.hitting.roll_hit_quality', lambda net_contact: quality)
 
-        swing = hitting.Swing(gamestate_1, pitch_1, gamestate_1.batter())
+        swing = hitting.Swing(gamestate_1, pitch_1, gamestate_1.batter(), messenger_1)
 
         assert swing.strike == strike
         assert swing.ball == ball
@@ -231,7 +234,7 @@ class TestHitStats:
                 gamestate_1.defense()['catcher'],
                 messenger_1
             )
-            swing = hitting.Swing(gamestate_1, pitch, batter)
+            swing = hitting.Swing(gamestate_1, pitch, batter, messenger_1)
             stats_monitor_1.update_pitch(pitch)
             stats_monitor_1.update_swing(swing)
             all_swings += [swing]
