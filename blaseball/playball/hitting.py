@@ -10,6 +10,7 @@ from blaseball.stats.players import Player
 from blaseball.playball.event import Update
 from blaseball.stats import stats as s
 from blaseball.util.messenger import Messenger
+from blaseball.playball.manager import Manager
 
 
 # Hit Intent:
@@ -141,3 +142,12 @@ class Swing(Update):
             text += f" with quality {self.hit_quality:.3f}"
         text += f" from desperation {self.desperation:.02f}"
         return text
+
+
+class SwingManager(Manager):
+    def start(self):
+        self.messenger.subscribe(self.do_swing, GameTags.pitch)
+
+    def do_swing(self, pitch: Pitch):
+        Swing(self.state, pitch, self.state.batter(), self.messenger)
+        

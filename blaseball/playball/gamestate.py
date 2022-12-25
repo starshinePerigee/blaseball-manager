@@ -16,6 +16,7 @@ from collections.abc import Collection
 from blaseball.stats.players import Player
 from blaseball.stats.lineup import Lineup
 from blaseball.stats.stadium import Stadium
+from blaseball.util.messenger import Listener
 
 from typing import List, Union
 
@@ -160,7 +161,9 @@ class GameState:
 
 class GameTags(Enum):
     pre_tick = 'state synchronization tick immediately prior to state tick <GameState>'
-    state_ticks = 'state ticks <GameState>'
+    state_ticks = 'state ticks <None>'  # used to be <GameState>, but now everything has a reference
+    # to GameState built in
+    # state_update = 'gamestate updated <None>' - may be needed for UI?
     new_batter = 'new player up to bat <Player>'
     new_inning = 'new inning reached <int>'
     new_half = 'new inning half reached <int>'

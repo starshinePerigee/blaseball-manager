@@ -12,6 +12,7 @@ from blaseball.playball.gamestate import GameState, GameRules, GameTags
 from blaseball.playball.event import Update
 from blaseball.stats.players import Player
 from blaseball.util.messenger import Messenger
+from blaseball.playball.manager import Manager
 from blaseball.stats import stats as s
 
 
@@ -292,4 +293,18 @@ class Pitch(Update):
             and self.location == other.location
             and self.reduction == other.reduction
             and self.strike == other.strike
+        )
+
+
+class PitchManager(Manager):
+    def start(self):
+        self.messenger.subscribe(GameTags.state_ticks, self.do_pitch)
+
+    def do_pitch(self):
+        defense = self.state.defense()
+        Pitch(
+            self.state,
+            defense['pitcher'],
+            defense['catcher'],
+            self.messenger
         )

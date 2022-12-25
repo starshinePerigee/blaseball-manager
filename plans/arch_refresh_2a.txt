@@ -33,3 +33,8 @@ answer:
 - use pointer to single state, with a messenger for when that state updates
 
 
+
+
+do we really want a manager for every step?
+- is there any time you would have a pitch without a swing?
+-- yes: for testing, profiling, etc.

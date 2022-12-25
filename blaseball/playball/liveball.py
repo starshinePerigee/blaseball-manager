@@ -7,7 +7,9 @@ from numpy.random import normal
 
 from blaseball.playball.event import Update
 from blaseball.playball.hitting import Swing
+from blaseball.playball.pitching import Pitch
 from blaseball.playball.gamestate import GameState, GameTags, BaseSummary
+from blaseball.playball.manager import Manager
 from blaseball.stats.players import Player
 from blaseball.util.geometry import Coord
 from blaseball.util.messenger import Messenger
@@ -145,3 +147,26 @@ class HitBall(Update):
 
     def __repr__(self):
         return f"<HitBall with live {repr(self.live)}>"
+
+
+class HitManager(Manager):
+    def __init__(self, state: GameState, messenger: Messenger):
+        super().__init__(state, messenger)
+        self.last_reduction = 0
+
+    def start(self):
+        self.messenger.subscribe(self.set_reduction, GameTags.pitch)
+        self.messenger.subscribe(self.do_hit, GameTags.swing)
+
+    def set_reduction(self, pitch: Pitch):
+        self.last_reduction = pitch.reduction
+
+    def do_hit(self, swing: Swing):
+        if swing.hit:
+            HitBall(
+                self.state,
+                swing.hit_quality,
+                self.last_reduction,
+                self.state.batter(),
+                self.messenger
+            )
