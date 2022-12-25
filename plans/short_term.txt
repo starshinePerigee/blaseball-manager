@@ -1,10 +1,19 @@
 move messenger sends into subclasses
 decouple bases and pitchmanager?
 - pitchmanager and fielding are independent modules connected by messenger?
+(are we trending towards removing pitchmanager entirely? just messenger sends?)
+
+pull foul handling into HitBall out of Swing
+
+remove statsmonitor
 
 finish adding tracking stats
 convert all blaseball to use s.stats
-add expected min/max/average to stats
+add expected min / low / ave / high / max / lowlim / highlim to Stat
+add validity check to stats (require 100 hits for hit rate, for instance)
+use the above for unit testing
+
+
 coarse balance pass
 
 revise some stats?

@@ -1,0 +1,35 @@
+Let's get even more decoupled!
+
+1. statsmonitor sucks really bad
+2. pitchmonitor is kind of weird - we can do this with just messenger?
+
+so basically, all the different pieces get initialized by ballgame, communicate over messenger naturally
+
+how many bits do we have?
+
+PitchListener
+SwingListener
+HitListener
+BasepathsManager
+FieldingListener
+
+
+Question - these all need to access (and sometimes modify) game state.
+
+Options:
+1. A StateListener class, which each manager has a copy of, that subscribes to gamestate messengers
+2. Provide a link to The Gamestate for each manager.
+
+1:
++ provides cleaner interface
++ controls effects on gamestate
+
+2:
++ performance
++ we're already doing 'globals' with
+
+
+answer:
+- use pointer to single state, with a messenger for when that state updates
+
+
