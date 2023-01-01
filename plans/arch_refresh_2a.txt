@@ -38,3 +38,24 @@ answer:
 do we really want a manager for every step?
 - is there any time you would have a pitch without a swing?
 -- yes: for testing, profiling, etc.
+
+
+
+Do we want to make fielding more manager/messenger based?
+
+should these cross-manager calls use a queue? should we set it up so these revert the callstack to the
+uppermost level? (i think this is how messenger's queue works rn)
+
+
+messenger queues:
+
+
+
+
+
+what you're doing here is an event system, and not a messenger system. trying to bolt it on to messenger
+is A Deal.
+
+
+which we can do? let's screw with messenger some, we can always revert.
+

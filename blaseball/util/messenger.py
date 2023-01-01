@@ -97,13 +97,31 @@ class Messenger:
                 if priority_tuple[1] == function:
                     self.listeners[tag].remove(priority_tuple)
 
-    def send(self, argument=None, tags: Union[Enum, List[Enum]] = "", queue=False) -> None:
-        """Send a message."""
-        if queue and self._broadcasting:
-            self._queue += [(argument, tags)]
+    def queue(self, argument=None, tags: Union[Enum, List[Enum]] = "", execute: bool = True) -> None:
+        """
+        Add a message to the event queue.
+
+        This works a lot like send (and even calls send!) except it guarantees this executes after
+        all pending calls, and it doesn't take up space on the call stack.
+
+        Where send() is fire-and-forget, to be used when you don't care what happens, queue is used
+        to preserve execution order.
+        """
+        self._queue += [(argument, tags)]
+
+        if self._broadcasting or not execute:
             return
 
         self._broadcasting = True
+        while len(self._queue) > 0:
+            self.send(*self._queue.pop(0))
+        self._broadcasting = False
+
+    def send(self, argument=None, tags: Union[Enum, List[Enum]] = ""):
+        """Send argument to all listeners subscribed on tags.
+        One final reminder that this basically acts as a distributed function call - read the docs
+        in messenger for several concerns.
+        """
         sent = set()
 
         if tags == "":
@@ -137,9 +155,6 @@ class Messenger:
                         finally:
                             sent.add(recipient)
 
-        self._broadcasting = False
-        if len(self._queue) > 0:
-            self.send(*self._queue.pop(0))
 
     def __str__(self):
         total_listeners = sum([len(self.listeners[key]) for key in self.listeners])
