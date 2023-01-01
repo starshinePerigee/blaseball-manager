@@ -47,15 +47,17 @@ should these cross-manager calls use a queue? should we set it up so these rever
 uppermost level? (i think this is how messenger's queue works rn)
 
 
-messenger queues:
+Ok, with the messenger refactor:
+- all the managers use queue() to make sure they're events that go in the queue
+- ballgame will instantiate the queue in normal situations.
+
+- fielding uses the queue system?
+- you have defense, runners on basepaths, the ballgame...
 
 
 
-
-
-what you're doing here is an event system, and not a messenger system. trying to bolt it on to messenger
-is A Deal.
-
-
-which we can do? let's screw with messenger some, we can always revert.
-
+x. Fix gamestate passing
+2. Fix manager / queueing
+2.5: fix fouls to be part of hits
+3. Refactor fielding to use queue
+4. handle stats one way or another

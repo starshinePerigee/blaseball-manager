@@ -3,7 +3,7 @@ Inplay handles everything that happens once a ball is hit.
 
 At its core, it creates a second Event (so a hit ball is two events, each with their own series of updates.
 
-This commands BasePaths and interfaces with fielding as needed..
+This commands BasePaths and interfaces with fielding as needed.
 """
 
 from blaseball.playball.basepaths import Runner, Basepaths, calc_speed

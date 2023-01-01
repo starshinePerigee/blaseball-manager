@@ -189,7 +189,7 @@ class BallGame:
 
         new_state = copy(self.state)
         self.messenger.send(new_state, GameTags.pre_tick)
-        self.messenger.send(new_state, GameTags.state_ticks)
+        self.messenger.queue(new_state, GameTags.state_ticks)
 
     def add_outs(self, outs):
         """Add a number of outs, will move game along."""
@@ -204,7 +204,7 @@ class BallGame:
         if self.state.inning_half:
             # we're in the top of the inning
             self.state.inning_half -= 1
-            self.messenger.send(self.state.inning_half, GameTags.new_half)
+            self.messenger.queue(self.state.inning_half, GameTags.new_half)
         elif self.state.inning > self.state.rules.innings and self.state.scores[0] != self.state.scores[1]:
             self.end_game()
         else:
@@ -215,8 +215,8 @@ class BallGame:
             if self.state.inning > 64:
                 # inning mercy
                 self.inning_mercy()
-            self.messenger.send(self.state.inning_half, GameTags.new_half)
-            self.messenger.send(self.state.inning, GameTags.new_inning)
+            self.messenger.queue(self.state.inning_half, GameTags.new_half)
+            self.messenger.queue(self.state.inning, GameTags.new_inning)
 
     def next_half_inning(self, inning_half):
         """Start the half inning."""

@@ -205,6 +205,7 @@ def fake_messenger_send(argument=None, tags=""):
 
     return fake_receive(argument)
 
+
 def fake_receive(argument=None):
     return ReceivedArgument(argument)
 

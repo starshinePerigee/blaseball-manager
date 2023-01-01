@@ -115,7 +115,7 @@ class Swing(Update):
                 self.ball = True
                 self.text = "Ball."
 
-        messenger.send(self, [GameTags.swing])
+        messenger.queue(self, [GameTags.swing])
 
         if self.strike:
             messenger.send(self.did_swing, GameTags.strike)

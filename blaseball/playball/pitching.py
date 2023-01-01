@@ -243,7 +243,7 @@ class Pitch(Update):
 
         super().__init__(self.description_string(pitcher))
 
-        messenger.send(self, [GameTags.pitch, GameTags.game_updates])
+        messenger.queue(self, [GameTags.pitch, GameTags.game_updates])
 
     def description_string(self, pitcher: Player):
         if self.location > 1.6:
@@ -298,7 +298,7 @@ class Pitch(Update):
 
 class PitchManager(Manager):
     def start(self):
-        self.messenger.subscribe(GameTags.state_ticks, self.do_pitch)
+        self.messenger.subscribe(self.do_pitch, GameTags.state_ticks)
 
     def do_pitch(self):
         defense = self.state.defense()
