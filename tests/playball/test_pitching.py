@@ -1,7 +1,7 @@
 import pytest
 import statistics
 
-from blaseball.stats import statclasses
+from blaseball.playball.gamestate import GameTags
 from blaseball.playball import pitching
 from blaseball.stats import stats as s
 
@@ -74,7 +74,7 @@ class TestCallingModifiers:
         print(f"No outs effect: {pitching.calling_mod_from_outs(0, 3)}")
         print(f"Two outs effect: {pitching.calling_mod_from_outs(2, 3)}")
 
-    def test_caling_modifier_next_hitter(self, lineup_1):
+    def test_calling_modifier_next_hitter(self, lineup_1):
         current = lineup_1['batter 1']
         on_deck = lineup_1['batter 2']
         current.set_all_stats(0)
@@ -267,7 +267,7 @@ class TestPitching:
 
 
 class TestPitchIntegrated:
-    def test_pitch(self, gamestate_1, messenger_1, monkeypatch, patcher):
+    def test_pitch(self, gamestate_1, ballgame_1, messenger_1, patcher, count_store_all):
         gamestate_1.outs = 1
         catcher = gamestate_1.defense()['catcher']
         pitcher = gamestate_1.defense()['pitcher']
@@ -279,6 +279,11 @@ class TestPitchIntegrated:
         reductions = []
 
         patcher.patch_normal('blaseball.playball.pitching.normal')
+        patcher.patch('blaseball.playball.ballgame.BallGame.add_ball', lambda self_: None)
+        patcher.patch('blaseball.playball.ballgame.BallGame.add_foul', lambda self_: None)
+        patcher.patch('blaseball.playball.ballgame.BallGame.add_strike', lambda self_: None)
+
+        pitchmanager = pitching.PitchManager(gamestate_1, messenger_1)
 
         # This *should be* an ideal candidate for pytest parameterization, but we need to compare each iteration
         # to each other to make sure trends go up. We could split this into two tests, but at that point you're
@@ -292,13 +297,17 @@ class TestPitchIntegrated:
             catcher.set_all_stats(stat)
             pitcher.reset_tracking()
             pitcher.set_all_stats(stat)
+            count_store_all.clear()
 
-            monkeypatch.setattr(
+            patcher.patch(
                 'blaseball.playball.pitching.roll_reduction',
                 lambda pitcher_trickery: pitcher_trickery * pitching.REDUCTION_FROM_TRICKERY
             )
 
-            pitches = [pitching.Pitch(gamestate_1, pitcher, catcher, messenger_1) for __ in patcher]
+            for i in range(100):
+                messenger_1.queue(tags=GameTags.state_ticks)
+
+            pitches = [received.argument for received in count_store_all if GameTags.pitch in received.tags]
 
             assert catcher[s.pitches_called] == 100
             assert pitcher[s.pitches_thrown] == 100

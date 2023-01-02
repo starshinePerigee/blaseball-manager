@@ -107,6 +107,7 @@ class TestBallGame:
         # guarantee hit
         patcher.patch('blaseball.playball.hitting.roll_for_swing_decision', lambda swing_chance: True)
         patcher.patch('blaseball.playball.hitting.roll_hit_quality', lambda net_contact: 4.0)
+        patcher.patch('blaseball.stats.stadium.Stadium.check_foul', lambda self, location: False)  # noqa
         patcher.patch('blaseball.stats.stadium.Stadium.check_home_run', lambda self, location: (False, False))  # noqa
         ballgame_1.send_tick()
 

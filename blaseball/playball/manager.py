@@ -10,6 +10,10 @@ class Manager:
     def __init__(self, state: GameState, messenger: Messenger):
         self.state = state
         self.messenger = messenger
+        self.start()
 
     def start(self):
+        raise NotImplementedError("Abstract base class for Manager called!")
+
+    def stop(self):
         raise NotImplementedError("Abstract base class for Manager called!")

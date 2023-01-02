@@ -230,20 +230,25 @@ class Pitch(Update):
     difficulty: how hard the pitch is to hit, from 0 +
     reduction: how much successful hits are reduced
     """
-    def __init__(self, game: GameState, pitcher: Player, catcher: Player, messenger: Messenger):
-        catcher = catcher
-        pitcher = pitcher
+    def __init__(
+            self,
+            pitcher: Player,
+            target: float,
+            location: float,
+            strike: bool,
+            obscurity: float,
+            difficulty: float,
+            reduction: float
+    ):
 
-        self.target = decide_call(game, catcher, pitcher)
-        self.location = roll_location(self.target, pitcher[s.accuracy])
-        self.strike = check_strike(self.location, catcher[s.calling])
-        self.obscurity = calc_obscurity(self.location, pitcher[s.trickery])
-        self.difficulty = calc_difficulty(self.location, pitcher[s.force])
-        self.reduction = roll_reduction(pitcher[s.trickery])
+        self.target = target
+        self.location = location
+        self.strike = strike
+        self.obscurity = obscurity
+        self.difficulty = difficulty
+        self.reduction = reduction
 
         super().__init__(self.description_string(pitcher))
-
-        messenger.queue(self, [GameTags.pitch, GameTags.game_updates])
 
     def description_string(self, pitcher: Player):
         if self.location > 1.6:
@@ -296,15 +301,28 @@ class Pitch(Update):
         )
 
 
+def build_pitch(state: GameState) -> Pitch:
+    defense = state.defense()
+    catcher = defense['catcher']
+    pitcher = defense['pitcher']
+
+    target = decide_call(state, catcher, pitcher)
+    location = roll_location(target, pitcher[s.accuracy])
+    strike = check_strike(location, catcher[s.calling])
+    obscurity = calc_obscurity(location, pitcher[s.trickery])
+    difficulty = calc_difficulty(location, pitcher[s.force])
+    reduction = roll_reduction(pitcher[s.trickery])
+
+    return Pitch(pitcher, target, location, strike, obscurity, difficulty, reduction)
+
+
 class PitchManager(Manager):
     def start(self):
         self.messenger.subscribe(self.do_pitch, GameTags.state_ticks)
 
+    def stop(self):
+        self.messenger.unsubscribe(self.do_pitch, GameTags.state_ticks)
+
     def do_pitch(self):
-        defense = self.state.defense()
-        Pitch(
-            self.state,
-            defense['pitcher'],
-            defense['catcher'],
-            self.messenger
-        )
+        pitch = build_pitch(self.state)
+        self.messenger.queue(pitch, [GameTags.pitch, GameTags.game_updates])

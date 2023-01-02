@@ -256,6 +256,9 @@ class CountStore(Listener):
     def __len__(self):
         return len(self.items)
 
+    def __iter__(self):
+        return iter(self.items)
+
     def print_all(self):
         for i, item in enumerate(self.items[::-1]):
             print(f"{'[' + str(i) + ']':>6} {item.as_padded_string()}")

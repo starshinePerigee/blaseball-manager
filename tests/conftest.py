@@ -193,43 +193,16 @@ def gamestate_1(ballgame_1):
 
 
 @pytest.fixture(scope='function')
-def pitch_1(gamestate_1, monkeypatch, messenger_1):
-    """A nice pitch right through the zone."""
-    catcher = gamestate_1.defense()['catcher']
-    catcher.set_all_stats(1)
-    pitcher = gamestate_1.defense()['pitcher']
-    pitcher.set_all_stats(1)
-
-    gamestate_1.outs = 1
-
-    monkeypatch.setattr('blaseball.playball.pitching.normal', lambda loc, scale=1: loc)
-    monkeypatch.setattr('blaseball.playball.pitching.rand', lambda: 0.5)
-
-    calling_mod_from_discipline_bias = pitching.calling_mod_from_discipline_bias
-    monkeypatch.setattr(
-        'blaseball.playball.pitching.calling_mod_from_discipline_bias',
-        lambda power, discipline: 0
+def pitch_1(gamestate_1):
+    return pitching.Pitch(
+        pitcher=gamestate_1.defense()['pitcher'],
+        target=0,
+        location=0,
+        strike=True,
+        obscurity=pitching.calc_obscurity(0, 0.5),
+        difficulty=pitching.calc_difficulty(0, 0.5),
+        reduction=0
     )
-    calling_mod_from_next_hitter = pitching.calling_mod_from_next_hitter
-    monkeypatch.setattr(
-        'blaseball.playball.pitching.calling_mod_from_next_hitter',
-        lambda current, on_deck: 0
-    )
-
-    pitch = pitching.Pitch(gamestate_1, pitcher, catcher, messenger_1)
-
-    monkeypatch.setattr('blaseball.playball.pitching.normal', numpy.random.normal)
-    monkeypatch.setattr('blaseball.playball.pitching.rand', numpy.random.rand)
-    monkeypatch.setattr(
-        'blaseball.playball.pitching.calling_mod_from_discipline_bias',
-        calling_mod_from_discipline_bias
-    )
-    monkeypatch.setattr(
-        'blaseball.playball.pitching.calling_mod_from_next_hitter',
-        calling_mod_from_next_hitter
-    )
-
-    return pitch
 
 
 @pytest.fixture(scope='function')

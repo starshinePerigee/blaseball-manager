@@ -58,6 +58,7 @@ Ok, with the messenger refactor:
 
 x. Fix gamestate passing
 x. Fix manager / queueing
+2.3: pull logic out of init into manager
 2.5: fix fouls to be part of hits
 3. Refactor fielding to use queue
 4. handle stats one way or another
