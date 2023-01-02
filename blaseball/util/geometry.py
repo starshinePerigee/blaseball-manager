@@ -27,14 +27,13 @@ class Coord(Point):  # noqa - we don't really care about the abstract methods he
     def theta(self):
         if self.x == 0:
             if self.y == 0:
-                theta = 0
+                return 0
             elif self.y > 0:
-                theta = 90
+                return 90
             else:
-                theta = 360 - 90
+                return 360 - 90
         else:
-            theta = math.degrees(math.atan(self.y / self.x))
-        return theta
+            return math.degrees(math.atan(self.y / self.x))
 
     def move_towards(self, location: "Coord", distance: float) -> "Coord":
         """Returns a coord that's equal to this point moved distance towards another point.

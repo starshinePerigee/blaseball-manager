@@ -49,6 +49,12 @@ class Stadium:
             outside = False
         return outside, hit_wall
 
+    def check_foul(self, location: Coord) -> bool:
+        """Check if a batted ball is foul.
+        Right now with simple fielding, this just checks field angle against the stadium field angle.
+        """
+        return 0 >= location.theta() >= self.THIRD_BASE.theta()
+
 
 if __name__ == "__main__":
     s = Stadium(ANGELS_STADIUM)

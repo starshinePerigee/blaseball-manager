@@ -69,7 +69,7 @@ class LiveBall:
 BASE_LAUNCH_ANGLE = 10  # median launch angle for a 0* batter
 LAUNCH_ANGLE_POWER_FACTOR = 5  # bonus launch angle for a 5* batter
 LAUNCH_ANGLE_BASE_STDEV = 40
-LA_HIT_QUALITY_FACTOR = 0.5  # magic factor for launch angle hit quality,
+LA_HIT_QUALITY_FACTOR = -0.5  # magic factor for launch angle hit quality,
 # higher LA_HIT_QUALITY_FACTOR means hit quality matters less for scaling launch angles with good hits,
 # LAHQF of 1 means a remainder of 1 cuts launch angle stdev in half.
 
@@ -82,22 +82,25 @@ def roll_launch_angle(quality, batter_power) -> float:
     return launch_angle
 
 
-PULL_STDEV = 45
+PULL_STDV_AT_ONE_QUALITY = 30
+PULL_STDV_AT_PT_ONE_QUALITY = 300
+inverse_pull_factor = 1/PULL_STDV_AT_PT_ONE_QUALITY
 
 
-def roll_field_angle(batter_pull) -> float:
-    for __ in range(0, 10):
-        field_angle = normal(loc=batter_pull, scale=PULL_STDEV)
-        if 0 <= field_angle <= 90:
-            return field_angle
-    return 45
+def roll_field_angle(quality, batter_pull) -> float:
+    pull_stdv = PULL_STDV_AT_ONE_QUALITY / (quality + inverse_pull_factor)
+    field_angle = normal(loc=batter_pull, scale=pull_stdv)
+    if (0 <= field_angle <= 90) and quality >= 1:
+        # reroll clean hits once
+        field_angle = normal(loc=batter_pull, scale=pull_stdv)
+    return field_angle
 
 
 MIN_EXIT_VELOCITY_AVERAGE = 80  # average EV for a player at 0 stars
 MAX_EXIT_VELOCITY_AVERAGE = 120  # max for a juiced player at 10 stars
 EXIT_VELOCITY_RANGE = MAX_EXIT_VELOCITY_AVERAGE - MIN_EXIT_VELOCITY_AVERAGE
 EXIT_VELOCITY_STDEV = 10  # additional fuzz on top of hit quality, should be low
-EXIT_VELOCITY_PITY_FACTOR = 0.2  # the higher this is, the less exit velo is reduced with low hit quality.
+EXIT_VELOCITY_PITY_FACTOR = -0.8  # the higher this is, the less exit velo is reduced with low hit quality.
 # This is very sensitive:
 # 0 means exit velo is 0 at 0 quality
 # 0.1 means exit velo is 56%%
@@ -125,22 +128,29 @@ class HitBall(Update):
         super().__init__()
 
         launch_angle = roll_launch_angle(quality, batter[s.power])
-        field_angle = roll_field_angle(batter[s.pull])
+        field_angle = roll_field_angle(quality, batter[s.pull])
         reduction = EXIT_VELOCITY_RANGE * reduction
         exit_velocity = roll_exit_velocity(quality, reduction, batter[s.power])
         self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity)
-        self.homerun, hit_wall = game.stadium.check_home_run(self.live.ground_location())
 
-        if self.homerun:
-            self.text = "Home run!"
-            messenger.send(len(game.bases) + 1, [GameTags.home_run, GameTags.runs_scored])
-            messenger.send(BaseSummary(game.stadium.NUMBER_OF_BASES), GameTags.bases_update)
+        ground_location = self.live.ground_location()
+        self.foul = game.stadium.check_foul(ground_location)
+        if self.foul:
+            self.homerun = False
+            # don't send foul yet - fielding will have a chance at it.
+        else:
+            self.homerun, hit_wall = game.stadium.check_home_run(ground_location)
+            if self.homerun:
+                self.text = "Home run!"
+                messenger.queue(len(game.bases) + 1, [GameTags.home_run, GameTags.runs_scored])
+                # TODO: pull into home run handler / basepath handler?
+                messenger.send(BaseSummary(game.stadium.NUMBER_OF_BASES), GameTags.bases_update)
 
-        elif hit_wall:
-            self.text = "Off the outfield wall!"
-            self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity-5)
+            elif hit_wall:
+                self.text = "Off the outfield wall!"
+                self.live = LiveBall(launch_angle=launch_angle, field_angle=field_angle, speed=exit_velocity-5)
 
-        messenger.send(self, [GameTags.hit_ball, GameTags.game_updates])
+        messenger.queue(self, [GameTags.hit_ball, GameTags.game_updates])
 
     def __str__(self):
         return f"HitBall with live {self.live}"

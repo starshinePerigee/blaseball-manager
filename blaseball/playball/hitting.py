@@ -67,13 +67,12 @@ def roll_for_swing_decision(swing_chance) -> bool:
 
 FOUL_BIAS = 0.6  # the higher this is, the more frequently fouls and hits occur vs strike swinging
 NET_CONTACT_FACTOR = 0.4  # how much net contact affects the ability to hit.
-FOUL_HIT_QUALITY_THRESHOLD = 1
 
 
 def roll_hit_quality(net_contact) -> float:
     """Roll for hit quality. 1 is a good hit, 0-1 is a foul"""
     base_quality = normal(loc=(net_contact + FOUL_BIAS) * NET_CONTACT_FACTOR, scale=1)
-    return base_quality - FOUL_HIT_QUALITY_THRESHOLD
+    return base_quality
 
 
 class Swing(Update):
@@ -88,19 +87,15 @@ class Swing(Update):
 
         self.strike = False
         self.ball = False
-        self.foul = False
         self.hit = False
 
         # this could probably use cleaning up
         if self.did_swing:
             self.net_contact = batter[s.contact] - pitch.difficulty
             self.hit_quality = roll_hit_quality(self.net_contact)
-            if self.hit_quality < -FOUL_HIT_QUALITY_THRESHOLD:
+            if self.hit_quality < 0:
                 self.strike = True
                 self.text = "Strike, swinging."
-            elif self.hit_quality < 0:
-                self.foul = True
-                self.text = "Foul ball."
             else:
                 self.hit = True
                 self.text = "It's a hit!"
@@ -119,8 +114,6 @@ class Swing(Update):
 
         if self.strike:
             messenger.send(self.did_swing, GameTags.strike)
-        elif self.foul:
-            messenger.send(tags=GameTags.foul)
         elif self.ball:
             messenger.send(tags=GameTags.ball)
 
@@ -135,8 +128,6 @@ class Swing(Update):
         else:
             if self.hit:
                 text += "Hit ball"
-            elif self.foul:
-                text += "Foul ball"
             else:
                 text += "Swung strike"
             text += f" with quality {self.hit_quality:.3f}"
