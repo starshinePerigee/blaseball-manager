@@ -135,6 +135,10 @@ class Swing(Update):
         return text
 
 
+def build_swing(state: GameState, pitch: Pitch):
+    pass
+
+
 class SwingManager(Manager):
     def start(self):
         self.messenger.subscribe(self.do_swing, GameTags.pitch)
