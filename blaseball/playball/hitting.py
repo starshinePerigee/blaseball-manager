@@ -77,45 +77,43 @@ def roll_hit_quality(net_contact) -> float:
 
 class Swing(Update):
     """A player's swing, from decision up to hit quality"""
-    def __init__(self, game: GameState, pitch: Pitch, batter: Player, messenger: Messenger):
+    def __init__(
+            self,
+            desperation: float,
+            read_chance: float,
+            swing_chance: float,
+            did_swing: bool,
+            thrown_strike: bool,
+            net_contact: float,
+            hit_quality: float,
+    ):
         super().__init__()
 
-        self.desperation = calc_desperation(game.balls, game.strikes, game.rules.ball_count, game.rules.strike_count)
-        self.read_chance = calc_read_chance(pitch.obscurity, batter[s.discipline])
-        self.swing_chance = calc_swing_chance(self.read_chance, self.desperation, pitch.strike)
-        self.did_swing = roll_for_swing_decision(self.swing_chance)
+        self.desperation = desperation
+        self.read_chance = read_chance
+        self.swing_chance = swing_chance
+        self.did_swing = did_swing
+        self.net_contact = net_contact
+        self.hit_quality = hit_quality
 
         self.strike = False
         self.ball = False
         self.hit = False
 
-        # this could probably use cleaning up
-        if self.did_swing:
-            self.net_contact = batter[s.contact] - pitch.difficulty
-            self.hit_quality = roll_hit_quality(self.net_contact)
-            if self.hit_quality < 0:
+        if did_swing:
+            if hit_quality < 0:
                 self.strike = True
                 self.text = "Strike, swinging."
             else:
                 self.hit = True
                 self.text = "It's a hit!"
         else:
-            self.net_contact = 0
-            self.hit_quality = 0
-            self.strike = pitch.strike
-            if self.strike:
-                self.ball = False
+            if thrown_strike:
+                self.strike = True
                 self.text = "Strike, looking."
             else:
                 self.ball = True
                 self.text = "Ball."
-
-        messenger.queue(self, [GameTags.swing])
-
-        if self.strike:
-            messenger.send(self.did_swing, GameTags.strike)
-        elif self.ball:
-            messenger.send(tags=GameTags.ball)
 
     def __bool__(self):
         return self.did_swing
@@ -135,14 +133,51 @@ class Swing(Update):
         return text
 
 
-def build_swing(state: GameState, pitch: Pitch):
-    pass
+def build_swing(state: GameState, pitch: Pitch) -> Swing:
+    batter = state.batter()
+
+    desperation = calc_desperation(state.balls, state.strikes, state.rules.ball_count, state.rules.strike_count)
+    read_chance = calc_read_chance(pitch.obscurity, batter[s.discipline])
+    swing_chance = calc_swing_chance(read_chance, desperation, pitch.strike)
+    did_swing = roll_for_swing_decision(swing_chance)
+
+    if did_swing:
+        net_contact = batter[s.contact] - pitch.difficulty
+        hit_quality = roll_hit_quality(net_contact)
+    else:
+        net_contact = 0
+        hit_quality = 0
+
+    swing = Swing(
+        desperation=desperation,
+        read_chance=read_chance,
+        swing_chance=swing_chance,
+        did_swing=did_swing,
+        thrown_strike=pitch.strike,
+        net_contact=net_contact,
+        hit_quality=hit_quality
+    )
+
+    return swing
 
 
 class SwingManager(Manager):
     def start(self):
         self.messenger.subscribe(self.do_swing, GameTags.pitch)
+        self.messenger.subscribe(self.update_score, GameTags.swing)
+
+    def stop(self):
+        self.messenger.unsubscribe(self.do_swing, GameTags.pitch)
+        self.messenger.unsubscribe(self.update_score, GameTags.swing)
 
     def do_swing(self, pitch: Pitch):
-        Swing(self.state, pitch, self.state.batter(), self.messenger)
-        
+        swing = build_swing(self.state, pitch)
+
+        self.messenger.queue(self, [GameTags.swing])
+
+    def update_score(self, swing: Swing):
+        # this is separate to keep its position in the event queue
+        if swing.strike:
+            self.messenger.send(swing.did_swing, GameTags.strike)
+        elif swing.ball:
+            self.messenger.send(tags=GameTags.ball)
