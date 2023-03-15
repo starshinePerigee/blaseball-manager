@@ -43,6 +43,23 @@ class BallGame:
     """The manager for a game of blaseball. This maintains its own internal gamestate, and sends out gameticks
     in response to all_game's "tick" on its messenger
     """
+
+    @staticmethod
+    def create_new_ballgame(
+            all_game_messenger: Messenger,
+            home: Lineup,
+            away: Lineup,
+            stadium: Stadium,
+            rules: GameRules
+    ) -> "BallGame":
+        """Create a new ballgame and initialize all required managers and services to support it."""
+        game_messenger = Messenger()
+
+        ballgame = BallGame(all_game_messenger, home, away, stadium, rules)
+        StatsMonitor(game_messenger, ballgame.state)
+
+        return ballgame
+
     def __init__(
             self,
             all_game_messenger: Messenger,
@@ -50,7 +67,7 @@ class BallGame:
             away: Lineup,
             stadium: Stadium,
             rules: GameRules,
-            game_messenger: Messenger = None  # this game's internal messenger (used for testing)
+            game_messenger: Messenger = None,  # this game's internal messenger (used for testing)
     ):
         self.state = GameState(home, away, stadium, rules)
         self.needs_new_batter = [True, True]
@@ -61,12 +78,7 @@ class BallGame:
 
         # all_game_messenger.subscribe(self.send_tick, None)  # TODO
 
-        if game_messenger is None:
-            self.messenger = Messenger()
-        else:
-            self.messenger = game_messenger
-
-        self.stats_monitor = StatsMonitor(self.messenger, self.state)
+        self.messenger = game_messenger
 
         self.messenger.subscribe(self.score_runs, GameTags.runs_scored)
         self.messenger.subscribe(self.add_ball, GameTags.ball)

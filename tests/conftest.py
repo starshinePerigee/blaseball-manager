@@ -106,6 +106,42 @@ def stat_3(arbitrary_pb):
     return arbitrary_pb.stats['col3']
 
 
+"""
+Here's the old conftest game construct tree
+playerbase_10
+league_2
+    team_1
+        lineup_1
+            defense_1
+    ballgame_1 (with messenger_1, stadium_cut_lf)
+        gamestate_1
+            pitch_1
+            runner_on_second
+            empty_basepaths
+            batters_4
+            live_defense_rf
+            live_defense_catcher
+    pitch_manager_1 (with messenger_1, stadium_cut_lf)
+player_1
+
+the correct game construct tree should look like:
+
+generate_league (class level)
+    league_2 (function level, handles league cleanup)
+        gamestate_1
+            pitch_1
+            etc...
+        ballgame_1 (with pitch_manager, stats_manager, etc.)
+        pitch_manager
+        stats_manager
+        etc..
+        player_1
+stadium_cut_lf (class level)
+messenger_1 (class level, users have to clean up)
+
+"""
+
+
 @pytest.fixture(scope='function')
 def playerbase_10():
     for __ in range(10):
@@ -115,8 +151,13 @@ def playerbase_10():
     stats.pb.clear_players()
 
 
+@pytest.fixture(scope='function')
+def empty_all_base():
+    s.pb.clear_players()
+
+
 @pytest.fixture(scope='class')
-def league_2():
+def generate_league_2():
     league = teams.League(s.pb, teamdata.TEAMS_99[0:2])
     for i, player in enumerate(league[0]):
         player["name"] = f"Test{i} Bobson"
@@ -129,14 +170,26 @@ def league_2():
 
 
 @pytest.fixture(scope='class')
-def team_1(league_2):
-    return league_2[0]
+def generate_team_components():
+    """An internal fixture to allow class scope for the tricky generate parts"""
+    test_team = league_2[0]
+    test_lineup = lineup.Lineup("Test Lineup")
+    test_lineup.generate(team_1, in_order=True)
+
+    return
 
 
 @pytest.fixture(scope='function')
-def empty_all_base():
-    s.pb.df.drop(s.pb.df.index, inplace=True)
-    s.pb.players = {}
+def league_2(generate_league_2):
+    yield generate_league_2
+    for player in generate_league_2:
+        player.reset_tracking()
+        player.set_all_stats(1)
+
+
+@pytest.fixture(scope='function')
+def team_1(league_2):
+    return league_2[0]
 
 
 @pytest.fixture(scope='function')
@@ -146,7 +199,7 @@ def player_1():
     player.modifiers = []
     player.recalculate()
     yield player
-    del stats.pb[player.cid]
+    del stats.pb[player]
 
 
 @pytest.fixture(scope='class')
@@ -188,8 +241,10 @@ def ballgame_1(league_2, stadium_cut_lf, messenger_1):
 
 
 @pytest.fixture(scope='function')
-def gamestate_1(ballgame_1):
-    return ballgame_1.state
+def gamestate_1(league_2):
+    state = gamestate.GameState(
+
+    )
 
 
 @pytest.fixture(scope='function')

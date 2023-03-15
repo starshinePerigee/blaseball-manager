@@ -38,6 +38,7 @@ class BaseSummary(Collection):
 
         if basepaths is not None:
             self.number_of_bases = basepaths.number_of_bases
+            # this is needed to extract the players from the runners returned from to_base_list()
             self.bases = [runner.player if runner is not None else None for runner in basepaths.to_base_list()]
         elif total_bases is not None:
             self.number_of_bases = total_bases
@@ -77,7 +78,21 @@ class GameState:
     that we're leaving on the table - this is due to its origin as the game manager, in addition to the game state.
     """
 
-    def __init__(self, home: Lineup, away: Lineup, stadium: Stadium, rules: GameRules) -> None:
+    def __init__(
+            self,
+            home: Lineup,
+            away: Lineup,
+            stadium: Stadium,
+            rules: GameRules,
+            inning: int = 1,
+            inning_half: int = 1,
+            outs: int = 0,
+            strikes: int = 0,
+            balls: int = 0,
+            at_bat_numbers: List[int] = None,
+            scores: List[Decimal] = None,
+            base_summary: BaseSummary = None
+    ) -> None:
         """Init will only get called once at the start of the game. BallGame maintains its own instance,
         and sends out copies as the game progresses."""
         self.rules = rules
@@ -88,19 +103,18 @@ class GameState:
 
         self.teams = [home, away]
 
-        self.inning = 1
+        self.inning = inning
         # away always bats first!
-        self.inning_half = 1  # index of the at_bat_number and scores, COUNTS DOWN
-        self.outs = 0
-        self.strikes = 0
-        self.balls = 0
+        self.inning_half = inning_half  # index of the at_bat_number and scores, COUNTS DOWN
+        self.outs = outs
+        self.strikes = strikes
+        self.balls = balls
 
-        self.at_bat_numbers = [0, 0]  # home, away
-        self.scores = [Decimal('0.0')] * 2  # home, away
-
+        self.at_bat_numbers = at_bat_numbers if at_bat_numbers is not None else [0, 0]
+        self.scores = scores if scores is not None else [Decimal('0.0')] * 2
         self.at_bat_count = 0
 
-        self.bases = BaseSummary(total_bases=stadium.NUMBER_OF_BASES)
+        self.bases = base_summary if base_summary is not None else BaseSummary(total_bases=stadium.NUMBER_OF_BASES)
 
     def offense_i(self) -> int:
         """Returns the index of the offense for this class' sequence structures"""

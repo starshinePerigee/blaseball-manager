@@ -88,9 +88,10 @@ class PlayerBase(MutableMapping):
         self.players[player.cid] = player
         self.df.loc[player.cid] = self._default_stat_list
 
-    def clear_players(self):
-        self.players = {}
+    def clear_players(self) -> None:
+        """Remove all players in a playerbase."""
         self.df.drop(self.df.index, inplace=True)
+        self.players = {}
 
     def write_stats_to_dataframe(self):
         """Writes all cached stats in _pending_stats to the dataframe columns"""
@@ -160,11 +161,12 @@ class PlayerBase(MutableMapping):
         raise NotImplementedError("MERP")
 
     def __delitem__(self, key: Union[int, 'players.Player']) -> None:
-        try:
-            del self[key.cid]
-        except AttributeError:
-            del self.players[key]
-            self.df.drop(key, inplace=True)
+        """Remove a player from the playerbase"""
+        if isinstance(key, players.Player):
+            key = key.cid
+
+        del self.players[key]
+        self.df.drop(key, inplace=True)
 
     def __str__(self) -> str:
         return_str = f"PlayerBase {len(self)} players x "

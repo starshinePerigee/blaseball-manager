@@ -1,4 +1,5 @@
 add the ability to have a game-less gamestate
+refactor conftest
 
 move messenger sends into subclasses
 decouple bases and pitchmanager?
