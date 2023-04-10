@@ -15,3 +15,7 @@ How do I run it?
 
 What's up next?
 - See /plans and especially /plans/short_term.txt
+
+What's a Blaseball?
+- oh jeez that is a big question
+- uh look over here https://blaseball.com/
